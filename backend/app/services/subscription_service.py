@@ -234,6 +234,7 @@ async def get_rss_market(
             category=source.category,
             icon_url=source.icon_url,
             entry_count=source.entry_count,
+            allow_ssl_bypass=source.allow_ssl_bypass,
             is_subscribed=source.id in subscribed_ids,
         )
         for source in sources

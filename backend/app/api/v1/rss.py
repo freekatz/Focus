@@ -65,7 +65,7 @@ async def validate_rss_url(
     current_user: CurrentUser,
 ):
     """验证 RSS URL 是否有效"""
-    result = await rss_service.validate_rss_url(data.url)
+    result = await rss_service.validate_rss_url(data.url, data.allow_ssl_bypass)
     return result
 
 

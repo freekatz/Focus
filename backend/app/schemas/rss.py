@@ -17,6 +17,7 @@ class RssSourceBase(BaseModel):
     description: Optional[str] = None
     website_url: Optional[str] = None
     fetch_interval: Optional[int] = Field(None, ge=5, le=1440)
+    allow_ssl_bypass: bool = Field(default=True, description="允许绕过 SSL 证书验证")
 
 
 class RssSourceCreate(RssSourceBase):
@@ -33,6 +34,7 @@ class RssSourceUpdate(BaseModel):
     website_url: Optional[str] = None
     is_active: Optional[bool] = None
     fetch_interval: Optional[int] = Field(None, ge=5, le=1440)
+    allow_ssl_bypass: Optional[bool] = None
 
 
 class RssSourceResponse(BaseModel):
@@ -46,6 +48,7 @@ class RssSourceResponse(BaseModel):
     icon_url: Optional[str]
     is_active: bool
     fetch_interval: Optional[int]
+    allow_ssl_bypass: bool
     last_fetched_at: Optional[datetime]
     last_fetch_status: str
     last_fetch_error: Optional[str]
@@ -67,6 +70,7 @@ class RssSourceListResponse(BaseModel):
 class RssValidateRequest(BaseModel):
     """验证 RSS URL 请求"""
     url: str = Field(..., min_length=1, max_length=500)
+    allow_ssl_bypass: bool = Field(default=True, description="允许绕过 SSL 证书验证")
 
 
 class RssValidateResponse(BaseModel):

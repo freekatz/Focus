@@ -71,6 +71,7 @@ class RssMarketItemResponse(BaseModel):
     category: RssCategory
     icon_url: Optional[str]
     entry_count: int
+    allow_ssl_bypass: bool
     # 用户是否已订阅
     is_subscribed: bool
 

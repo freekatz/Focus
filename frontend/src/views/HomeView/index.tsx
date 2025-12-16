@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Icons } from "../../components/icons/Icons";
 import { AIBottomSheet } from "../../components/shared/AIBottomSheet";
 import { ArticleContent } from "../../components/shared/ArticleContent";
@@ -16,6 +17,7 @@ interface HomeViewProps {
 type SwipeDirection = "left" | "right" | null;
 
 export function HomeView({ darkMode }: HomeViewProps) {
+  const { t } = useTranslation();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -322,10 +324,9 @@ export function HomeView({ darkMode }: HomeViewProps) {
             <Icons.Check />
           </div>
         </div>
-        <h2 className="text-2xl font-serif font-medium">All caught up</h2>
+        <h2 className="text-2xl font-serif font-medium">{t('home.allCaughtUp')}</h2>
         <p className="text-zinc-500 max-w-md">
-          You've processed all incoming items. Enjoy your focus time or check
-          your Library.
+          {t('home.allCaughtUpDesc')}
         </p>
       </div>
     );
@@ -373,7 +374,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
                     : "text-zinc-400 bg-zinc-100"
                 }`}
               >
-                {articles.length} Left
+                {articles.length} {t('common.left')}
               </span>
             </div>
 
@@ -436,7 +437,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
               }`}
             >
               <Icons.Sparkles />
-              <span className="text-sm font-bold">Insight</span>
+              <span className="text-sm font-bold">{t('home.insight')}</span>
             </button>
           </div>
 
