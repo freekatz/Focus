@@ -2,20 +2,54 @@
 RSS 服务 - 处理 RSS 相关业务逻辑
 """
 import asyncio
+import ssl
+import urllib.request
 from datetime import datetime
 from functools import partial
 from typing import Optional, List, Tuple
-
 import feedparser
 from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.rss import RssSource, RssCategory
 from app.models.entry import Entry, EntryStatus
 from app.schemas.rss import RssSourceCreate, RssSourceUpdate
 from app.utils.hash import generate_hash
 from app.utils.logger import logger
 
+
+def parse_feed_safe(url: str, allow_ssl_bypass: bool = True):
+    """
+    安全地解析 RSS feed
+
+    Args:
+        url: RSS 订阅地址
+        allow_ssl_bypass: 是否允许在 SSL 验证失败时绕过验证，默认允许
+
+    Returns:
+        feedparser 解析结果
+    """
+    logger.info(f"parse_feed_safe called: url={url}, allow_ssl_bypass={allow_ssl_bypass}")
+
+    # 首先尝试正常解析
+    feed = feedparser.parse(url)
+
+    # 检查是否有 SSL 证书验证错误
+    if feed.bozo and feed.bozo_exception:
+        exception_str = str(feed.bozo_exception)
+        logger.info(f"Feed bozo exception: {exception_str}")
+        if "CERTIFICATE_VERIFY_FAILED" in exception_str or "SSL" in exception_str.upper():
+            if allow_ssl_bypass:
+                logger.warning(f"SSL verification failed for {url}, retrying without verification.")
+                # SSL 验证失败，使用跳过验证的方式重试
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+                handlers = [urllib.request.HTTPSHandler(context=ssl_context)]
+                feed = feedparser.parse(url, handlers=handlers)
+            else:
+                logger.warning(f"SSL verification failed for {url}, bypass not allowed. Feed will fail.")
+
+    return feed
 
 def extract_authors(entry: dict) -> Optional[str]:
     """
@@ -112,6 +146,7 @@ async def get_rss_source_by_url_hash(db: AsyncSession, url_hash: str) -> Optiona
 
 async def create_rss_source(db: AsyncSession, data: RssSourceCreate) -> RssSource:
     """创建 RSS 源"""
+    logger.info(f"Creating RSS source: {data.name}, url={data.url}, allow_ssl_bypass={data.allow_ssl_bypass}")
     url_hash = generate_hash(data.url)
 
     # 检查是否已存在
@@ -126,6 +161,7 @@ async def create_rss_source(db: AsyncSession, data: RssSourceCreate) -> RssSourc
         description=data.description,
         category=data.category,
         fetch_interval=data.fetch_interval,
+        allow_ssl_bypass=data.allow_ssl_bypass,
         url_hash=url_hash,
     )
     db.add(rss_source)
@@ -139,6 +175,7 @@ async def update_rss_source(
 ) -> RssSource:
     """更新 RSS 源"""
     update_data = data.model_dump(exclude_unset=True)
+    logger.info(f"Updating RSS source {rss_source.id}: {update_data}")
 
     # 如果更新了 URL，需要重新计算哈希
     if "url" in update_data:
@@ -237,11 +274,13 @@ async def delete_rss_source(db: AsyncSession, rss_source: RssSource) -> dict:
     }
 
 
-async def validate_rss_url(url: str) -> dict:
+async def validate_rss_url(url: str, allow_ssl_bypass: bool = True) -> dict:
     """验证 RSS URL 是否有效"""
+    logger.info(f"Validating RSS URL: {url}, allow_ssl_bypass={allow_ssl_bypass}")
     try:
         # 在线程池中运行同步的 feedparser，避免阻塞事件循环
-        feed = await asyncio.to_thread(feedparser.parse, url)
+        # 使用 parse_feed_safe 处理 SSL 证书验证问题
+        feed = await asyncio.to_thread(parse_feed_safe, url, allow_ssl_bypass)
 
         if feed.bozo and not feed.entries:
             return {
@@ -273,7 +312,10 @@ async def fetch_rss_entries(db: AsyncSession, rss_source: RssSource) -> Tuple[in
     """
     try:
         # 在线程池中运行同步的 feedparser，避免阻塞事件循环
-        feed = await asyncio.to_thread(feedparser.parse, rss_source.url)
+        # 使用 parse_feed_safe 处理 SSL 证书验证问题，根据源配置决定是否允许绕过 SSL
+        feed = await asyncio.to_thread(
+            parse_feed_safe, rss_source.url, rss_source.allow_ssl_bypass
+        )
 
         if feed.bozo and not feed.entries:
             rss_source.last_fetch_status = "failed"

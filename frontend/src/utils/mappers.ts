@@ -93,6 +93,7 @@ export function mapMarketItemToFeed(item: RssMarketItem): Feed {
     subscribed: item.is_subscribed,
     description: item.description || undefined,
     homepage: item.website_url || undefined,
+    allow_ssl_bypass: item.allow_ssl_bypass,
     _marketItem: item,
   };
 }

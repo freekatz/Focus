@@ -1,7 +1,9 @@
 import { useState, useEffect, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../../components/icons/Icons';
 import { configApi, aiApi, exportApi, authApi } from '../../api';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import type { UserConfig } from '../../types';
 
 type FontTheme = 'sans' | 'serif' | 'mono';
@@ -239,7 +241,9 @@ function ChangePasswordModal({
 }
 
 export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, setFontTheme }: SettingsViewProps) {
+  const { t } = useTranslation();
   const { showToast } = useToast();
+  const { language, setLanguage, languages } = useLanguage();
 
   const [config, setConfig] = useState<UserConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -338,11 +342,11 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
         setIsDefaultPrompt(false);
       }
 
-      showToast('Settings saved', 'success');
+      showToast(t('settings.settingsSaved'), 'success');
       setHasChanges(false);
     } catch (error) {
       console.error('Failed to save settings:', error);
-      showToast('Failed to save settings', 'error');
+      showToast(t('settings.settingsSaveFailed'), 'error');
     } finally {
       setSaving(false);
     }
@@ -360,13 +364,13 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
     <div className="animate-fade-in pb-20 max-w-3xl mx-auto">
       <header className="mb-8">
         <h2 className={`text-3xl font-serif font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>
-          Settings
+          {t('settings.title')}
         </h2>
       </header>
 
       {/* General Settings */}
-      <Section title="General" icon={<Icons.Sliders />} darkMode={darkMode}>
-        <Row label="Unread Article Retention (Days)" darkMode={darkMode}>
+      <Section title={t('settings.general')} icon={<Icons.Sliders />} darkMode={darkMode}>
+        <Row label={t('settings.unreadRetention')} darkMode={darkMode}>
           <input
             type="number"
             value={formData.unmarked_retention_days}
@@ -378,7 +382,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             }`}
           />
         </Row>
-        <Row label="Discarded Article Retention (Days)" darkMode={darkMode}>
+        <Row label={t('settings.discardedRetention')} darkMode={darkMode}>
           <input
             type="number"
             value={formData.trash_retention_days}
@@ -390,7 +394,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             }`}
           />
         </Row>
-        <Row label="Auto-Archive Inbox (Days)" darkMode={darkMode}>
+        <Row label={t('settings.autoArchive')} darkMode={darkMode}>
           <input
             type="number"
             value={formData.archive_after_days}
@@ -405,9 +409,34 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
       </Section>
 
       {/* Appearance */}
-      <Section title="Appearance" icon={<Icons.Palette />} darkMode={darkMode}>
+      <Section title={t('settings.appearance')} icon={<Icons.Palette />} darkMode={darkMode}>
+        {/* Language */}
+        <Row label={t('settings.language')} darkMode={darkMode}>
+          <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-zinc-100'}`}>
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setLanguage(lang.code)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  language === lang.code
+                    ? darkMode
+                      ? 'bg-slate-700 text-white shadow'
+                      : 'bg-white text-zinc-900 shadow'
+                    : darkMode
+                      ? 'text-slate-400 hover:text-slate-300'
+                      : 'text-zinc-500 hover:text-zinc-700'
+                }`}
+              >
+                {lang.nativeName}
+              </button>
+            ))}
+          </div>
+        </Row>
+
         {/* Theme Mode */}
-        <Row label="Theme" darkMode={darkMode}>
+        <Row label={t('settings.theme')} darkMode={darkMode}>
           <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-zinc-100'}`}>
             <button
               type="button"
@@ -424,7 +453,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
               }`}
             >
               <Icons.Sun />
-              <span>Light</span>
+              <span>{t('settings.themeLight')}</span>
             </button>
             <button
               type="button"
@@ -441,7 +470,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
               }`}
             >
               <Icons.Moon />
-              <span>Dark</span>
+              <span>{t('settings.themeDark')}</span>
             </button>
             <button
               type="button"
@@ -458,13 +487,13 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
               }`}
             >
               <Icons.Monitor />
-              <span>System</span>
+              <span>{t('settings.themeSystem')}</span>
             </button>
           </div>
         </Row>
 
         {/* Font Theme */}
-        <Row label="Font" darkMode={darkMode}>
+        <Row label={t('settings.font')} darkMode={darkMode}>
           <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-zinc-100'}`}>
             {fontOptions.map((option) => (
               <button
@@ -493,8 +522,8 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
       </Section>
 
       {/* AI Settings */}
-      <Section title="AI Intelligence" icon={<Icons.Robot />} darkMode={darkMode}>
-        <Row label="AI Provider" darkMode={darkMode}>
+      <Section title={t('settings.aiIntelligence')} icon={<Icons.Robot />} darkMode={darkMode}>
+        <Row label={t('settings.aiProvider')} darkMode={darkMode}>
           <select
             value={formData.ai_provider}
             onChange={(e) => updateFormField('ai_provider', e.target.value)}
@@ -510,7 +539,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             <option value="openai_compatible">OpenAI Compatible</option>
           </select>
         </Row>
-        <Row label="Model" darkMode={darkMode}>
+        <Row label={t('settings.aiModel')} darkMode={darkMode}>
           <input
             type="text"
             placeholder="gemini-2.5-flash"
@@ -523,10 +552,10 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             }`}
           />
         </Row>
-        <Row label="API Key" darkMode={darkMode}>
+        <Row label={t('settings.apiKey')} darkMode={darkMode}>
           <input
             type="password"
-            placeholder={config?.ai_api_key_configured ? '••••••••' : 'Enter API key'}
+            placeholder={config?.ai_api_key_configured ? '••••••••' : t('settings.enterApiKey')}
             value={formData.ai_api_key}
             onChange={(e) => updateFormField('ai_api_key', e.target.value)}
             className={`w-44 px-3 py-1.5 rounded-lg border text-sm ${
@@ -536,7 +565,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             }`}
           />
         </Row>
-        <Row label="API Base URL" darkMode={darkMode}>
+        <Row label={t('settings.apiBaseUrl')} darkMode={darkMode}>
           <input
             type="text"
             placeholder="https://api.openai.com/v1"
@@ -553,7 +582,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
             <span className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-zinc-700'}`}>
-              System Prompt
+              {t('settings.systemPrompt')}
             </span>
             {!isDefaultPrompt && (
               <button
@@ -564,16 +593,16 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
                     const response = await aiApi.resetPrompt();
                     updateFormField('systemPrompt', response.prompt);
                     setIsDefaultPrompt(true);
-                    showToast('Prompt reset to default', 'success');
+                    showToast(t('settings.promptReset'), 'success');
                   } catch {
-                    showToast('Failed to reset prompt', 'error');
+                    showToast(t('settings.promptResetFailed'), 'error');
                   }
                 }}
                 className={`text-xs font-medium ${
                   darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-spira-600 hover:text-spira-700'
                 }`}
               >
-                Reset to default
+                {t('settings.resetToDefault')}
               </button>
             )}
           </div>
@@ -583,7 +612,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
                 ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder-slate-500'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-800 placeholder-zinc-400'
             }`}
-            placeholder="Enter custom instructions for AI summaries..."
+            placeholder={t('settings.promptPlaceholder')}
             value={formData.systemPrompt}
             onChange={(e) => updateFormField('systemPrompt', e.target.value)}
           />
@@ -591,11 +620,11 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
       </Section>
 
       {/* Zotero Integration */}
-      <Section title="Zotero Integration" icon={<Icons.Link />} darkMode={darkMode}>
-        <Row label="API Key" darkMode={darkMode}>
+      <Section title={t('settings.zoteroIntegration')} icon={<Icons.Link />} darkMode={darkMode}>
+        <Row label={t('settings.apiKey')} darkMode={darkMode}>
           <input
             type="password"
-            placeholder={config?.zotero_api_key_configured ? '••••••••' : 'Enter API key'}
+            placeholder={config?.zotero_api_key_configured ? '••••••••' : t('settings.enterApiKey')}
             value={formData.zotero_api_key}
             onChange={(e) => updateFormField('zotero_api_key', e.target.value)}
             className={`w-44 px-3 py-1.5 rounded-lg border text-sm ${
@@ -605,7 +634,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             }`}
           />
         </Row>
-        <Row label="Library ID" darkMode={darkMode}>
+        <Row label={t('settings.libraryId')} darkMode={darkMode}>
           <input
             type="text"
             placeholder="1234567"
@@ -618,7 +647,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             }`}
           />
         </Row>
-        <Row label="Default Collection" darkMode={darkMode}>
+        <Row label={t('settings.defaultCollection')} darkMode={darkMode}>
           <input
             type="text"
             placeholder="Focus"
@@ -634,8 +663,8 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
       </Section>
 
       {/* RSS Feed */}
-      <Section title="RSS Feed" icon={<Icons.Sources />} darkMode={darkMode}>
-        <Row label="Feed Type" darkMode={darkMode}>
+      <Section title={t('settings.rssFeed')} icon={<Icons.Sources />} darkMode={darkMode}>
+        <Row label={t('settings.feedType')} darkMode={darkMode}>
           <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-zinc-100'}`}>
             {(['all', 'interested', 'favorite'] as const).map((type) => (
               <button
@@ -653,12 +682,12 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
                       : 'text-zinc-500 hover:text-zinc-700'
                 }`}
               >
-                {type === 'all' ? 'All' : type === 'interested' ? 'Saved' : 'Favorites'}
+                {type === 'all' ? t('settings.feedAll') : type === 'interested' ? t('settings.feedSaved') : t('settings.feedFavorites')}
               </button>
             ))}
           </div>
         </Row>
-        <Row label="Feed URL" darkMode={darkMode}>
+        <Row label={t('settings.feedUrl')} darkMode={darkMode}>
           <div className="flex gap-2">
             <input
               type="text"
@@ -676,7 +705,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
               onClick={async () => {
                 await navigator.clipboard.writeText(exportApi.getRssFeedUrl(rssFeedType));
                 setRssFeedCopied(true);
-                showToast('Feed URL copied', 'success');
+                showToast(t('settings.feedUrlCopied'), 'success');
                 setTimeout(() => setRssFeedCopied(false), 2000);
               }}
               className={`px-3 py-1.5 rounded-lg transition-colors ${
@@ -694,7 +723,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
       </Section>
 
       {/* Account */}
-      <Section title="Account" icon={<Icons.User />} darkMode={darkMode}>
+      <Section title={t('settings.account')} icon={<Icons.User />} darkMode={darkMode}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
@@ -704,10 +733,10 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             </div>
             <div>
               <div className={`font-medium ${darkMode ? 'text-white' : 'text-zinc-900'}`}>
-                Admin User
+                {t('settings.adminUser')}
               </div>
               <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-zinc-500'}`}>
-                Single User Mode
+                {t('settings.singleUserMode')}
               </div>
             </div>
           </div>
@@ -721,20 +750,20 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
                 : 'border-zinc-300 text-zinc-700 hover:bg-zinc-50'
             }`}
           >
-            Change Password
+            {t('settings.changePassword')}
           </button>
         </div>
       </Section>
 
       {/* About */}
-      <Section title="About" icon={<Icons.Info />} darkMode={darkMode}>
+      <Section title={t('settings.about')} icon={<Icons.Info />} darkMode={darkMode}>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className={darkMode ? 'text-slate-400' : 'text-zinc-500'}>Version</span>
+            <span className={darkMode ? 'text-slate-400' : 'text-zinc-500'}>{t('settings.version')}</span>
             <span className={darkMode ? 'text-slate-200' : 'text-zinc-800'}>1.0.0 (Beta)</span>
           </div>
           <div className="flex justify-between">
-            <span className={darkMode ? 'text-slate-400' : 'text-zinc-500'}>Build</span>
+            <span className={darkMode ? 'text-slate-400' : 'text-zinc-500'}>{t('settings.build')}</span>
             <span className={darkMode ? 'text-slate-200' : 'text-zinc-800'}>2025.12.16</span>
           </div>
         </div>
@@ -757,10 +786,10 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             {saving ? (
               <span className="flex items-center gap-2">
                 <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Saving...
+                {t('common.saving')}
               </span>
             ) : (
-              'Save Changes'
+              t('settings.saveChanges')
             )}
           </button>
         </div>

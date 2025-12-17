@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../icons/Icons';
 
 type TabType = 'home' | 'sources' | 'library' | 'settings';
@@ -35,6 +36,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, onTabChange, darkMode, themeMode, setThemeMode }: SidebarProps) {
+  const { t } = useTranslation();
+
   // Cycle through theme modes: light -> dark -> system -> light
   const cycleTheme = () => {
     const nextMode: ThemeMode = themeMode === 'light' ? 'dark' : themeMode === 'dark' ? 'system' : 'light';
@@ -47,8 +50,8 @@ export function Sidebar({ activeTab, onTabChange, darkMode, themeMode, setThemeM
   };
 
   const getThemeLabel = () => {
-    if (themeMode === 'system') return 'System Theme';
-    return darkMode ? 'Light Mode' : 'Dark Mode';
+    if (themeMode === 'system') return t('settings.themeSystem');
+    return darkMode ? t('settings.themeLight') : t('settings.themeDark');
   };
 
   return (
@@ -61,13 +64,13 @@ export function Sidebar({ activeTab, onTabChange, darkMode, themeMode, setThemeM
       </div>
 
       <nav className="flex-1 space-y-2">
-        <SidebarItem active={activeTab === 'home'} onClick={() => onTabChange('home')} icon={<Icons.Home />} label="Focus" darkMode={darkMode} />
-        <SidebarItem active={activeTab === 'sources'} onClick={() => onTabChange('sources')} icon={<Icons.Sources />} label="Sources" darkMode={darkMode} />
-        <SidebarItem active={activeTab === 'library'} onClick={() => onTabChange('library')} icon={<Icons.Library />} label="Library" darkMode={darkMode} />
+        <SidebarItem active={activeTab === 'home'} onClick={() => onTabChange('home')} icon={<Icons.Home />} label={t('nav.home')} darkMode={darkMode} />
+        <SidebarItem active={activeTab === 'sources'} onClick={() => onTabChange('sources')} icon={<Icons.Sources />} label={t('nav.sources')} darkMode={darkMode} />
+        <SidebarItem active={activeTab === 'library'} onClick={() => onTabChange('library')} icon={<Icons.Library />} label={t('nav.library')} darkMode={darkMode} />
       </nav>
 
       <div className={`border-t pt-4 space-y-2 ${darkMode ? 'border-slate-800' : 'border-zinc-200'}`}>
-        <SidebarItem active={activeTab === 'settings'} onClick={() => onTabChange('settings')} icon={<Icons.Settings />} label="Settings" darkMode={darkMode} />
+        <SidebarItem active={activeTab === 'settings'} onClick={() => onTabChange('settings')} icon={<Icons.Settings />} label={t('nav.settings')} darkMode={darkMode} />
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={cycleTheme}

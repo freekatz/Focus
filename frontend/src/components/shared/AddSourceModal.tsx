@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../icons/Icons';
 import { rssApi } from '../../api';
 import { CATEGORY_DISPLAY, type RssCategory } from '../../types/subscription';
@@ -16,12 +17,14 @@ const CATEGORIES = (Object.entries(CATEGORY_DISPLAY) as [RssCategory, string][])
 );
 
 export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSourceModalProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<'input' | 'confirm'>('input');
   const [url, setUrl] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [homepage, setHomepage] = useState('');
   const [category, setCategory] = useState('blog');
+  const [allowSslBypass, setAllowSslBypass] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +32,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
 
   const handleParse = async () => {
     if (!url.trim()) {
-      setError('Please enter a URL');
+      setError(t('sources.pleaseEnterUrl'));
       return;
     }
 
@@ -37,12 +40,13 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
     setError(null);
 
     try {
-      const response = await rssApi.parseUrl(url);
+      console.log('Parsing URL with allowSslBypass:', allowSslBypass);
+      const response = await rssApi.parseUrl(url, allowSslBypass);
       setName(response.title || '');
       setDescription(response.description || '');
       setStep('confirm');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to parse RSS feed');
+      setError(err instanceof Error ? err.message : t('sources.failedToParseFeed'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +54,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      setError('Please enter a name');
+      setError(t('sources.pleaseEnterName'));
       return;
     }
 
@@ -58,17 +62,19 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
     setError(null);
 
     try {
+      console.log('Creating source with allowSslBypass:', allowSslBypass);
       await rssApi.create({
         name: name.trim(),
         url: url.trim(),
         category,
         description: description.trim() || undefined,
         website_url: homepage.trim() || undefined,
+        allow_ssl_bypass: allowSslBypass,
       });
       onSuccess();
       handleClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create source');
+      setError(err instanceof Error ? err.message : t('sources.failedToCreateSource'));
     } finally {
       setLoading(false);
     }
@@ -81,6 +87,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
     setDescription('');
     setHomepage('');
     setCategory('blog');
+    setAllowSslBypass(true);
     setError(null);
     onClose();
   };
@@ -98,7 +105,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
         {/* Header */}
         <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-slate-700' : 'border-zinc-200'}`}>
           <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>
-            Add RSS Source
+            {t('sources.addRssSource')}
           </h3>
           <button
             onClick={handleClose}
@@ -114,7 +121,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
             <>
               <div>
                 <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
-                  RSS Feed URL
+                  {t('sources.rssUrl')}
                 </label>
                 <input
                   type="url"
@@ -129,6 +136,32 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                 />
               </div>
 
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className={`block text-xs font-medium uppercase tracking-wider ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
+                    {t('sources.allowSslBypass')}
+                  </label>
+                  <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-600' : 'text-zinc-400'}`}>
+                    {t('sources.allowSslBypassDesc')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAllowSslBypass(!allowSslBypass)}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    allowSslBypass
+                      ? (darkMode ? 'bg-indigo-600' : 'bg-spira-600')
+                      : (darkMode ? 'bg-slate-700' : 'bg-zinc-200')
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-transform ${
+                      darkMode ? 'bg-slate-300' : 'bg-white'
+                    } ${allowSslBypass ? 'translate-x-5' : 'translate-x-0'}`}
+                  />
+                </button>
+              </div>
+
               <button
                 onClick={handleParse}
                 disabled={loading || !url.trim()}
@@ -138,14 +171,14 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                     : 'bg-spira-600 hover:bg-spira-500 text-white'
                 } ${loading || !url.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {loading ? 'Parsing...' : 'Get Feed Info'}
+                {loading ? t('common.parsing') : t('sources.getFeedInfo')}
               </button>
             </>
           ) : (
             <>
               <div>
                 <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
-                  Name
+                  {t('sources.name')}
                 </label>
                 <input
                   type="text"
@@ -162,7 +195,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
 
               <div>
                 <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
-                  Description (optional)
+                  {t('sources.descriptionOptional')}
                 </label>
                 <textarea
                   value={description}
@@ -179,7 +212,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
 
               <div>
                 <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
-                  Category
+                  {t('sources.category')}
                 </label>
                 <select
                   value={category}
@@ -198,7 +231,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
 
               <div>
                 <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
-                  Homepage (optional)
+                  {t('sources.homepageOptional')}
                 </label>
                 <input
                   type="url"
@@ -222,7 +255,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                       : 'border-zinc-300 text-zinc-700 hover:bg-zinc-50'
                   }`}
                 >
-                  Back
+                  {t('common.back')}
                 </button>
                 <button
                   onClick={handleCreate}
@@ -233,7 +266,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                       : 'bg-spira-600 hover:bg-spira-500 text-white'
                   } ${loading || !name.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {loading ? 'Adding...' : 'Add Source'}
+                  {loading ? t('common.adding') : t('sources.addSource')}
                 </button>
               </div>
             </>

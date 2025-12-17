@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../../components/icons/Icons';
 import { entriesApi } from '../../api';
 import { mapEntryToArticle, mapActionToBackendStatus } from '../../utils/mappers';
@@ -17,6 +18,7 @@ type SortOrder = 'asc' | 'desc';
 const PAGE_SIZE = 20;
 
 export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [articles, setArticles] = useState<Article[]>([]);
   const [search, setSearch] = useState('');
@@ -228,10 +230,10 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
         await entriesApi.batchUpdateStatus(ids, 'trash');
         setArticles(prev => prev.filter(a => !selectedIds.has(a.id)));
         setSelectedIds(new Set());
-        showToast(`${ids.length} article${ids.length > 1 ? 's' : ''} discarded`, 'success');
+        showToast(t('library.articlesDiscarded', { count: ids.length }), 'success');
       } catch (error) {
         console.error('Failed to bulk discard:', error);
-        showToast('Failed to discard articles', 'error');
+        showToast(t('library.failedToDiscard'), 'error');
       }
     }
   };
@@ -249,10 +251,10 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
           selectedIds.has(a.id) ? { ...a, isFavorite: true } : a
         ));
         setSelectedIds(new Set());
-        showToast(`${ids.length} article${ids.length > 1 ? 's' : ''} favorited`, 'success');
+        showToast(t('library.articlesFavorited', { count: ids.length }), 'success');
       } catch (error) {
         console.error('Failed to bulk favorite:', error);
-        showToast('Failed to favorite articles', 'error');
+        showToast(t('library.failedToFavorite'), 'error');
       }
     }
   };
@@ -268,10 +270,10 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
         await entriesApi.batchUpdateStatus(ids, 'interested');
         fetchEntries();
         setSelectedIds(new Set());
-        showToast(`${ids.length} article${ids.length > 1 ? 's' : ''} saved`, 'success');
+        showToast(t('library.articlesSaved', { count: ids.length }), 'success');
       } catch (error) {
         console.error('Failed to bulk save:', error);
-        showToast('Failed to save articles', 'error');
+        showToast(t('library.failedToSave'), 'error');
       }
     }
   };
@@ -292,12 +294,12 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
 
   const getStatusLabel = (status: EntryStatus | 'all') => {
     const labels: Record<string, string> = {
-      all: 'All Status',
-      unread: 'Unread',
-      interested: 'Saved',
-      favorite: 'Favorite',
-      archived: 'Archived',
-      trash: 'Trash',
+      all: t('common.all'),
+      unread: t('library.unread'),
+      interested: t('library.saved'),
+      favorite: t('library.favorite'),
+      archived: t('library.archived'),
+      trash: t('library.trash'),
     };
     return labels[status] || status;
   };
@@ -308,9 +310,9 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
     <div className="animate-fade-in space-y-4 pb-32 relative">
       {/* Header */}
       <header className="flex justify-between items-center">
-        <h2 className={`text-3xl font-serif font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>Library</h2>
+        <h2 className={`text-3xl font-serif font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>{t('library.title')}</h2>
         <span className={`text-sm ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
-          {filteredAndSorted.length} articles
+          {filteredAndSorted.length} {t('library.articles')}
         </span>
       </header>
 
@@ -319,7 +321,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
         <div className="relative flex-1">
           <input
             type="text"
-            placeholder="Search articles..."
+            placeholder={t('library.searchArticles')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={`w-full pl-10 pr-4 py-2.5 rounded-xl border outline-none focus:ring-2 transition-all ${darkMode ? 'bg-slate-800 border-slate-700 focus:ring-indigo-500 text-white placeholder-slate-500' : 'bg-white border-zinc-200 focus:ring-spira-200 text-zinc-900 placeholder-zinc-400'}`}
@@ -338,7 +340,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
           }`}
         >
           <Icons.Filter />
-          <span className="text-sm font-medium">Filter</span>
+          <span className="text-sm font-medium">{t('library.filter')}</span>
           {hasActiveFilters && (
             <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${darkMode ? 'bg-indigo-500' : 'bg-spira-500'}`}>
               {statusFilters.size + (categoryFilter !== 'all' ? 1 : 0) + (yearFilter !== 'all' ? 1 : 0) + (letterFilter !== 'all' ? 1 : 0)}
@@ -354,7 +356,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
             }`}
           >
             <Icons.X />
-            Clear
+            {t('library.clear')}
           </button>
         )}
 
@@ -368,7 +370,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
             }`}
           >
             {sortField === 'date' && sortOrder === 'desc' ? <Icons.SortDesc /> : <Icons.SortAsc />}
-            Date
+            {t('library.date')}
           </button>
           <button
             onClick={() => toggleSort('title')}
@@ -379,7 +381,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
             }`}
           >
             {sortField === 'title' && sortOrder === 'desc' ? <Icons.SortDesc /> : <Icons.SortAsc />}
-            Title
+            {t('entry.title')}
           </button>
         </div>
       </div>
@@ -394,7 +396,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
           />
           <div className={`absolute left-4 right-4 md:left-auto md:right-8 md:w-[500px] z-20 p-4 rounded-xl border shadow-xl space-y-4 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-zinc-200'}`}>
             <div className="flex items-center justify-between mb-2">
-              <span className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-zinc-700'}`}>Filters</span>
+              <span className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-zinc-700'}`}>{t('library.filters')}</span>
               <button
                 onClick={() => setShowFilters(false)}
                 className={`p-1 rounded-lg transition-colors ${darkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-zinc-100 text-zinc-400'}`}
@@ -404,7 +406,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
             </div>
             {/* Status multi-select */}
             <div className="mb-4">
-              <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>Status</label>
+              <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>{t('library.status')}</label>
               <div className="flex flex-wrap gap-2">
                 {(['unread', 'interested', 'favorite', 'archived', 'trash'] as EntryStatus[]).map(status => (
                   <button
@@ -429,13 +431,13 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>Source</label>
+                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>{t('library.source')}</label>
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-zinc-200'}`}
                 >
-                  <option value="all">All Sources</option>
+                  <option value="all">{t('library.allSources')}</option>
                   {categories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
@@ -443,13 +445,13 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
               </div>
 
               <div>
-                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>Year</label>
+                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>{t('library.year')}</label>
                 <select
                   value={yearFilter}
                   onChange={(e) => setYearFilter(e.target.value)}
                   className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-zinc-200'}`}
                 >
-                  <option value="all">All Years</option>
+                  <option value="all">{t('library.allYears')}</option>
                   {years.map(year => (
                     <option key={year} value={year}>{year}</option>
                   ))}
@@ -457,13 +459,13 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
               </div>
 
               <div>
-                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>First Letter</label>
+                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>{t('library.firstLetter')}</label>
                 <select
                   value={letterFilter}
                   onChange={(e) => setLetterFilter(e.target.value)}
                   className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-zinc-200'}`}
                 >
-                  <option value="all">All</option>
+                  <option value="all">{t('common.all')}</option>
                   {letters.map(letter => (
                     <option key={letter} value={letter}>{letter}</option>
                   ))}
@@ -476,7 +478,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
                 onClick={clearAllFilters}
                 className={`text-sm font-medium ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-spira-600 hover:text-spira-500'}`}
               >
-                Clear all filters
+                {t('library.clearAllFilters')}
               </button>
             )}
           </div>
@@ -488,11 +490,11 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
-              <span className={`text-sm font-medium ${darkMode ? 'text-indigo-400' : 'text-spira-600'}`}>{selectedIds.size} selected</span>
+              <span className={`text-sm font-medium ${darkMode ? 'text-indigo-400' : 'text-spira-600'}`}>{selectedIds.size} {t('library.selected')}</span>
             )}
           </div>
           <div className="flex items-center gap-3 cursor-pointer" onClick={selectAll}>
-            <span className={`text-xs uppercase tracking-wider font-bold ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>Select All</span>
+            <span className={`text-xs uppercase tracking-wider font-bold ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>{t('library.selectAll')}</span>
             <div
               className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedIds.size === paginatedArticles.length && paginatedArticles.length > 0 ? (darkMode ? 'bg-indigo-600 border-indigo-600' : 'bg-spira-600 border-spira-600') : (darkMode ? 'border-slate-600' : 'border-zinc-300')}`}
             >
@@ -509,8 +511,8 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
       ) : paginatedArticles.length === 0 ? (
         <div className="text-center py-20 opacity-50 flex flex-col items-center">
           <div className="mb-4 p-4 bg-zinc-100 rounded-full dark:bg-slate-800"><Icons.Library /></div>
-          <p className="font-medium">No articles found.</p>
-          <p className="text-sm">Try adjusting your filters or search terms.</p>
+          <p className="font-medium">{t('library.noArticlesFound')}</p>
+          <p className="text-sm">{t('library.tryAdjustingFilters')}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -669,7 +671,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
                 onClick={handleBulkSave}
                 className={`flex items-center gap-1.5 md:gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-full font-medium text-sm transition-colors ${darkMode ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-spira-600 hover:bg-spira-500 text-white'}`}
               >
-                <Icons.Check /> <span>Restore</span>
+                <Icons.Check /> <span>{t('library.restore')}</span>
               </button>
             ) : (
               // Normal action bar
@@ -678,27 +680,27 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
                   onClick={handleBulkDiscard}
                   className="flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-2 rounded-full hover:bg-red-50 text-red-500 font-medium text-sm transition-colors"
                 >
-                  <Icons.Trash /> <span className="hidden md:inline">Discard</span>
+                  <Icons.Trash /> <span className="hidden md:inline">{t('library.discard')}</span>
                 </button>
                 <div className={`w-px h-5 md:h-6 ${darkMode ? 'bg-slate-700' : 'bg-zinc-200'}`}></div>
                 <button
                   onClick={handleBulkSave}
                   className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-2 rounded-full font-medium text-sm transition-colors ${darkMode ? 'hover:bg-slate-700 text-slate-200' : 'hover:bg-zinc-50 text-zinc-700'}`}
                 >
-                  <Icons.Check /> <span className="hidden md:inline">Save</span>
+                  <Icons.Check /> <span className="hidden md:inline">{t('common.save')}</span>
                 </button>
                 <button
                   onClick={handleBulkFavorite}
                   className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-2 rounded-full font-medium text-sm transition-colors ${darkMode ? 'hover:bg-slate-700 text-slate-200' : 'hover:bg-zinc-50 text-zinc-700'}`}
                 >
-                  <Icons.Star /> <span className="hidden md:inline">Favorite</span>
+                  <Icons.Star /> <span className="hidden md:inline">{t('library.favorite')}</span>
                 </button>
                 <div className={`w-px h-5 md:h-6 ${darkMode ? 'bg-slate-700' : 'bg-zinc-200'}`}></div>
                 <button
                   onClick={() => setExportModalOpen(true)}
                   className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-2 rounded-full font-medium text-sm transition-colors ${darkMode ? 'hover:bg-slate-700 text-slate-200' : 'hover:bg-zinc-50 text-zinc-700'}`}
                 >
-                  <Icons.Share /> <span className="hidden md:inline">Export</span>
+                  <Icons.Share /> <span className="hidden md:inline">{t('library.export')}</span>
                 </button>
               </>
             )}

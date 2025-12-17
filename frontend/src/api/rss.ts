@@ -14,6 +14,7 @@ export interface RssCreateRequest {
   category: string;
   description?: string;
   website_url?: string;
+  allow_ssl_bypass?: boolean;
 }
 
 export interface RssSource {
@@ -23,6 +24,7 @@ export interface RssSource {
   category: string;
   description?: string;
   icon_url?: string;
+  allow_ssl_bypass: boolean;
   created_at: string;
 }
 
@@ -47,12 +49,13 @@ export interface RssUpdateRequest {
   website_url?: string;
   is_active?: boolean;
   fetch_interval?: number;
+  allow_ssl_bypass?: boolean;
 }
 
 export const rssApi = {
   // Parse RSS URL to extract feed info
-  parseUrl: (url: string) =>
-    apiClient.post<RssParseResponse>('/rss/validate', { url }),
+  parseUrl: (url: string, allow_ssl_bypass: boolean = true) =>
+    apiClient.post<RssParseResponse>('/rss/validate', { url, allow_ssl_bypass }),
 
   // Create a new RSS source
   create: (data: RssCreateRequest) =>

@@ -42,6 +42,7 @@ class RssSource(Base):
     # 采集配置
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     fetch_interval: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # 覆盖全局配置
+    allow_ssl_bypass: Mapped[bool] = mapped_column(Boolean, default=True)  # 允许绕过 SSL 证书验证
     last_fetched_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     last_fetch_status: Mapped[str] = mapped_column(String(20), default="pending")
     last_fetch_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../../components/icons/Icons';
 import { subscriptionsApi, rssApi } from '../../api';
 import { mapSubscriptionToFeed, mapMarketItemToFeed, getUniqueCategories } from '../../utils/mappers';
@@ -11,6 +12,7 @@ interface SourcesViewProps {
 }
 
 export function SourcesView({ darkMode }: SourcesViewProps) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<'my' | 'market'>('my');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [editingFeed, setEditingFeed] = useState<Feed | null>(null);
@@ -81,12 +83,14 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
         });
       } else if (updatedFeed._marketItem) {
         // Update RSS source (market tab)
+        console.log('Updating RSS source, allow_ssl_bypass:', updatedFeed.allow_ssl_bypass);
         await rssApi.update(updatedFeed._marketItem.id, {
           name: updatedFeed.name,
           url: updatedFeed.url,
           category: updatedFeed._marketItem.category,
           description: updatedFeed.description || undefined,
           website_url: updatedFeed.homepage || undefined,
+          allow_ssl_bypass: updatedFeed.allow_ssl_bypass,
         });
       }
       fetchFeeds();
@@ -160,21 +164,21 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
     if (errorCount === 0) {
       setRefreshMessage({
         type: 'success',
-        text: totalNew > 0 ? `Refreshed! ${totalNew} new article(s) found.` : 'All feeds are up to date.'
+        text: totalNew > 0 ? t('sources.refreshSuccess', { count: totalNew }) : t('sources.allUpToDate')
       });
     } else if (successCount > 0) {
       // Some succeeded, some failed
       setRefreshMessage({
         type: 'success',
         text: totalNew > 0
-          ? `${totalNew} new article(s) found. ${errorCount} feed(s) failed to refresh.`
-          : `Refreshed ${successCount} feed(s). ${errorCount} feed(s) failed.`
+          ? t('sources.refreshPartialSuccess', { newCount: totalNew, errorCount })
+          : t('sources.refreshPartialNoNew', { successCount, errorCount })
       });
     } else {
       // All failed
       setRefreshMessage({
         type: 'error',
-        text: 'Failed to refresh feeds. Please check your network connection.'
+        text: t('sources.refreshFailed')
       });
     }
 
@@ -195,7 +199,7 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
     <div className="animate-fade-in space-y-6 pb-20">
       <header className="flex flex-col gap-4 sticky top-0 z-10 pt-2 backdrop-blur-md">
         <div className="flex justify-between items-center">
-          <h2 className={`text-3xl font-serif font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>Sources</h2>
+          <h2 className={`text-3xl font-serif font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>{t('sources.title')}</h2>
           <div className="flex items-center gap-3">
             {tab === 'my' ? (
               <button
@@ -225,13 +229,13 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
               onClick={() => { setTab('my'); setSelectedCategory('All'); }}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === 'my' ? (darkMode ? 'bg-slate-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
             >
-              My Subs
+              {t('sources.mySubs')}
             </button>
             <button
               onClick={() => { setTab('market'); setSelectedCategory('All'); }}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === 'market' ? (darkMode ? 'bg-slate-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
             >
-              Discovery
+              {t('sources.discovery')}
             </button>
             </div>
           </div>
@@ -274,7 +278,7 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredFeeds.length === 0 ? (
             <div className="col-span-full text-center py-10 opacity-50 italic">
-              No sources found in this category.
+              {t('sources.noSourcesInCategory')}
             </div>
           ) : (
             filteredFeeds.map(feed => (
@@ -300,7 +304,7 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
                       : (darkMode ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-zinc-900 text-white hover:bg-zinc-700')
                   }`}
                 >
-                  {feed.subscribed ? 'Following' : 'Follow'}
+                  {feed.subscribed ? t('sources.following') : t('sources.follow')}
                 </button>
               </div>
             ))

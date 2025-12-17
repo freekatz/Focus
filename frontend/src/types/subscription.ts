@@ -34,6 +34,7 @@ export interface RssMarketItem {
   icon_url: string | null;
   entry_count: number;
   is_subscribed: boolean;
+  allow_ssl_bypass: boolean;
 }
 
 export interface RssMarketListResponse {
@@ -51,6 +52,7 @@ export interface Feed {
   description?: string;
   homepage?: string;
   refreshRate?: string;
+  allow_ssl_bypass?: boolean;
   // Keep original data for API calls
   _subscription?: Subscription;
   _marketItem?: RssMarketItem;
