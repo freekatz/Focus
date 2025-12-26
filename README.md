@@ -1,5 +1,7 @@
 # Focus
 
+English | [中文](README_zh.md)
+
 A modern, minimalist RSS reader with AI-powered insights. Designed for vibe reading with a card-based swipe interface.
 
 ## Features
