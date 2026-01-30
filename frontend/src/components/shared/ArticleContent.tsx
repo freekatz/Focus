@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -11,6 +11,62 @@ interface ArticleContentProps {
 }
 
 type ContentType = 'html' | 'markdown' | 'plain';
+
+// Image Lightbox Component
+function ImageLightbox({
+  src,
+  alt,
+  onClose
+}: {
+  src: string;
+  alt: string;
+  onClose: () => void;
+}) {
+  // ESC key to close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  // Prevent body scroll when lightbox is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-zoom-out"
+      onClick={onClose}
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl bg-white p-2"
+        style={{ backgroundColor: '#f8f8f8' }}
+        onClick={(e) => e.stopPropagation()}
+      />
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+        aria-label="Close"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  );
+}
 
 // Detect content type based on patterns
 function detectContentType(content: string): ContentType {
@@ -92,7 +148,15 @@ function plainTextToHtml(text: string): string {
 }
 
 // Markdown content component using react-markdown with KaTeX support
-function MarkdownContent({ content, darkMode }: { content: string; darkMode: boolean }) {
+function MarkdownContent({
+  content,
+  darkMode,
+  onImageClick
+}: {
+  content: string;
+  darkMode: boolean;
+  onImageClick: (src: string, alt: string) => void;
+}) {
   return (
     <article className={`article-content ${darkMode ? 'article-content-dark' : 'article-content-light'}`}>
       <ReactMarkdown
@@ -104,6 +168,16 @@ function MarkdownContent({ content, darkMode }: { content: string; darkMode: boo
             <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
               {children}
             </a>
+          ),
+          // Custom image renderer with lightbox support
+          img: ({ src, alt, ...props }) => (
+            <img
+              src={src}
+              alt={alt || ''}
+              {...props}
+              className="cursor-zoom-in hover:opacity-90 transition-opacity"
+              onClick={() => src && onImageClick(src, alt || '')}
+            />
           ),
           // Custom code block renderer
           code: ({ className, children, ...props }) => {
@@ -136,10 +210,39 @@ function MarkdownContent({ content, darkMode }: { content: string; darkMode: boo
 
 export function ArticleContent({ content, darkMode }: ArticleContentProps) {
   const contentType = useMemo(() => detectContentType(content), [content]);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
+
+  const openLightbox = useCallback((src: string, alt: string) => {
+    setLightboxImage({ src, alt });
+  }, []);
+
+  const closeLightbox = useCallback(() => {
+    setLightboxImage(null);
+  }, []);
+
+  // Handle image clicks for HTML content
+  const handleHtmlImageClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      openLightbox(img.src, img.alt || '');
+    }
+  }, [openLightbox]);
 
   // Use react-markdown for markdown content
   if (contentType === 'markdown') {
-    return <MarkdownContent content={content} darkMode={darkMode} />;
+    return (
+      <>
+        <MarkdownContent content={content} darkMode={darkMode} onImageClick={openLightbox} />
+        {lightboxImage && (
+          <ImageLightbox
+            src={lightboxImage.src}
+            alt={lightboxImage.alt}
+            onClose={closeLightbox}
+          />
+        )}
+      </>
+    );
   }
 
   // For HTML and plain text, use dangerouslySetInnerHTML
@@ -156,9 +259,19 @@ export function ArticleContent({ content, darkMode }: ArticleContentProps) {
   }, [content, contentType]);
 
   return (
-    <article
-      className={`article-content ${darkMode ? 'article-content-dark' : 'article-content-light'}`}
-      dangerouslySetInnerHTML={{ __html: processedContent }}
-    />
+    <>
+      <article
+        className={`article-content ${darkMode ? 'article-content-dark' : 'article-content-light'}`}
+        dangerouslySetInnerHTML={{ __html: processedContent }}
+        onClick={handleHtmlImageClick}
+      />
+      {lightboxImage && (
+        <ImageLightbox
+          src={lightboxImage.src}
+          alt={lightboxImage.alt}
+          onClose={closeLightbox}
+        />
+      )}
+    </>
   );
 }

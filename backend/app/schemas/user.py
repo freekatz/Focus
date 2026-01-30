@@ -53,6 +53,9 @@ class UserConfigResponse(BaseModel):
     zotero_collection: Optional[str]
     zotero_api_key_configured: bool = False  # 标识 Zotero API Key 是否已配置
     theme: str
+    color_theme: str
+    font_theme: str
+    custom_theme_json: Optional[str] = None
     entries_per_page: int
 
     model_config = {"from_attributes": True}
@@ -74,4 +77,7 @@ class UserConfigUpdateRequest(BaseModel):
     zotero_api_key: Optional[str] = None
     zotero_collection: Optional[str] = None
     theme: Optional[str] = None
+    color_theme: Optional[str] = None
+    font_theme: Optional[str] = None
+    custom_theme_json: Optional[str] = None
     entries_per_page: Optional[int] = Field(None, ge=10, le=100)

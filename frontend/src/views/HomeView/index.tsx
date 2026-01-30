@@ -210,25 +210,25 @@ export function HomeView({ darkMode }: HomeViewProps) {
         {/* Skeleton: Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
-            <div className={`h-5 w-16 rounded ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
-            <div className={`h-5 w-20 rounded ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+            <div className="h-5 w-16 rounded bg-theme-muted" />
+            <div className="h-5 w-20 rounded bg-theme-muted" />
           </div>
-          <div className={`h-4 w-24 rounded ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+          <div className="h-4 w-24 rounded bg-theme-muted" />
         </div>
         {/* Skeleton: Title */}
-        <div className={`h-8 md:h-10 rounded w-3/4 mb-4 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+        <div className="h-8 md:h-10 rounded w-3/4 mb-4 bg-theme-muted" />
         {/* Skeleton: Author */}
-        <div className={`h-4 w-48 rounded mb-8 ml-4 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+        <div className="h-4 w-48 rounded mb-8 ml-4 bg-theme-muted" />
         {/* Skeleton: Divider */}
-        <div className={`h-px w-full mb-8 ${darkMode ? 'bg-stone-700' : 'bg-zinc-200'}`} />
+        <div className="h-px w-full mb-8 bg-theme-border" />
         {/* Skeleton: Content */}
         <div className="space-y-4">
-          <div className={`h-4 rounded w-full ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
-          <div className={`h-4 rounded w-5/6 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
-          <div className={`h-4 rounded w-full ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
-          <div className={`h-4 rounded w-4/5 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
-          <div className={`h-4 rounded w-full ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
-          <div className={`h-4 rounded w-3/4 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+          <div className="h-4 rounded w-full bg-theme-muted" />
+          <div className="h-4 rounded w-5/6 bg-theme-muted" />
+          <div className="h-4 rounded w-full bg-theme-muted" />
+          <div className="h-4 rounded w-4/5 bg-theme-muted" />
+          <div className="h-4 rounded w-full bg-theme-muted" />
+          <div className="h-4 rounded w-3/4 bg-theme-muted" />
         </div>
       </div>
     );
@@ -238,44 +238,28 @@ export function HomeView({ darkMode }: HomeViewProps) {
     return (
       <>
         <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4 animate-fade-in">
-          <div
-            className={`p-4 rounded-full ${
-              darkMode ? "bg-stone-800" : "bg-spira-100"
-            }`}
-          >
-            <div className={`${darkMode ? "text-teal-400" : "text-spira-600"}`}>
-              <Icons.Check />
-            </div>
+          <div className="mb-4 p-4 rounded-full bg-theme-muted text-theme-text-tertiary">
+            <Icons.Check />
           </div>
-          <h2 className="text-2xl font-serif font-medium">
+          <p className="text-lg font-medium text-theme-text-secondary mb-1">
             {selectedSourceId ? t("home.noArticlesInSource") : t("home.allCaughtUp")}
-          </h2>
-          <p
-            className={`max-w-md ${darkMode ? "text-stone-400" : "text-zinc-500"}`}
-          >
+          </p>
+          <p className="text-sm text-theme-text-tertiary max-w-md">
             {selectedSourceId ? t("home.trySelectingAnotherSource") : t("home.allCaughtUpDesc")}
           </p>
         </div>
 
         {/* Floating Action Bar - Always show source selector */}
         <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
-          <div
-            className={`flex items-center gap-2 px-3 py-2 rounded-full shadow-lg backdrop-blur-sm ${
-              darkMode
-                ? "bg-stone-800/95 border border-stone-700"
-                : "bg-white/95 border border-zinc-200"
-            }`}
-          >
+          <div className="flex items-center gap-2 px-3 py-2 rounded-full shadow-lg backdrop-blur-sm bg-theme-surface/95 border border-theme-border">
             {/* Source Filter */}
-            <span className={`text-xs ${darkMode ? "text-stone-500" : "text-zinc-400"}`}>
+            <span className="text-xs text-theme-text-tertiary">
               {t("home.source")}:
             </span>
             <select
               value={selectedSourceId || ""}
               onChange={handleSourceChange}
-              className={`px-2 py-1 rounded text-sm border-0 bg-transparent cursor-pointer ${
-                darkMode ? "text-stone-300" : "text-zinc-600"
-              }`}
+              className="px-2 py-1 rounded text-sm border-0 bg-transparent cursor-pointer text-theme-text-secondary"
             >
               <option value="">{t("common.all")}</option>
               {subscriptions.map((sub) => (
@@ -310,33 +294,19 @@ export function HomeView({ darkMode }: HomeViewProps) {
         {/* Document Header: Tag + Date */}
         <div className="flex justify-between items-center text-sm mb-6">
           <span className="flex items-center gap-2">
-            <span
-              className={`px-2 py-0.5 rounded text-xs font-medium ${
-                darkMode
-                  ? "bg-stone-800 text-stone-300"
-                  : "bg-zinc-100 text-zinc-600"
-              }`}
-            >
+            <span className="px-2 py-0.5 rounded text-xs font-medium bg-theme-muted text-theme-text-secondary">
               {current.source}
             </span>
             {isArxiv && (
               <span
                 className={`px-2 py-0.5 rounded text-xs font-medium ${
                   hasInterpretation
-                    ? darkMode
-                      ? "bg-green-900/30 text-green-400"
-                      : "bg-green-100 text-green-700"
+                    ? "bg-theme-success/15 text-theme-success"
                     : isInterpretFailed
-                      ? darkMode
-                        ? "bg-red-900/30 text-red-400"
-                        : "bg-red-100 text-red-700"
+                      ? "bg-theme-error/15 text-theme-error"
                       : isInterpreting
-                        ? darkMode
-                          ? "bg-yellow-900/30 text-yellow-400"
-                          : "bg-yellow-100 text-yellow-700"
-                        : darkMode
-                          ? "bg-teal-900/30 text-teal-400"
-                          : "bg-blue-100 text-blue-700"
+                        ? "bg-theme-warning/15 text-theme-warning"
+                        : "bg-theme-accent/15 text-theme-accent"
                 }`}
               >
                 {hasInterpretation
@@ -349,7 +319,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
               </span>
             )}
           </span>
-          <time className={darkMode ? "text-stone-500" : "text-zinc-500"}>
+          <time className="text-theme-text-tertiary">
             {formatDate(
               current._entry?.published_at ||
                 current._entry?.created_at ||
@@ -365,31 +335,19 @@ export function HomeView({ darkMode }: HomeViewProps) {
               window.open(current.url, "_blank", "noopener,noreferrer");
             }
           }}
-          className={`text-2xl md:text-3xl font-serif font-bold mb-4 leading-tight cursor-pointer hover:underline decoration-2 underline-offset-4 ${
-            darkMode
-              ? "text-stone-100 hover:text-teal-300"
-              : "text-zinc-900 hover:text-spira-600"
-          }`}
+          className="text-2xl md:text-3xl font-serif font-bold mb-4 leading-tight cursor-pointer hover:underline decoration-2 underline-offset-4 text-theme-text hover:text-theme-accent"
         >
           {current.title}
         </h1>
 
         {/* Author - Blockquote Style */}
         {current.author && (
-          <blockquote
-            className={`border-l-4 pl-4 mb-8 ${
-              darkMode
-                ? "border-stone-700 text-stone-400"
-                : "border-zinc-200 text-zinc-600"
-            }`}
-          >
+          <blockquote className="border-l-4 pl-4 mb-8 border-theme-border text-theme-text-secondary">
             {current.author}
           </blockquote>
         )}
 
-        <hr
-          className={`mb-8 ${darkMode ? "border-stone-700" : "border-zinc-200"}`}
-        />
+        <hr className="mb-8 border-theme-border" />
 
         {isArxiv ? (
           <>
@@ -397,11 +355,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
             {(briefSummary || translatedAbstract) && (
               <section className="mb-8">
                 {briefSummary && (
-                  <p
-                    className={`text-base leading-relaxed mb-4 ${
-                      darkMode ? "text-stone-200" : "text-zinc-800"
-                    }`}
-                  >
+                  <p className="text-base leading-relaxed mb-4 text-theme-text">
                     {briefSummary}
                   </p>
                 )}
@@ -416,13 +370,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
 
             {/* 原文摘要 - 折叠 */}
             <details className="mb-8 group">
-              <summary
-                className={`cursor-pointer text-sm ${
-                  darkMode
-                    ? "text-stone-500 hover:text-stone-300"
-                    : "text-zinc-400 hover:text-zinc-600"
-                }`}
-              >
+              <summary className="cursor-pointer text-sm text-theme-text-tertiary hover:text-theme-text-secondary">
                 <span className="transform transition-transform group-open:rotate-90 inline-block mr-2">
                   ▶
                 </span>
@@ -442,11 +390,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
                 />
               </section>
             ) : isInterpreting ? (
-              <div
-                className={`flex items-center gap-3 py-8 justify-center ${
-                  darkMode ? "text-stone-400" : "text-zinc-500"
-                }`}
-              >
+              <div className="flex items-center gap-3 py-8 justify-center text-theme-text-secondary">
                 <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
                 <span>{t("home.interpretingArticle")}</span>
               </div>
@@ -460,25 +404,15 @@ export function HomeView({ darkMode }: HomeViewProps) {
 
       {/* Unified Floating Action Bar - PC shows text labels, mobile icons only */}
       <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
-        <div
-          className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-full shadow-xl backdrop-blur-sm transition-micro ${
-            darkMode
-              ? "bg-stone-800/95 border border-stone-700 shadow-stone-900/50"
-              : "bg-white/95 border border-zinc-200 shadow-zinc-300/50"
-          }`}
-        >
+        <div className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-full shadow-xl backdrop-blur-sm transition-micro bg-theme-surface/95 border border-theme-border">
           {/* Previous */}
           <button
             onClick={goPrev}
             disabled={currentIndex === 0}
             className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
               currentIndex === 0
-                ? darkMode
-                  ? "text-stone-600 cursor-not-allowed"
-                  : "text-zinc-300 cursor-not-allowed"
-                : darkMode
-                  ? "text-stone-300 hover:bg-stone-700 cursor-pointer active:scale-95"
-                  : "text-zinc-600 hover:bg-zinc-100 cursor-pointer active:scale-95"
+                ? "text-theme-text-muted cursor-not-allowed"
+                : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
             }`}
             title={t("home.prevArticle")}
           >
@@ -498,9 +432,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
           </button>
 
           {/* Divider */}
-          <div
-            className={`w-px h-4 ${darkMode ? "bg-stone-700" : "bg-zinc-200"}`}
-          />
+          <div className="w-px h-4 bg-theme-border" />
 
           {/* Discard */}
           <button
@@ -509,9 +441,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
             className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
               isAnimating
                 ? "opacity-50 cursor-not-allowed"
-                : darkMode
-                  ? "text-stone-400 hover:bg-stone-700 hover:text-red-400 cursor-pointer active:scale-95"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-red-500 cursor-pointer active:scale-95"
+                : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-error cursor-pointer active:scale-95"
             }`}
             title={t("home.discard")}
           >
@@ -523,9 +453,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <select
             value={selectedSourceId || ""}
             onChange={handleSourceChange}
-            className={`px-1 py-1 rounded text-xs border-0 bg-transparent cursor-pointer max-w-[60px] md:max-w-[100px] ${
-              darkMode ? "text-stone-400" : "text-zinc-500"
-            }`}
+            className="px-1 py-1 rounded text-xs border-0 bg-transparent cursor-pointer max-w-[60px] md:max-w-[100px] text-theme-text-secondary"
           >
             <option value="">{t("common.all")}</option>
             {subscriptions.map((sub) => (
@@ -543,15 +471,9 @@ export function HomeView({ darkMode }: HomeViewProps) {
               onChange={(e) => setJumpInput(e.target.value)}
               onKeyDown={handleJumpToArticle}
               placeholder={String(currentIndex + 1)}
-              className={`w-8 text-center text-caption bg-transparent border-0 outline-none ${
-                darkMode
-                  ? "text-stone-400 placeholder-stone-500"
-                  : "text-zinc-500 placeholder-zinc-400"
-              }`}
+              className="w-8 text-center text-caption bg-transparent border-0 outline-none text-theme-text-secondary placeholder-theme-text-tertiary"
             />
-            <span
-              className={`text-caption ${darkMode ? "text-stone-500" : "text-zinc-400"}`}
-            >
+            <span className="text-caption text-theme-text-tertiary">
               /{articles.length}
             </span>
           </div>
@@ -563,9 +485,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
             className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
               isShuffling || isAnimating
                 ? "opacity-50 cursor-not-allowed"
-                : darkMode
-                  ? "text-stone-400 hover:bg-stone-700 hover:text-stone-200 cursor-pointer active:scale-95"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 cursor-pointer active:scale-95"
+                : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
             }`}
             title={t("home.shuffle")}
           >
@@ -574,9 +494,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
           </button>
 
           {/* Divider */}
-          <div
-            className={`w-px h-4 ${darkMode ? "bg-stone-700" : "bg-zinc-200"}`}
-          />
+          <div className="w-px h-4 bg-theme-border" />
 
           {/* Save */}
           <button
@@ -585,9 +503,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
             className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
               isAnimating
                 ? "opacity-50 cursor-not-allowed"
-                : darkMode
-                  ? "text-teal-400 hover:bg-stone-700 cursor-pointer active:scale-95"
-                  : "text-spira-600 hover:bg-zinc-100 cursor-pointer active:scale-95"
+                : "text-theme-accent hover:bg-theme-muted cursor-pointer active:scale-95"
             }`}
             title={t("home.save")}
           >
@@ -601,12 +517,8 @@ export function HomeView({ darkMode }: HomeViewProps) {
             disabled={currentIndex === articles.length - 1}
             className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
               currentIndex === articles.length - 1
-                ? darkMode
-                  ? "text-stone-600 cursor-not-allowed"
-                  : "text-zinc-300 cursor-not-allowed"
-                : darkMode
-                  ? "text-stone-300 hover:bg-stone-700 cursor-pointer active:scale-95"
-                  : "text-zinc-600 hover:bg-zinc-100 cursor-pointer active:scale-95"
+                ? "text-theme-text-muted cursor-not-allowed"
+                : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
             }`}
             title={t("home.nextArticle")}
           >

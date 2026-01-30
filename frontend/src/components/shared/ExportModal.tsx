@@ -137,18 +137,18 @@ export function ExportModal({
       {/* Modal - Centered */}
       <div
         className={`relative w-full max-w-md rounded-2xl shadow-xl ${
-          darkMode ? "bg-stone-800" : "bg-white"
+          darkMode ? "bg-theme-surface" : "bg-theme-surface"
         }`}
       >
         {/* Header */}
         <div
           className={`flex items-center justify-between p-4 border-b ${
-            darkMode ? "border-stone-700" : "border-zinc-200"
+            darkMode ? "border-theme-border" : "border-theme-border"
           }`}
         >
           <h3
             className={`text-h3 font-bold ${
-              darkMode ? "text-white" : "text-zinc-900"
+              darkMode ? "text-theme-text" : "text-theme-text"
             }`}
           >
             Export {articles.length} item{articles.length > 1 ? "s" : ""}
@@ -157,8 +157,8 @@ export function ExportModal({
             onClick={onClose}
             className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${
               darkMode
-                ? "hover:bg-stone-700 text-stone-400"
-                : "hover:bg-zinc-100 text-zinc-500"
+                ? "hover:bg-theme-muted text-theme-text-secondary"
+                : "hover:bg-theme-muted text-theme-text-secondary"
             }`}
           >
             <Icons.X />
@@ -168,7 +168,7 @@ export function ExportModal({
         {/* Tabs */}
         <div
           className={`flex p-2 mx-4 mt-4 rounded-lg ${
-            darkMode ? "bg-stone-900" : "bg-zinc-100"
+            darkMode ? "bg-theme-muted" : "bg-theme-muted"
           }`}
         >
           {tabs.map((tab) => (
@@ -182,11 +182,11 @@ export function ExportModal({
               className={`flex-1 flex items-center justify-center gap-2 min-h-touch px-3 rounded-md text-ui-sm font-medium transition-all ${
                 activeTab === tab.id
                   ? darkMode
-                    ? "bg-stone-700 text-white shadow"
-                    : "bg-white text-zinc-900 shadow"
+                    ? "bg-theme-selected text-theme-text shadow"
+                    : "bg-theme-surface text-theme-text shadow"
                   : darkMode
-                  ? "text-stone-400 hover:text-stone-300"
-                  : "text-zinc-500 hover:text-zinc-700"
+                  ? "text-theme-text-secondary hover:text-theme-text"
+                  : "text-theme-text-secondary hover:text-theme-text"
               }`}
             >
               <span className="scale-75">{tab.icon}</span>
@@ -202,7 +202,7 @@ export function ExportModal({
               <div>
                 <label
                   className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
-                    darkMode ? "text-stone-500" : "text-zinc-400"
+                    darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
                   }`}
                 >
                   Expires in
@@ -212,8 +212,8 @@ export function ExportModal({
                   onChange={(e) => setExpiresInDays(parseInt(e.target.value))}
                   className={`w-full min-h-touch p-2 rounded-lg border text-body-sm ${
                     darkMode
-                      ? "bg-stone-900 border-stone-600 text-white"
-                      : "bg-zinc-50 border-zinc-200"
+                      ? "bg-theme-muted border-theme-border text-theme-text"
+                      : "bg-theme-muted border-theme-border text-theme-text"
                   }`}
                 >
                   <option value={1}>1 day</option>
@@ -227,7 +227,7 @@ export function ExportModal({
                 <div className="space-y-2">
                   <div
                     className={`flex items-center gap-2 p-3 rounded-lg ${
-                      darkMode ? "bg-stone-900" : "bg-zinc-50"
+                      darkMode ? "bg-theme-muted" : "bg-theme-muted"
                     }`}
                   >
                     <input
@@ -235,15 +235,15 @@ export function ExportModal({
                       readOnly
                       value={shareUrl}
                       className={`flex-1 bg-transparent text-body-sm outline-none ${
-                        darkMode ? "text-stone-300" : "text-zinc-700"
+                        darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
                       }`}
                     />
                     <button
                       onClick={copyShareUrl}
                       className={`min-h-touch min-w-touch flex items-center justify-center rounded-lg transition-colors ${
                         darkMode
-                          ? "hover:bg-stone-700 text-teal-400"
-                          : "hover:bg-zinc-200 text-spira-600"
+                          ? "hover:bg-theme-selected text-theme-accent"
+                          : "hover:bg-theme-border text-theme-accent"
                       }`}
                     >
                       <Icons.Share />
@@ -256,8 +256,8 @@ export function ExportModal({
                   disabled={loading || entryIds.length === 0}
                   className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
                     darkMode
-                      ? "bg-teal-600 hover:bg-teal-500 text-white"
-                      : "bg-spira-600 hover:bg-spira-500 text-white"
+                      ? "bg-theme-accent hover:bg-theme-accent-hover text-white"
+                      : "bg-theme-accent hover:bg-theme-accent-hover text-white"
                   } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {loading ? "Creating..." : "Create Share Link"}
@@ -271,7 +271,7 @@ export function ExportModal({
               <div>
                 <label
                   className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
-                    darkMode ? "text-stone-500" : "text-zinc-400"
+                    darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
                   }`}
                 >
                   Collection
@@ -283,8 +283,8 @@ export function ExportModal({
                   onChange={(e) => setZoteroCollection(e.target.value)}
                   className={`w-full min-h-touch p-2 rounded-lg border text-body-sm ${
                     darkMode
-                      ? "bg-stone-900 border-stone-600 text-white"
-                      : "bg-zinc-50 border-zinc-200"
+                      ? "bg-theme-muted border-theme-border text-theme-text"
+                      : "bg-theme-muted border-theme-border text-theme-text"
                   }`}
                 />
               </div>
@@ -293,8 +293,8 @@ export function ExportModal({
                 disabled={loading || entryIds.length === 0}
                 className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
                   darkMode
-                    ? "bg-teal-600 hover:bg-teal-500 text-white"
-                    : "bg-spira-600 hover:bg-spira-500 text-white"
+                    ? "bg-theme-accent hover:bg-theme-accent text-white"
+                    : "bg-theme-accent hover:bg-theme-accent-hover text-white"
                 } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 {loading ? "Exporting..." : "Export to Zotero"}
@@ -306,7 +306,7 @@ export function ExportModal({
             <div className="space-y-4">
               <div
                 className={`p-3 rounded-lg max-h-32 overflow-y-auto ${
-                  darkMode ? "bg-stone-900" : "bg-zinc-50"
+                  darkMode ? "bg-theme-muted" : "bg-theme-muted"
                 }`}
               >
                 {articles.map((a, i) => (
@@ -315,13 +315,13 @@ export function ExportModal({
                     className={`text-body-sm py-1 ${
                       i > 0
                         ? "border-t " +
-                          (darkMode ? "border-stone-700" : "border-zinc-200")
+                          (darkMode ? "border-theme-border" : "border-theme-border")
                         : ""
                     }`}
                   >
                     <div
                       className={`font-medium truncate ${
-                        darkMode ? "text-stone-300" : "text-zinc-700"
+                        darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
                       }`}
                     >
                       {a.title}
@@ -329,7 +329,7 @@ export function ExportModal({
                     {a._entry?.link && (
                       <div
                         className={`text-caption truncate ${
-                          darkMode ? "text-stone-500" : "text-zinc-400"
+                          darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
                         }`}
                       >
                         {a._entry.link}
@@ -343,8 +343,8 @@ export function ExportModal({
                 onClick={handleCopy}
                 className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
                   darkMode
-                    ? "bg-teal-600 hover:bg-teal-500 text-white"
-                    : "bg-spira-600 hover:bg-spira-500 text-white"
+                    ? "bg-theme-accent hover:bg-theme-accent text-white"
+                    : "bg-theme-accent hover:bg-theme-accent-hover text-white"
                 }`}
               >
                 Copy to Clipboard
@@ -357,12 +357,8 @@ export function ExportModal({
             <div
               className={`mt-4 p-3 rounded-lg text-body-sm text-center ${
                 message.type === "success"
-                  ? darkMode
-                    ? "bg-green-900/30 text-green-400"
-                    : "bg-green-50 text-green-600"
-                  : darkMode
-                  ? "bg-red-900/30 text-red-400"
-                  : "bg-red-50 text-red-600"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
               }`}
             >
               {message.text}

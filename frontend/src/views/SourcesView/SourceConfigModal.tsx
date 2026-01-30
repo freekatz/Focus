@@ -64,11 +64,11 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
-      <div className={`relative w-full max-w-md rounded-2xl shadow-xl ${darkMode ? 'bg-stone-900 text-white' : 'bg-white text-zinc-900'}`}>
+      <div className={`relative w-full max-w-md rounded-2xl shadow-xl ${darkMode ? 'bg-theme-surface text-theme-text' : 'bg-theme-surface text-theme-text'}`}>
         {/* Header */}
-        <div className={`flex items-center justify-between px-5 py-4 md:px-6 md:py-5 border-b ${darkMode ? 'border-stone-700' : 'border-zinc-200'}`}>
+        <div className={`flex items-center justify-between px-5 py-4 md:px-6 md:py-5 border-b ${darkMode ? 'border-theme-border' : 'border-theme-border'}`}>
           <h3 className="text-h3 font-bold">{type === 'my' ? t('sources.subscriptionSettings') : t('sources.editSource')}</h3>
-          <button onClick={onClose} className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${darkMode ? 'hover:bg-stone-700 text-stone-400' : 'hover:bg-zinc-100 text-zinc-500'}`}>
+          <button onClick={onClose} className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${darkMode ? 'hover:bg-theme-muted text-theme-text-secondary' : 'hover:bg-theme-muted text-theme-text-secondary'}`}>
             <Icons.X />
           </button>
         </div>
@@ -78,15 +78,15 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
           {type === 'market' && (
             <>
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>{t('sources.name')}</label>
-                <input name="name" value={formData.name} onChange={handleChange} className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${darkMode ? 'bg-stone-800 border-stone-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'}`} />
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('sources.name')}</label>
+                <input name="name" value={formData.name} onChange={handleChange} className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-muted border-theme-border text-theme-text'}`} />
               </div>
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>{t('sources.rssUrl')}</label>
-                <input name="url" value={formData.url} onChange={handleChange} className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${darkMode ? 'bg-stone-800 border-stone-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'}`} />
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('sources.rssUrl')}</label>
+                <input name="url" value={formData.url} onChange={handleChange} className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-muted border-theme-border text-theme-text'}`} />
               </div>
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>{t('sources.category')}</label>
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('sources.category')}</label>
                 <select
                   name="category"
                   value={formData._marketItem?.category || 'other'}
@@ -99,7 +99,7 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
                       });
                     }
                   }}
-                  className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${darkMode ? 'bg-stone-800 border-stone-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'}`}
+                  className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-muted border-theme-border text-theme-text'}`}
                 >
                   {CATEGORY_OPTIONS.map(cat => (
                     <option key={cat} value={cat}>{t(`categories.${cat}`)}</option>
@@ -107,12 +107,12 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
                 </select>
               </div>
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>{t('sources.homepage')}</label>
-                <input name="homepage" value={formData.homepage || ''} onChange={handleChange} className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${darkMode ? 'bg-stone-800 border-stone-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'}`} />
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('sources.homepage')}</label>
+                <input name="homepage" value={formData.homepage || ''} onChange={handleChange} className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-muted border-theme-border text-theme-text'}`} />
               </div>
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>{t('sources.description')}</label>
-                <textarea name="description" value={formData.description || ''} onChange={handleChange} className={`w-full min-h-touch p-3 rounded-xl border h-20 text-body-sm resize-none ${darkMode ? 'bg-stone-800 border-stone-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'}`} />
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('sources.description')}</label>
+                <textarea name="description" value={formData.description || ''} onChange={handleChange} className={`w-full min-h-touch p-3 rounded-xl border h-20 text-body-sm resize-none ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-muted border-theme-border text-theme-text'}`} />
               </div>
             </>
           )}
@@ -120,8 +120,8 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
           {type === 'my' && (
             <>
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>{t('sources.refreshTime')}</label>
-                <select name="refreshTime" value={formData.refreshTime || 'default'} onChange={handleChange} className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${darkMode ? 'bg-stone-800 border-stone-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'}`}>
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('sources.refreshTime')}</label>
+                <select name="refreshTime" value={formData.refreshTime || 'default'} onChange={handleChange} className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-muted border-theme-border text-theme-text'}`}>
                   <option value="default">{t('sources.daily')}</option>
                   <option value="06:00">{t('sources.daily6am')}</option>
                   <option value="08:00">{t('sources.daily8am')}</option>
@@ -135,7 +135,7 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
               {/* Manual Refresh Button */}
               {onRefresh && (
                 <div>
-                  <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>{t('sources.manualRefresh')}</label>
+                  <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('sources.manualRefresh')}</label>
                   <button
                     onClick={handleRefresh}
                     disabled={refreshing}
@@ -143,8 +143,8 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
                       refreshing
                         ? 'opacity-50 cursor-not-allowed'
                         : darkMode
-                          ? 'bg-stone-800 border-stone-700 hover:bg-stone-700'
-                          : 'bg-zinc-50 border-zinc-200 hover:bg-zinc-100'
+                          ? 'bg-theme-muted border-theme-border hover:bg-theme-selected'
+                          : 'bg-theme-muted border-theme-border hover:bg-theme-border'
                     }`}
                   >
                     <div className={refreshing ? 'animate-spin' : ''}>
@@ -155,8 +155,8 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
                   {refreshResult && (
                     <div className={`mt-2 px-3 py-2 rounded-xl text-caption text-center ${
                       refreshResult.type === 'success'
-                        ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-600')
-                        : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-50 text-red-600')
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
                     }`}>
                       {refreshResult.text}
                     </div>
@@ -169,15 +169,15 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
 
         {/* Delete Confirmation for market (Delete RSS Source) */}
         {showDeleteConfirm && type === 'market' && (
-          <div className={`mx-5 md:mx-6 mb-4 p-4 rounded-xl border ${darkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-200'}`}>
-            <p className={`text-body-sm mb-3 ${darkMode ? 'text-red-300' : 'text-red-700'}`}>
+          <div className="mx-5 md:mx-6 mb-4 p-4 rounded-xl border bg-red-50 border-red-200">
+            <p className="text-body-sm mb-3 text-red-700">
               {t('sources.deleteConfirmMessage', { name: feed.name })}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className={`flex-1 min-h-touch px-4 rounded-xl text-ui-sm font-medium ${
-                  darkMode ? 'bg-stone-700 hover:bg-stone-600' : 'bg-zinc-100 hover:bg-zinc-200'
+                  darkMode ? 'bg-theme-muted hover:bg-theme-selected' : 'bg-theme-muted hover:bg-theme-border'
                 }`}
               >
                 {t('common.cancel')}
@@ -193,16 +193,12 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
         )}
 
         {/* Footer */}
-        <div className={`flex justify-between items-center px-5 py-4 md:px-6 md:py-5 border-t ${darkMode ? 'border-stone-700' : 'border-zinc-200'}`}>
+        <div className={`flex justify-between items-center px-5 py-4 md:px-6 md:py-5 border-t ${darkMode ? 'border-theme-border' : 'border-theme-border'}`}>
           {/* Delete button for market (RSS Source) */}
           {type === 'market' && onDelete && !showDeleteConfirm && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className={`min-h-touch px-4 rounded-xl text-ui-sm font-medium flex items-center gap-2 ${
-                darkMode
-                  ? 'text-red-400 hover:bg-red-900/30'
-                  : 'text-red-600 hover:bg-red-50'
-              }`}
+              className="min-h-touch px-4 rounded-xl text-ui-sm font-medium flex items-center gap-2 text-red-600 hover:bg-red-50"
             >
               <Icons.Trash />
               {t('common.delete')}
@@ -211,8 +207,8 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
           {(type === 'my' || !onDelete || showDeleteConfirm) && <div />}
 
           <div className="flex gap-3">
-            <button onClick={onClose} className={`min-h-touch px-4 rounded-xl text-ui font-medium border transition-colors ${darkMode ? 'border-stone-600 text-stone-300 hover:bg-stone-700' : 'border-zinc-300 text-zinc-700 hover:bg-zinc-50'}`}>{t('common.cancel')}</button>
-            <button onClick={() => { onSave(formData); onClose(); }} className={`min-h-touch px-4 rounded-xl text-ui font-medium text-white transition-colors ${darkMode ? 'bg-teal-600 hover:bg-teal-500' : 'bg-spira-600 hover:bg-spira-500'}`}>{t('settings.saveChanges')}</button>
+            <button onClick={onClose} className={`min-h-touch px-4 rounded-xl text-ui font-medium border transition-colors ${darkMode ? 'border-theme-border text-theme-text-secondary hover:bg-theme-muted' : 'border-theme-border text-theme-text-secondary hover:bg-theme-muted'}`}>{t('common.cancel')}</button>
+            <button onClick={() => { onSave(formData); onClose(); }} className={`min-h-touch px-4 rounded-xl text-ui font-medium text-white transition-colors ${darkMode ? 'bg-theme-accent hover:bg-theme-accent' : 'bg-theme-accent hover:bg-theme-accent-hover'}`}>{t('settings.saveChanges')}</button>
           </div>
         </div>
       </div>

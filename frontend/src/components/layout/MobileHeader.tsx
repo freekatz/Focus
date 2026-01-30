@@ -25,9 +25,9 @@ export function MobileHeader({ darkMode, themeMode, setThemeMode, mobileMenuOpen
   };
 
   return (
-    <div className={`md:hidden flex items-center justify-between px-4 py-3 border-b z-30 relative transition-colors ${darkMode ? 'bg-stone-900 border-stone-800' : 'bg-white border-zinc-200'} backdrop-blur-md`}>
+    <div className="md:hidden flex items-center justify-between px-4 py-3 border-b z-30 relative transition-colors bg-theme-surface border-theme-border backdrop-blur-md">
       <div className="flex items-center gap-2 cursor-pointer" onClick={onLogoClick}>
-        <div className={`w-6 h-6 rounded flex items-center justify-center ${darkMode ? 'bg-teal-600' : 'bg-spira-600'} text-white`}>
+        <div className="w-6 h-6 rounded flex items-center justify-center bg-theme-accent text-white">
           <Icons.Focus />
         </div>
         <span className="font-serif font-bold text-lg tracking-tight">Focus</span>
@@ -37,7 +37,7 @@ export function MobileHeader({ darkMode, themeMode, setThemeMode, mobileMenuOpen
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={cycleTheme}
-          className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${darkMode ? 'text-stone-300 hover:bg-stone-800 active:bg-stone-700' : 'text-zinc-600 hover:bg-zinc-100 active:bg-zinc-200'}`}
+          className="min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors text-theme-text-secondary hover:bg-theme-muted active:bg-theme-selected"
           aria-label="Toggle theme"
         >
           {getThemeIcon()}
@@ -45,7 +45,7 @@ export function MobileHeader({ darkMode, themeMode, setThemeMode, mobileMenuOpen
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${darkMode ? 'text-zinc-300 hover:bg-stone-800 active:bg-stone-700' : 'text-zinc-600 hover:bg-zinc-100 active:bg-zinc-200'}`}
+          className="min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors text-theme-text-secondary hover:bg-theme-muted active:bg-theme-selected"
           aria-label="Menu"
         >
           {mobileMenuOpen ? <Icons.X /> : <Icons.Menu />}

@@ -58,7 +58,7 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
           <details className="mb-8 group">
             <summary
               className={`cursor-pointer text-sm ${
-                darkMode ? "text-stone-500 hover:text-stone-300" : "text-zinc-400 hover:text-zinc-600"
+                darkMode ? "text-theme-text-tertiary hover:text-theme-text" : "text-theme-text-tertiary hover:text-theme-text-secondary"
               }`}
             >
               <span className="transform transition-transform group-open:rotate-90 inline-block mr-2">▶</span>
@@ -85,7 +85,7 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
           {(briefSummary || translatedAbstract) && (
             <section className="mb-8">
               {briefSummary && (
-                <p className={`text-base leading-relaxed mb-4 ${darkMode ? "text-stone-200" : "text-zinc-800"}`}>
+                <p className={`text-base leading-relaxed mb-4 ${darkMode ? "text-theme-text" : "text-theme-text"}`}>
                   {briefSummary}
                 </p>
               )}
@@ -99,7 +99,7 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
           <details className="mb-8 group">
             <summary
               className={`cursor-pointer text-sm ${
-                darkMode ? "text-stone-500 hover:text-stone-300" : "text-zinc-400 hover:text-zinc-600"
+                darkMode ? "text-theme-text-tertiary hover:text-theme-text" : "text-theme-text-tertiary hover:text-theme-text-secondary"
               }`}
             >
               <span className="transform transition-transform group-open:rotate-90 inline-block mr-2">▶</span>
@@ -159,22 +159,22 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${fontClass} ${darkMode ? 'bg-stone-900' : 'bg-[#FAFAF9]'}`}>
-        <div className={`animate-spin h-8 w-8 border-2 border-t-transparent rounded-full ${darkMode ? 'border-teal-500' : 'border-spira-500'}`} />
+      <div className={`min-h-screen flex items-center justify-center ${fontClass} ${darkMode ? 'bg-theme-base' : 'bg-theme-base'}`}>
+        <div className={`animate-spin h-8 w-8 border-2 border-t-transparent rounded-full ${darkMode ? 'border-theme-accent' : 'border-theme-accent'}`} />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${fontClass} ${darkMode ? 'bg-stone-900 text-stone-200' : 'bg-[#FAFAF9] text-[#1C1C1E]'}`}>
-        <div className={`p-4 rounded-full mb-4 ${darkMode ? 'bg-stone-800 text-red-400' : 'bg-red-50 text-red-500'}`}>
+      <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${fontClass} ${darkMode ? 'bg-theme-base text-theme-text' : 'bg-theme-base text-theme-text'}`}>
+        <div className={`p-4 rounded-full mb-4 ${darkMode ? 'bg-theme-muted text-theme-error' : 'bg-red-50 text-red-500'}`}>
           <Icons.X />
         </div>
         <h1 className="text-h2 font-serif font-medium mb-2">
           {error === 'Share not found' ? 'Not Found' : error === 'Share has expired' ? 'Expired' : 'Error'}
         </h1>
-        <p className={`text-center max-w-md text-body-sm ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
+        <p className={`text-center max-w-md text-body-sm ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>
           {error === 'Share not found'
             ? 'This share link does not exist or has been removed.'
             : error === 'Share has expired'
@@ -192,17 +192,17 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
   // Text share - simple display
   if (share_type === 'text' && text_content) {
     return (
-      <div className={`min-h-screen ${fontClass} ${darkMode ? 'bg-stone-900 text-stone-200' : 'bg-[#FAFAF9] text-[#1C1C1E]'}`}>
+      <div className={`min-h-screen ${fontClass} ${darkMode ? 'bg-theme-base text-theme-text' : 'bg-theme-base text-theme-text'}`}>
         {/* Header */}
-        <header className={`sticky top-0 z-10 border-b backdrop-blur-sm ${darkMode ? 'bg-stone-900/90 border-stone-800' : 'bg-[#FAFAF9]/90 border-zinc-200'}`}>
+        <header className={`sticky top-0 z-10 border-b backdrop-blur-sm ${darkMode ? 'bg-theme-base/90 border-theme-border' : 'bg-theme-base/90 border-theme-border'}`}>
           <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-teal-600' : 'bg-spira-600'}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-theme-accent' : 'bg-theme-accent'}`}>
                 <span className="w-5 h-5 text-white"><Icons.Focus /></span>
               </div>
               <span className="font-semibold text-body">Focus</span>
             </div>
-            <div className={`text-caption ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
+            <div className={`text-caption ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>
               Shared {formatDate(created_at)}
             </div>
           </div>
@@ -210,12 +210,12 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
 
         <main className="max-w-4xl mx-auto px-4 py-8">
           {description && (
-            <div className={`mb-8 p-4 rounded-xl ${darkMode ? 'bg-stone-800' : 'bg-white'} shadow-sm`}>
-              <p className={`text-body-sm ${darkMode ? 'text-stone-300' : 'text-zinc-700'}`}>{description}</p>
+            <div className={`mb-8 p-4 rounded-xl ${darkMode ? 'bg-theme-surface' : 'bg-theme-surface'} shadow-sm`}>
+              <p className={`text-body-sm ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>{description}</p>
             </div>
           )}
-          <div className={`p-6 rounded-2xl ${darkMode ? 'bg-stone-800' : 'bg-white'} shadow-sm`}>
-            <div className={`prose max-w-none ${darkMode ? 'prose-invert' : ''}`}>
+          <div className={`p-6 rounded-2xl ${darkMode ? 'bg-theme-surface' : 'bg-theme-surface'} shadow-sm`}>
+            <div className={`prose max-w-none ${darkMode ? 'prose-sepia' : ''}`}>
               <pre className="whitespace-pre-wrap font-sans text-body-sm">{text_content}</pre>
             </div>
           </div>
@@ -231,17 +231,17 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
     const hasInterpretation = current.ai_summary && current.ai_content_type === 'arxiv_interpretation';
 
     return (
-      <div className={`min-h-screen flex flex-col ${fontClass} ${darkMode ? 'bg-stone-900 text-stone-200' : 'bg-[#FAFAF9] text-[#1C1C1E]'}`}>
+      <div className={`min-h-screen flex flex-col ${fontClass} ${darkMode ? 'bg-theme-base text-theme-text' : 'bg-theme-base text-theme-text'}`}>
         {/* Header */}
-        <header className={`sticky top-0 z-10 border-b backdrop-blur-sm ${darkMode ? 'bg-stone-900/90 border-stone-800' : 'bg-[#FAFAF9]/90 border-zinc-200'}`}>
+        <header className={`sticky top-0 z-10 border-b backdrop-blur-sm ${darkMode ? 'bg-theme-base/90 border-theme-border' : 'bg-theme-base/90 border-theme-border'}`}>
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${darkMode ? 'bg-teal-600' : 'bg-spira-600'}`}>
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${darkMode ? 'bg-theme-accent' : 'bg-theme-accent'}`}>
                 <span className="w-4 h-4 text-white"><Icons.Focus /></span>
               </div>
               <span className="font-semibold text-body-sm">Focus</span>
             </div>
-            <div className={`text-caption ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
+            <div className={`text-caption ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>
               {formatDate(created_at)}
               {expires_at && <span className="hidden md:inline"> · Expires {formatDate(expires_at)}</span>}
             </div>
@@ -258,7 +258,7 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
             <span className="flex items-center gap-2 flex-wrap">
               {current.rss_source_name && (
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                  darkMode ? "bg-stone-800 text-stone-300" : "bg-zinc-100 text-zinc-600"
+                  darkMode ? "bg-theme-muted text-theme-text-secondary" : "bg-theme-muted text-theme-text-secondary"
                 }`}>
                   {current.rss_source_name}
                 </span>
@@ -266,10 +266,10 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
               {isArxiv && (
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                   hasInterpretation
-                    ? darkMode ? "bg-green-900/30 text-green-400" : "bg-green-100 text-green-700"
+                    ? "bg-green-100 text-green-700"
                     : current.translation_status === 'completed'
-                      ? darkMode ? "bg-teal-900/30 text-teal-400" : "bg-teal-100 text-teal-700"
-                      : darkMode ? "bg-purple-900/30 text-purple-400" : "bg-purple-100 text-purple-700"
+                      ? "bg-teal-100 text-teal-700"
+                      : "bg-purple-100 text-purple-700"
                 }`}>
                   {hasInterpretation
                     ? t("home.interpreted")
@@ -279,7 +279,7 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
                 </span>
               )}
             </span>
-            <time className={`flex-shrink-0 ${darkMode ? "text-stone-500" : "text-zinc-500"}`}>
+            <time className={`flex-shrink-0 ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}>
               {formatDate(current.published_at)}
             </time>
           </div>
@@ -293,8 +293,8 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
             }}
             className={`text-2xl md:text-3xl font-serif font-bold mb-4 leading-tight cursor-pointer hover:underline decoration-2 underline-offset-4 ${
               darkMode
-                ? "text-stone-100 hover:text-teal-300"
-                : "text-zinc-900 hover:text-spira-600"
+                ? "text-theme-text hover:text-theme-accent"
+                : "text-theme-text hover:text-theme-accent"
             }`}
           >
             {current.title}
@@ -303,13 +303,13 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
           {/* Author - Blockquote Style */}
           {current.author && (
             <blockquote className={`border-l-4 pl-4 mb-8 ${
-              darkMode ? "border-stone-700 text-stone-400" : "border-zinc-200 text-zinc-600"
+              darkMode ? "border-theme-border text-theme-text-secondary" : "border-theme-border text-theme-text-secondary"
             }`}>
               {current.author}
             </blockquote>
           )}
 
-          <hr className={`mb-8 ${darkMode ? "border-stone-700" : "border-zinc-200"}`} />
+          <hr className={`mb-8 ${darkMode ? "border-theme-border" : "border-theme-border"}`} />
 
           {/* Content */}
           {renderEntryContent(current)}
@@ -319,8 +319,8 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
         <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
           <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-full shadow-xl backdrop-blur-sm ${
             darkMode
-              ? "bg-stone-800/95 border border-stone-700 shadow-stone-900/50"
-              : "bg-white/95 border border-zinc-200 shadow-zinc-300/50"
+              ? "bg-theme-surface/95 border border-theme-border shadow-theme-border/50"
+              : "bg-theme-surface/95 border border-theme-border shadow-theme-border/50"
           }`}>
             {/* Previous */}
             <button
@@ -328,8 +328,8 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
               disabled={currentIndex === 0}
               className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
                 currentIndex === 0
-                  ? darkMode ? "text-stone-600 cursor-not-allowed" : "text-zinc-300 cursor-not-allowed"
-                  : darkMode ? "text-stone-300 hover:bg-stone-700 cursor-pointer active:scale-95" : "text-zinc-600 hover:bg-zinc-100 cursor-pointer active:scale-95"
+                  ? darkMode ? "text-theme-text-muted cursor-not-allowed" : "text-theme-text-muted cursor-not-allowed"
+                  : darkMode ? "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95" : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
               }`}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -339,20 +339,20 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
             </button>
 
             {/* Divider */}
-            <div className={`w-px h-4 ${darkMode ? "bg-stone-700" : "bg-zinc-200"}`} />
+            <div className={`w-px h-4 ${darkMode ? "bg-theme-border" : "bg-theme-border"}`} />
 
             {/* Article Counter */}
             <div className="flex items-center flex-shrink-0 whitespace-nowrap px-2">
-              <span className={`text-caption font-medium ${darkMode ? "text-stone-300" : "text-zinc-600"}`}>
+              <span className={`text-caption font-medium ${darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"}`}>
                 {currentIndex + 1}
               </span>
-              <span className={`text-caption ${darkMode ? "text-stone-500" : "text-zinc-400"}`}>
+              <span className={`text-caption ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}>
                 /{entries.length}
               </span>
             </div>
 
             {/* Divider */}
-            <div className={`w-px h-4 ${darkMode ? "bg-stone-700" : "bg-zinc-200"}`} />
+            <div className={`w-px h-4 ${darkMode ? "bg-theme-border" : "bg-theme-border"}`} />
 
             {/* Open Original */}
             <button
@@ -363,8 +363,8 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
               }}
               className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
                 darkMode
-                  ? "text-stone-400 hover:bg-stone-700 hover:text-stone-200 cursor-pointer active:scale-95"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 cursor-pointer active:scale-95"
+                  ? "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
+                  : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
               }`}
             >
               <Icons.ExternalLink />
@@ -372,7 +372,7 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
             </button>
 
             {/* Divider */}
-            <div className={`w-px h-4 ${darkMode ? "bg-stone-700" : "bg-zinc-200"}`} />
+            <div className={`w-px h-4 ${darkMode ? "bg-theme-border" : "bg-theme-border"}`} />
 
             {/* Next */}
             <button
@@ -380,8 +380,8 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
               disabled={currentIndex === entries.length - 1}
               className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
                 currentIndex === entries.length - 1
-                  ? darkMode ? "text-stone-600 cursor-not-allowed" : "text-zinc-300 cursor-not-allowed"
-                  : darkMode ? "text-stone-300 hover:bg-stone-700 cursor-pointer active:scale-95" : "text-zinc-600 hover:bg-zinc-100 cursor-pointer active:scale-95"
+                  ? darkMode ? "text-theme-text-muted cursor-not-allowed" : "text-theme-text-muted cursor-not-allowed"
+                  : darkMode ? "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95" : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
               }`}
             >
               <span className="hidden md:inline">{t("home.nextArticle")}</span>
@@ -393,9 +393,9 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
         </nav>
 
         {/* Footer */}
-        <footer className={`border-t py-4 ${darkMode ? 'border-stone-800' : 'border-zinc-200'}`}>
+        <footer className={`border-t py-4 ${darkMode ? 'border-theme-border' : 'border-theme-border'}`}>
           <div className="max-w-5xl mx-auto px-4 text-center">
-            <p className={`text-caption ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>
+            <p className={`text-caption ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
               Shared via Focus
             </p>
           </div>
@@ -406,8 +406,8 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
 
   // Empty state
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${fontClass} ${darkMode ? 'bg-stone-900 text-stone-200' : 'bg-[#FAFAF9] text-[#1C1C1E]'}`}>
-      <p className={`text-body-sm ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
+    <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${fontClass} ${darkMode ? 'bg-theme-base text-theme-text' : 'bg-theme-base text-theme-text'}`}>
+      <p className={`text-body-sm ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>
         No articles in this share.
       </p>
     </div>

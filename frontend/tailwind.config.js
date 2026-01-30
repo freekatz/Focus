@@ -53,7 +53,26 @@ export default {
         '2xl': '1440px',      // Large desktop
       },
       colors: {
-        // Focus brand colors (teal/cyan palette)
+        // Theme colors via CSS variables (set by applyTheme in themes.ts)
+        theme: {
+          base: 'var(--color-base)',
+          surface: 'var(--color-surface)',
+          muted: 'var(--color-muted)',
+          border: 'var(--color-border)',
+          selected: 'var(--color-selected)',
+          text: 'var(--color-text)',
+          'text-secondary': 'var(--color-text-secondary)',
+          'text-tertiary': 'var(--color-text-tertiary)',
+          'text-muted': 'var(--color-text-muted)',
+          accent: 'var(--color-accent)',
+          'accent-hover': 'var(--color-accent-hover)',
+          'accent-soft': 'var(--color-accent-soft)',
+          success: 'var(--color-success)',
+          warning: 'var(--color-warning)',
+          error: 'var(--color-error)',
+          favorite: 'var(--color-favorite)',
+        },
+        // Focus brand colors (teal/cyan palette) - kept for logo/brand consistency
         spira: {
           50: '#f0fdf9',
           100: '#ccfbef',
@@ -61,46 +80,45 @@ export default {
           300: '#5fe9cb',
           400: '#2dd4b3',
           500: '#14b899',
-          600: '#0d947c',
-          700: '#0f7665',
+          600: '#0F766E',
+          700: '#115E59',
           800: '#115e52',
           900: '#134d44',
         },
-        // Light theme surface colors (warm whites - Apple inspired)
-        surface: {
-          light: '#FFFFFE',        // Primary surface - warm white
-          'light-raised': '#FFFFFF', // Cards, elevated surfaces
-          'light-muted': '#FAFAF9',  // Subtle backgrounds
-          'light-dim': '#F5F5F4',    // Dimmed areas, inputs
+        // Legacy color aliases (kept for backward compatibility during migration)
+        cream: {
+          base: 'var(--color-base)',
+          surface: 'var(--color-surface)',
+          muted: 'var(--color-muted)',
+          border: 'var(--color-border)',
+          text: 'var(--color-text)',
+          'text-secondary': 'var(--color-text-secondary)',
+          'text-tertiary': 'var(--color-text-tertiary)',
+          'text-muted': 'var(--color-text-muted)',
         },
-        // Dark theme surface colors (Google Material Design 3 inspired)
-        // Using dark gray instead of pure black for better readability
-        'surface-dark': {
-          DEFAULT: '#121212',         // Base background
-          raised: '#1E1E1E',          // Elevated surfaces (+1dp)
-          overlay: '#252525',         // Overlays, modals (+2dp)
-          high: '#2C2C2C',            // High elevation (+3dp)
+        sepia: {
+          base: 'var(--color-base)',
+          surface: 'var(--color-surface)',
+          muted: 'var(--color-muted)',
+          border: 'var(--color-border)',
+          selected: 'var(--color-selected)',
+          text: 'var(--color-text)',
+          'text-secondary': 'var(--color-text-secondary)',
+          'text-tertiary': 'var(--color-text-tertiary)',
+          'text-muted': 'var(--color-text-muted)',
         },
-        // Light theme text colors (optimized contrast)
-        'text-light': {
-          primary: '#1C1C1E',         // High emphasis - iOS system gray
-          secondary: '#3C3C43',       // Medium emphasis
-          tertiary: '#636366',        // Low emphasis
-          quaternary: '#AEAEB2',      // Disabled, hints
-        },
-        // Dark theme text colors (reduced brightness for comfort)
-        'text-dark': {
-          primary: 'rgba(255, 255, 255, 0.87)',    // High emphasis (87% white)
-          secondary: 'rgba(255, 255, 255, 0.60)',  // Medium emphasis (60% white)
-          tertiary: 'rgba(255, 255, 255, 0.38)',   // Low emphasis (38% white)
-          quaternary: 'rgba(255, 255, 255, 0.24)', // Disabled
-        },
-        // Accent colors for dark mode (desaturated for comfort)
         accent: {
-          teal: '#4DB6AC',       // Desaturated teal
-          'teal-soft': '#80CBC4', // Softer variant
-          indigo: '#7986CB',      // Desaturated indigo
-          'indigo-soft': '#9FA8DA', // Softer variant
+          teal: 'var(--color-accent)',
+          'teal-light': 'var(--color-accent-soft)',
+          'teal-soft': 'var(--color-accent-soft)',
+          success: 'var(--color-success)',
+          'success-light': 'var(--color-success)',
+          warning: 'var(--color-warning)',
+          'warning-light': 'var(--color-warning)',
+          error: 'var(--color-error)',
+          'error-light': 'var(--color-error)',
+          favorite: 'var(--color-favorite)',
+          'favorite-light': 'var(--color-favorite)',
         },
       },
       // Custom opacity values for surfaces in dark mode

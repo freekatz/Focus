@@ -22,6 +22,9 @@ export interface UserConfig {
   zotero_collection: string | null;
   // UI config
   theme: string | null;
+  color_theme: string | null;
+  font_theme: string | null;
+  custom_theme_json: string | null;
   entries_per_page: number;
 }
 
@@ -37,6 +40,9 @@ export interface UserConfigUpdateRequest {
   zotero_api_key?: string;
   zotero_collection?: string;
   theme?: string;
+  color_theme?: string;
+  font_theme?: string;
+  custom_theme_json?: string;
   unmarked_retention_days?: number;
   trash_retention_days?: number;
   archive_after_days?: number;

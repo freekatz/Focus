@@ -79,9 +79,7 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
           {/* Original Abstract - Collapsible */}
           <details className="mb-6 group">
             <summary
-              className={`cursor-pointer flex items-center gap-2 text-sm font-medium ${
-                darkMode ? "text-stone-400 hover:text-stone-200" : "text-zinc-500 hover:text-zinc-700"
-              }`}
+              className="cursor-pointer flex items-center gap-2 text-sm font-medium text-theme-text-tertiary hover:text-theme-text"
             >
               <span className="transform transition-transform group-open:rotate-90">▶</span>
               {t("home.originalAbstract")}
@@ -107,11 +105,7 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
           {(briefSummary || translatedAbstract) && (
             <section className="mb-6">
               {briefSummary && (
-                <p
-                  className={`text-base leading-relaxed mb-4 ${
-                    darkMode ? "text-stone-200" : "text-zinc-800"
-                  }`}
-                >
+                <p className="text-base leading-relaxed mb-4 text-theme-text">
                   {briefSummary}
                 </p>
               )}
@@ -124,9 +118,7 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
           {/* Original Abstract - Collapsible */}
           <details className="mb-6 group">
             <summary
-              className={`cursor-pointer text-sm ${
-                darkMode ? "text-stone-500 hover:text-stone-300" : "text-zinc-400 hover:text-zinc-600"
-              }`}
+              className="cursor-pointer text-sm text-theme-text-muted hover:text-theme-text-secondary"
             >
               <span className="transform transition-transform group-open:rotate-90 inline-block mr-2">▶</span>
               {t("home.originalAbstract")}
@@ -138,20 +130,20 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
 
           {/* Interpretation status */}
           {isInterpreting && (
-            <div className={`flex items-center gap-3 py-6 justify-center ${darkMode ? "text-stone-400" : "text-zinc-500"}`}>
+            <div className="flex items-center gap-3 py-6 justify-center text-theme-text-tertiary">
               <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
               <span>{t("home.interpretingArticle")}</span>
             </div>
           )}
           {isInterpretFailed && (
-            <div className={`flex items-center justify-center gap-3 py-6 ${darkMode ? "text-red-400" : "text-red-500"}`}>
+            <div className="flex items-center justify-center gap-3 py-6 text-theme-error">
               <span>{t("home.interpretFailed")}</span>
               <button
                 onClick={handleReinterpret}
                 disabled={isRetrying}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-theme-muted hover:bg-theme-selected ${
                   isRetrying ? "opacity-50" : ""
-                } ${darkMode ? "bg-stone-700 hover:bg-stone-600" : "bg-zinc-100 hover:bg-zinc-200"}`}
+                }`}
               >
                 <Icons.Refresh />
                 {t("home.reinterpret")}
@@ -169,20 +161,20 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
 
         {/* Translation/Interpretation status indicators */}
         {isTranslating && (
-          <div className={`flex items-center gap-3 py-6 justify-center mt-4 ${darkMode ? "text-stone-400" : "text-zinc-500"}`}>
+          <div className="flex items-center gap-3 py-6 justify-center mt-4 text-theme-text-tertiary">
             <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
             <span>{t("library.translating")}</span>
           </div>
         )}
         {isTranslationFailed && (
-          <div className={`flex items-center justify-center gap-3 py-6 mt-4 ${darkMode ? "text-red-400" : "text-red-500"}`}>
+          <div className="flex items-center justify-center gap-3 py-6 mt-4 text-theme-error">
             <span>{t("home.translationFailed")}</span>
             <button
               onClick={handleReinterpret}
               disabled={isRetrying}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-theme-muted hover:bg-theme-selected ${
                 isRetrying ? "opacity-50" : ""
-              } ${darkMode ? "bg-stone-700 hover:bg-stone-600" : "bg-zinc-100 hover:bg-zinc-200"}`}
+              }`}
             >
               <Icons.Refresh />
               {t("home.retryTranslation")}
@@ -232,23 +224,23 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
   return (
     <>
       {/* Mobile: Full screen slide up */}
-      <div className={`md:hidden fixed inset-0 z-50 flex flex-col animate-slide-up ${darkMode ? 'bg-stone-900' : 'bg-white'}`}>
+      <div className="md:hidden fixed inset-0 z-50 flex flex-col animate-slide-up bg-theme-surface">
         {/* Mobile Sticky Header */}
-        <div className={`flex-shrink-0 px-5 py-4 border-b ${darkMode ? 'bg-stone-900 border-stone-800' : 'bg-white border-zinc-100'}`}>
+        <div className="flex-shrink-0 px-5 py-4 border-b bg-theme-surface border-theme-border">
           {/* Top Row: Source & Close */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${darkMode ? 'bg-stone-700 text-teal-300' : 'bg-spira-100 text-spira-700'}`}>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-theme-muted text-theme-accent">
                 {article.source}
               </span>
               {renderStatusBadge()}
               {isTrashed && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-theme-error/10 text-theme-error">
                   Trash
                 </span>
               )}
             </div>
-            <button onClick={onClose} className={`p-1.5 -mr-1.5 rounded-full ${darkMode ? 'text-stone-400' : 'text-zinc-400'}`}>
+            <button onClick={onClose} className="p-1.5 -mr-1.5 rounded-full text-theme-text-tertiary">
               <Icons.ChevronDown />
             </button>
           </div>
@@ -256,13 +248,13 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
           <h1 className="mb-2 line-clamp-2">
             <span
               onClick={() => article.url && window.open(article.url, '_blank', 'noopener,noreferrer')}
-              className={`text-xl font-serif font-bold leading-snug cursor-pointer hover:underline ${darkMode ? 'text-stone-100 hover:text-teal-300' : 'text-zinc-900 hover:text-spira-600'}`}
+              className="text-xl font-serif font-bold leading-snug cursor-pointer hover:underline text-theme-text hover:text-theme-accent"
             >
               {article.title}
             </span>
           </h1>
           {/* Metadata - same style as Focus card */}
-          <div className={`text-sm flex items-center gap-2 ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
+          <div className="text-sm flex items-center gap-2 text-theme-text-tertiary">
             <span className="font-medium">{article.author}</span>
             <span>•</span>
             <span>{article.timestamp}</span>
@@ -275,13 +267,13 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
         </div>
 
         {/* Mobile Bottom Action Bar */}
-        <div className={`fixed bottom-0 left-0 right-0 p-4 border-t z-50 ${darkMode ? 'bg-stone-900 border-stone-800' : 'bg-white border-zinc-200'}`}>
+        <div className="fixed bottom-0 left-0 right-0 p-4 border-t z-50 bg-theme-surface border-theme-border">
           <div className="flex items-center justify-center gap-4 px-4">
             {isTrashed ? (
               // Only show Restore button for trashed articles
               <button
                 onClick={onRestore}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium text-sm ${darkMode ? 'bg-teal-600 text-white' : 'bg-spira-600 text-white'}`}
+                className="flex items-center gap-2 px-6 py-3 rounded-full font-medium text-sm bg-theme-accent text-white"
               >
                 <Icons.Check />
                 <span>Restore</span>
@@ -289,21 +281,21 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
             ) : (
               // Normal action bar
               <>
-                <button onClick={onDiscard} className={`flex flex-col items-center gap-1 p-2 ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
+                <button onClick={onDiscard} className="flex flex-col items-center gap-1 p-2 text-theme-text-tertiary">
                   <Icons.Trash />
                   <span className="text-[10px] font-medium">Discard</span>
                 </button>
-                <button onClick={onFavorite} className={`flex flex-col items-center gap-1 p-2 ${article.isFavorite ? 'text-yellow-500' : (darkMode ? 'text-stone-400' : 'text-zinc-500')}`}>
+                <button onClick={onFavorite} className={`flex flex-col items-center gap-1 p-2 ${article.isFavorite ? 'text-theme-favorite' : 'text-theme-text-tertiary'}`}>
                   <Icons.Star />
                   <span className="text-[10px] font-medium">Favorite</span>
                 </button>
-                <button onClick={() => setExportModalOpen(true)} className={`flex flex-col items-center gap-1 p-2 ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
+                <button onClick={() => setExportModalOpen(true)} className="flex flex-col items-center gap-1 p-2 text-theme-text-tertiary">
                   <Icons.Share />
                   <span className="text-[10px] font-medium">Export</span>
                 </button>
               </>
             )}
-            <button onClick={onClose} className={`flex flex-col items-center gap-1 p-2 ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
+            <button onClick={onClose} className="flex flex-col items-center gap-1 p-2 text-theme-text-tertiary">
               <Icons.X />
               <span className="text-[10px] font-medium">Close</span>
             </button>
@@ -315,30 +307,30 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
       <div className="hidden md:flex fixed inset-0 z-50 items-center justify-center p-6 animate-fade-in">
         {/* Backdrop */}
         <div
-          className={`absolute inset-0 ${darkMode ? 'bg-black/60' : 'bg-black/40'} backdrop-blur-sm`}
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           onClick={onClose}
         />
 
         {/* Modal Card - Increased size */}
-        <div className={`relative w-full max-w-5xl h-[85vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden ${darkMode ? 'bg-stone-800' : 'bg-white'}`}>
+        <div className="relative w-full max-w-5xl h-[85vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden bg-theme-surface">
           {/* Desktop Sticky Header */}
-          <div className={`flex-shrink-0 px-8 py-5 border-b ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-white border-zinc-100'}`}>
+          <div className="flex-shrink-0 px-8 py-5 border-b bg-theme-surface border-theme-border">
             {/* Top Row: Source, Trash, Close */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${darkMode ? 'bg-stone-700 text-teal-300' : 'bg-spira-100 text-spira-700'}`}>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-theme-muted text-theme-accent">
                   {article.source}
                 </span>
                 {renderStatusBadge()}
                 {isTrashed && (
-                  <span className="text-xs font-medium px-2 py-1 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                  <span className="text-xs font-medium px-2 py-1 rounded bg-theme-error/10 text-theme-error">
                     Trash
                   </span>
                 )}
               </div>
               <button
                 onClick={onClose}
-                className={`p-2 rounded-lg transition-colors ${darkMode ? 'text-stone-400 hover:bg-stone-700 hover:text-stone-200' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600'}`}
+                className="p-2 rounded-lg transition-colors text-theme-text-tertiary hover:bg-theme-muted hover:text-theme-text"
               >
                 <Icons.X />
               </button>
@@ -347,13 +339,13 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
             <h1 className="mb-2 line-clamp-2">
               <span
                 onClick={() => article.url && window.open(article.url, '_blank', 'noopener,noreferrer')}
-                className={`text-2xl font-serif font-bold leading-snug cursor-pointer hover:underline ${darkMode ? 'text-stone-100 hover:text-teal-300' : 'text-zinc-900 hover:text-spira-600'}`}
+                className="text-2xl font-serif font-bold leading-snug cursor-pointer hover:underline text-theme-text hover:text-theme-accent"
               >
                 {article.title}
               </span>
             </h1>
             {/* Metadata - same style as Focus card */}
-            <div className={`text-sm flex items-center gap-2 ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
+            <div className="text-sm flex items-center gap-2 text-theme-text-tertiary">
               <span className="font-medium">{article.author}</span>
               <span>•</span>
               <span>{article.timestamp}</span>
@@ -366,13 +358,13 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
           </div>
 
           {/* Desktop Action Bar */}
-          <div className={`flex items-center justify-between px-8 py-4 border-t flex-shrink-0 ${darkMode ? 'border-stone-700 bg-stone-800/80' : 'border-zinc-100 bg-white/80'}`}>
+          <div className="flex items-center justify-between px-8 py-4 border-t flex-shrink-0 border-theme-border bg-theme-surface/80">
             {isTrashed ? (
               // Only show Restore button for trashed articles
               <div className="flex-1 flex justify-center">
                 <button
                   onClick={onRestore}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-transform hover:scale-105 ${darkMode ? 'bg-teal-600 text-white' : 'bg-spira-600 text-white'}`}
+                  className="flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-transform hover:scale-105 bg-theme-accent text-white"
                 >
                   <Icons.Check />
                   <span>Restore Article</span>
@@ -384,21 +376,21 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
                 <div className="flex items-center gap-2">
                   <button
                     onClick={onDiscard}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${darkMode ? 'text-stone-400 hover:bg-stone-700 hover:text-red-400' : 'text-zinc-500 hover:bg-zinc-100 hover:text-red-500'}`}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-theme-text-tertiary hover:bg-theme-muted hover:text-theme-error"
                   >
                     <Icons.Trash />
                     <span className="text-sm font-medium">Discard</span>
                   </button>
                   <button
                     onClick={onFavorite}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${article.isFavorite ? 'text-yellow-500 bg-yellow-500/10' : (darkMode ? 'text-stone-400 hover:bg-stone-700 hover:text-yellow-400' : 'text-zinc-500 hover:bg-zinc-100 hover:text-yellow-500')}`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${article.isFavorite ? 'text-theme-favorite bg-theme-favorite/10' : 'text-theme-text-tertiary hover:bg-theme-muted hover:text-theme-favorite'}`}
                   >
                     <Icons.Star />
                     <span className="text-sm font-medium">Favorite</span>
                   </button>
                   <button
                     onClick={() => setExportModalOpen(true)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${darkMode ? 'text-stone-400 hover:bg-stone-700 hover:text-stone-200' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700'}`}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-theme-text-tertiary hover:bg-theme-muted hover:text-theme-text"
                   >
                     <Icons.Share />
                     <span className="text-sm font-medium">Export</span>

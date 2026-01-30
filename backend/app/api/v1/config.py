@@ -60,6 +60,9 @@ async def get_config(db: DbSession, current_user: CurrentUser):
         zotero_collection=config.zotero_collection,
         zotero_api_key_configured=bool(config.zotero_api_key),  # 不返回实际 key，只返回是否已配置
         theme=config.theme,
+        color_theme=getattr(config, 'color_theme', 'cream'),
+        font_theme=getattr(config, 'font_theme', 'sans'),
+        custom_theme_json=getattr(config, 'custom_theme_json', None),
         entries_per_page=config.entries_per_page,
     )
 
@@ -96,6 +99,9 @@ async def update_config(
         zotero_collection=config.zotero_collection,
         zotero_api_key_configured=bool(config.zotero_api_key),
         theme=config.theme,
+        color_theme=getattr(config, 'color_theme', 'cream'),
+        font_theme=getattr(config, 'font_theme', 'sans'),
+        custom_theme_json=getattr(config, 'custom_theme_json', None),
         entries_per_page=config.entries_per_page,
     )
 

@@ -43,6 +43,9 @@ class UserConfig(Base):
 
     # 界面配置
     theme: Mapped[str] = mapped_column(String(20), default="light")
+    color_theme: Mapped[str] = mapped_column(String(20), default="cream")
+    font_theme: Mapped[str] = mapped_column(String(20), default="sans")
+    custom_theme_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     entries_per_page: Mapped[int] = mapped_column(Integer, default=20)
 
     # ArXiv 配置

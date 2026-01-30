@@ -52,7 +52,7 @@ const getShareCode = (): string | null => {
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { darkMode, themeMode, setThemeMode, fontTheme, setFontTheme } = useTheme();
+  const { darkMode, themeMode, setThemeMode, fontTheme, setFontTheme, colorTheme, setColorTheme, customThemeJson, setCustomThemeJson } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>(getTabFromPath);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
@@ -137,8 +137,8 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className={`flex h-screen w-full items-center justify-center ${darkMode ? 'bg-stone-900' : 'bg-spira-50'}`}>
-        <div className="animate-spin h-8 w-8 border-2 border-spira-500 border-t-transparent rounded-full"/>
+      <div className={`flex h-screen w-full items-center justify-center ${darkMode ? 'bg-theme-base' : 'bg-theme-base'}`}>
+        <div className={`animate-spin h-8 w-8 border-2 border-t-transparent rounded-full ${darkMode ? 'border-theme-accent' : 'border-theme-accent'}`}/>
       </div>
     );
   }
@@ -166,7 +166,7 @@ function App() {
   };
 
   return (
-    <div className={`flex h-screen w-full transition-colors duration-300 ${fontClass} ${darkMode ? 'bg-stone-900 text-stone-200' : 'bg-[#FAFAF9] text-[#1C1C1E]'}`}>
+    <div className={`flex h-screen w-full transition-colors duration-300 ${fontClass} ${darkMode ? 'bg-theme-base text-theme-text' : 'bg-theme-base text-theme-text'}`}>
 
       {/* Sidebar (Desktop) */}
       <Sidebar
@@ -231,6 +231,10 @@ function App() {
                     setThemeMode={setThemeMode}
                     fontTheme={fontTheme}
                     setFontTheme={setFontTheme}
+                    colorTheme={colorTheme}
+                    setColorTheme={setColorTheme}
+                    customThemeJson={customThemeJson}
+                    setCustomThemeJson={setCustomThemeJson}
                   />
                 )}
               </div>

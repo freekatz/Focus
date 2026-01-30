@@ -91,15 +91,15 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
       />
 
       {/* Modal - Centered */}
-      <div className={`relative w-full max-w-md rounded-2xl shadow-xl ${darkMode ? 'bg-stone-800' : 'bg-white'}`}>
+      <div className={`relative w-full max-w-md rounded-2xl shadow-xl ${darkMode ? 'bg-theme-surface' : 'bg-theme-surface'}`}>
         {/* Header */}
-        <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-stone-700' : 'border-zinc-200'}`}>
-          <h3 className={`text-h3 font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>
+        <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-theme-border' : 'border-theme-border'}`}>
+          <h3 className={`text-h3 font-bold ${darkMode ? 'text-theme-text' : 'text-theme-text'}`}>
             {t('sources.addRssSource')}
           </h3>
           <button
             onClick={handleClose}
-            className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${darkMode ? 'hover:bg-stone-700 text-stone-400' : 'hover:bg-zinc-100 text-zinc-500'}`}
+            className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${darkMode ? 'hover:bg-theme-muted text-theme-text-secondary' : 'hover:bg-theme-muted text-theme-text-secondary'}`}
           >
             <Icons.X />
           </button>
@@ -110,7 +110,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
           {step === 'input' ? (
             <>
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
                   {t('sources.rssUrl')}
                 </label>
                 <input
@@ -120,8 +120,8 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                   placeholder="https://example.com/feed.xml"
                   className={`w-full min-h-touch p-3 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${
                     darkMode
-                      ? 'bg-stone-900 border-stone-600 text-white placeholder-stone-500 focus:ring-teal-500'
-                      : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:ring-spira-200'
+                      ? 'bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:ring-theme-accent'
+                      : 'bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:ring-theme-accent/30'
                   }`}
                 />
               </div>
@@ -131,8 +131,8 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                 disabled={loading || !url.trim()}
                 className={`w-full min-h-touch py-3 rounded-xl font-medium transition-all text-ui ${
                   darkMode
-                    ? 'bg-teal-600 hover:bg-teal-500 text-white'
-                    : 'bg-spira-600 hover:bg-spira-500 text-white'
+                    ? 'bg-theme-accent hover:bg-theme-accent text-white'
+                    : 'bg-theme-accent hover:bg-theme-accent-hover text-white'
                 } ${loading || !url.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {loading ? t('common.parsing') : t('sources.getFeedInfo')}
@@ -141,7 +141,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
           ) : (
             <>
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
                   {t('sources.name')}
                 </label>
                 <input
@@ -151,14 +151,14 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                   placeholder="Feed name"
                   className={`w-full min-h-touch p-3 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${
                     darkMode
-                      ? 'bg-stone-900 border-stone-600 text-white placeholder-stone-500 focus:ring-teal-500'
-                      : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:ring-spira-200'
+                      ? 'bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:ring-theme-accent'
+                      : 'bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:ring-theme-accent/30'
                   }`}
                 />
               </div>
 
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
                   {t('sources.descriptionOptional')}
                 </label>
                 <textarea
@@ -168,14 +168,14 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                   rows={2}
                   className={`w-full min-h-touch p-3 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm resize-none ${
                     darkMode
-                      ? 'bg-stone-900 border-stone-600 text-white placeholder-stone-500 focus:ring-teal-500'
-                      : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:ring-spira-200'
+                      ? 'bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:ring-theme-accent'
+                      : 'bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:ring-theme-accent/30'
                   }`}
                 />
               </div>
 
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
                   {t('sources.category')}
                 </label>
                 <select
@@ -183,8 +183,8 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                   onChange={(e) => setCategory(e.target.value)}
                   className={`w-full min-h-touch p-3 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${
                     darkMode
-                      ? 'bg-stone-900 border-stone-600 text-white focus:ring-teal-500'
-                      : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:ring-spira-200'
+                      ? 'bg-theme-muted border-theme-border text-theme-text focus:ring-theme-accent'
+                      : 'bg-theme-muted border-theme-border text-theme-text focus:ring-theme-accent/30'
                   }`}
                 >
                   {CATEGORY_OPTIONS.map(cat => (
@@ -194,7 +194,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
               </div>
 
               <div>
-                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>
+                <label className={`block text-caption font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
                   {t('sources.homepageOptional')}
                 </label>
                 <input
@@ -204,8 +204,8 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                   placeholder="https://example.com"
                   className={`w-full min-h-touch p-3 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${
                     darkMode
-                      ? 'bg-stone-900 border-stone-600 text-white placeholder-stone-500 focus:ring-teal-500'
-                      : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:ring-spira-200'
+                      ? 'bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:ring-theme-accent'
+                      : 'bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:ring-theme-accent/30'
                   }`}
                 />
               </div>
@@ -215,8 +215,8 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                   onClick={() => setStep('input')}
                   className={`flex-1 min-h-touch py-3 rounded-xl font-medium transition-all text-ui border ${
                     darkMode
-                      ? 'border-stone-600 text-stone-300 hover:bg-stone-700'
-                      : 'border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+                      ? 'border-theme-border text-theme-text-secondary hover:bg-theme-muted'
+                      : 'border-theme-border text-theme-text-secondary hover:bg-theme-muted'
                   }`}
                 >
                   {t('common.back')}
@@ -226,8 +226,8 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                   disabled={loading || !name.trim()}
                   className={`flex-1 min-h-touch py-3 rounded-xl font-medium transition-all text-ui ${
                     darkMode
-                      ? 'bg-teal-600 hover:bg-teal-500 text-white'
-                      : 'bg-spira-600 hover:bg-spira-500 text-white'
+                      ? 'bg-theme-accent hover:bg-theme-accent-hover text-white'
+                      : 'bg-theme-accent hover:bg-theme-accent-hover text-white'
                   } ${loading || !name.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {loading ? t('common.adding') : t('sources.addSource')}
@@ -238,9 +238,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
 
           {/* Error Message */}
           {error && (
-            <div className={`p-3 rounded-lg text-body-sm text-center ${
-              darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-50 text-red-600'
-            }`}>
+            <div className="p-3 rounded-lg text-body-sm text-center bg-red-50 text-red-600">
               {error}
             </div>
           )}

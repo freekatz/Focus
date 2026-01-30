@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { configApi } from '../api';
+import { type ColorThemeId, applyTheme, applyCustomTheme, isValidThemeId, colorThemes } from '../themes';
 
 type FontTheme = 'sans' | 'serif' | 'mono';
 type ThemeMode = 'light' | 'dark' | 'system';
@@ -10,12 +11,18 @@ interface ThemeContextType {
   setThemeMode: (value: ThemeMode) => void;
   fontTheme: FontTheme;
   setFontTheme: (value: FontTheme) => void;
+  colorTheme: ColorThemeId;
+  setColorTheme: (value: ColorThemeId) => void;
+  customThemeJson: string | null;
+  setCustomThemeJson: (value: string | null) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
 const THEME_MODE_KEY = 'focus-theme-mode';
 const FONT_THEME_KEY = 'focus-font-theme';
+const COLOR_THEME_KEY = 'focus-color-theme';
+const CUSTOM_THEME_KEY = 'focus-custom-theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
@@ -36,6 +43,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return stored as FontTheme;
     }
     return 'sans';
+  });
+
+  const [colorTheme, setColorThemeState] = useState<ColorThemeId>(() => {
+    const stored = localStorage.getItem(COLOR_THEME_KEY);
+    if (stored && isValidThemeId(stored)) {
+      return stored;
+    }
+    return 'cream';
+  });
+
+  const [customThemeJson, setCustomThemeJsonState] = useState<string | null>(() => {
+    return localStorage.getItem(CUSTOM_THEME_KEY);
   });
 
   // Compute actual dark mode based on theme mode
@@ -60,6 +79,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           setThemeModeState(config.theme as ThemeMode);
           localStorage.setItem(THEME_MODE_KEY, config.theme);
         }
+        if (config.color_theme && isValidThemeId(config.color_theme)) {
+          setColorThemeState(config.color_theme);
+          localStorage.setItem(COLOR_THEME_KEY, config.color_theme);
+        }
+        if (config.font_theme && ['sans', 'serif', 'mono'].includes(config.font_theme)) {
+          setFontThemeState(config.font_theme as FontTheme);
+          localStorage.setItem(FONT_THEME_KEY, config.font_theme);
+        }
+        if (config.custom_theme_json) {
+          setCustomThemeJsonState(config.custom_theme_json);
+          localStorage.setItem(CUSTOM_THEME_KEY, config.custom_theme_json);
+        }
       } catch {
         // If not logged in or error, use local storage value
       }
@@ -78,9 +109,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const setFontTheme = useCallback((value: FontTheme) => {
+  const setFontTheme = useCallback(async (value: FontTheme) => {
     setFontThemeState(value);
     localStorage.setItem(FONT_THEME_KEY, value);
+    // Sync to server
+    try {
+      await configApi.update({ font_theme: value });
+    } catch {
+      // Ignore sync errors
+    }
+  }, []);
+
+  const setColorTheme = useCallback(async (value: ColorThemeId) => {
+    setColorThemeState(value);
+    localStorage.setItem(COLOR_THEME_KEY, value);
+    // Sync to server
+    try {
+      await configApi.update({ color_theme: value });
+    } catch {
+      // Ignore sync errors
+    }
+  }, []);
+
+  const setCustomThemeJson = useCallback(async (value: string | null) => {
+    setCustomThemeJsonState(value);
+    if (value) {
+      localStorage.setItem(CUSTOM_THEME_KEY, value);
+    } else {
+      localStorage.removeItem(CUSTOM_THEME_KEY);
+    }
+    // Sync to server
+    try {
+      await configApi.update({ custom_theme_json: value || '' });
+    } catch {
+      // Ignore sync errors
+    }
   }, []);
 
   // Update document class for dark mode
@@ -92,6 +155,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [darkMode]);
 
+  // Apply color theme whenever colorTheme, customThemeJson, or darkMode changes
+  useEffect(() => {
+    if (colorTheme === 'custom' && customThemeJson) {
+      applyCustomTheme(customThemeJson, darkMode);
+    } else {
+      applyTheme(colorTheme, darkMode);
+    }
+  }, [colorTheme, customThemeJson, darkMode]);
+
   return (
     <ThemeContext.Provider
       value={{
@@ -100,6 +172,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setThemeMode,
         fontTheme,
         setFontTheme,
+        colorTheme,
+        setColorTheme,
+        customThemeJson,
+        setCustomThemeJson,
       }}
     >
       {children}
