@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     ai_api_key: Optional[str] = Field(default=None, description="AI API 密钥")
     ai_base_url: Optional[str] = Field(default=None, description="AI API 基础 URL")
 
+    # ArXiv 解读配置
+    interpretations_dir: str = Field(default="data/interpretations", description="ArXiv 解读文件保存目录")
+
     # Zotero 配置
     zotero_library_id: Optional[str] = Field(default=None, description="Zotero 库 ID")
     zotero_library_type: str = Field(default="user", description="Zotero 库类型")

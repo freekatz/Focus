@@ -16,12 +16,16 @@ interface SidebarItemProps {
 const SidebarItem = ({ active, onClick, icon, label, darkMode }: SidebarItemProps) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
+    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-micro cursor-pointer relative overflow-hidden ${
       active
         ? (darkMode ? 'bg-stone-800 text-teal-300' : 'bg-spira-100 text-spira-800 font-medium')
-        : (darkMode ? 'text-stone-400 hover:bg-stone-800 hover:text-stone-200' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900')
+        : (darkMode ? 'text-stone-400 hover:bg-stone-800 hover:text-stone-200 hover:scale-[1.02] active:scale-[0.98]' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 hover:scale-[1.02] active:scale-[0.98]')
     }`}
   >
+    {/* Active indicator bar */}
+    {active && (
+      <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full ${darkMode ? 'bg-teal-400' : 'bg-spira-600'}`} />
+    )}
     <div className={active ? (darkMode ? 'text-teal-400' : 'text-spira-600') : ''}>{icon}</div>
     <span>{label}</span>
   </button>
@@ -74,8 +78,8 @@ export function Sidebar({ activeTab, onTabChange, darkMode, themeMode, setThemeM
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={cycleTheme}
-          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
-            darkMode ? 'text-stone-400 hover:bg-stone-800 hover:text-stone-200' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'
+          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-micro cursor-pointer ${
+            darkMode ? 'text-stone-400 hover:bg-stone-800 hover:text-stone-200 hover:scale-[1.02] active:scale-[0.98]' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 hover:scale-[1.02] active:scale-[0.98]'
           }`}
         >
           <div>{getThemeIcon()}</div>

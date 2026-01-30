@@ -27,10 +27,13 @@ from app.agents.arxiv_prompts import (
     ROUND1_USER_PROMPT,
     ROUND2_USER_PROMPT,
 )
+from app.config import settings
 from app.utils.logger import logger
 
-# 解读文件保存目录
-INTERPRETATIONS_DIR = Path("data/interpretations")
+
+def get_interpretations_dir() -> Path:
+    """获取解读文件保存目录（支持 env 配置）"""
+    return Path(settings.interpretations_dir)
 
 # API 请求超时配置（秒）
 API_TIMEOUT = 120.0
@@ -512,8 +515,9 @@ async def save_interpretation_to_file(entry: Entry, interpretation: str) -> str:
     Returns:
         保存的文件路径
     """
-    # 确保目录存在
-    INTERPRETATIONS_DIR.mkdir(parents=True, exist_ok=True)
+    # 获取目录并确保存在
+    interpretations_dir = get_interpretations_dir()
+    interpretations_dir.mkdir(parents=True, exist_ok=True)
 
     # 提取 arxiv_id
     arxiv_id = extract_arxiv_id(entry.link)
@@ -527,7 +531,7 @@ async def save_interpretation_to_file(entry: Entry, interpretation: str) -> str:
 
     # 组合文件名: arxiv_id_title_date.md
     filename = f"{safe_arxiv_id}_{title_short}_{date_str}.md"
-    file_path = INTERPRETATIONS_DIR / filename
+    file_path = interpretations_dir / filename
 
     # 格式化发布时间
     pub_time = entry.published_at.strftime("%Y-%m-%d %H:%M") if entry.published_at else 'Unknown'

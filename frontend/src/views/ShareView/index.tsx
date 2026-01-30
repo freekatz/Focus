@@ -46,7 +46,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
           <details className="mb-6 group">
             <summary
               className={`cursor-pointer flex items-center gap-2 text-sm font-medium ${
-                darkMode ? "text-slate-400 hover:text-slate-200" : "text-zinc-500 hover:text-zinc-700"
+                darkMode ? "text-stone-400 hover:text-stone-200" : "text-zinc-500 hover:text-zinc-700"
               }`}
             >
               <span className="transform transition-transform group-open:rotate-90">▶</span>
@@ -75,7 +75,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
               {briefSummary && (
                 <p
                   className={`text-base leading-relaxed mb-4 ${
-                    darkMode ? "text-slate-200" : "text-zinc-800"
+                    darkMode ? "text-stone-200" : "text-zinc-800"
                   }`}
                 >
                   {briefSummary}
@@ -91,7 +91,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
           <details className="mb-6 group">
             <summary
               className={`cursor-pointer text-sm ${
-                darkMode ? "text-slate-500 hover:text-slate-300" : "text-zinc-400 hover:text-zinc-600"
+                darkMode ? "text-stone-500 hover:text-stone-300" : "text-zinc-400 hover:text-zinc-600"
               }`}
             >
               <span className="transform transition-transform group-open:rotate-90 inline-block mr-2">▶</span>
@@ -144,7 +144,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-spira-50'}`}>
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-stone-900' : 'bg-spira-50'}`}>
         <div className="animate-spin h-8 w-8 border-2 border-spira-500 border-t-transparent rounded-full" />
       </div>
     );
@@ -152,14 +152,14 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
 
   if (error) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-spira-50 text-zinc-900'}`}>
-        <div className={`p-4 rounded-full mb-4 ${darkMode ? 'bg-slate-800 text-red-400' : 'bg-red-50 text-red-500'}`}>
+      <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${darkMode ? 'bg-stone-900 text-stone-100' : 'bg-spira-50 text-zinc-900'}`}>
+        <div className={`p-4 rounded-full mb-4 ${darkMode ? 'bg-stone-800 text-red-400' : 'bg-red-50 text-red-500'}`}>
           <Icons.X />
         </div>
         <h1 className="text-2xl font-serif font-medium mb-2">
           {error === 'Share not found' ? 'Not Found' : error === 'Share has expired' ? 'Expired' : 'Error'}
         </h1>
-        <p className={`text-center max-w-md ${darkMode ? 'text-slate-400' : 'text-zinc-500'}`}>
+        <p className={`text-center max-w-md ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
           {error === 'Share not found'
             ? 'This share link does not exist or has been removed.'
             : error === 'Share has expired'
@@ -175,17 +175,17 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
   const { entries, text_content, description, created_at, expires_at, share_type } = shareData;
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-spira-50 text-zinc-900'}`}>
+    <div className={`min-h-screen ${darkMode ? 'bg-stone-900 text-stone-100' : 'bg-spira-50 text-zinc-900'}`}>
       {/* Header */}
-      <header className={`sticky top-0 z-10 border-b backdrop-blur-sm ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-spira-50/90 border-zinc-200'}`}>
+      <header className={`sticky top-0 z-10 border-b backdrop-blur-sm ${darkMode ? 'bg-stone-900/90 border-stone-800' : 'bg-spira-50/90 border-zinc-200'}`}>
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-indigo-600' : 'bg-spira-600'}`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-teal-600' : 'bg-spira-600'}`}>
               <span className="w-5 h-5 text-white"><Icons.Focus /></span>
             </div>
             <span className="font-semibold text-lg">Focus</span>
           </div>
-          <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-zinc-500'}`}>
+          <div className={`text-sm ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
             Shared {formatDate(created_at)}
             {expires_at && (
               <span className="ml-2">
@@ -200,14 +200,14 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Description if exists */}
         {description && (
-          <div className={`mb-8 p-4 rounded-xl ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-sm`}>
-            <p className={darkMode ? 'text-slate-300' : 'text-zinc-700'}>{description}</p>
+          <div className={`mb-8 p-4 rounded-xl ${darkMode ? 'bg-stone-800' : 'bg-white'} shadow-sm`}>
+            <p className={darkMode ? 'text-stone-300' : 'text-zinc-700'}>{description}</p>
           </div>
         )}
 
         {/* Text Share */}
         {share_type === 'text' && text_content && (
-          <div className={`p-6 rounded-2xl ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-sm`}>
+          <div className={`p-6 rounded-2xl ${darkMode ? 'bg-stone-800' : 'bg-white'} shadow-sm`}>
             <div className={`prose max-w-none ${darkMode ? 'prose-invert' : ''}`}>
               <pre className="whitespace-pre-wrap font-sans">{text_content}</pre>
             </div>
@@ -218,7 +218,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
         {share_type === 'entries' && entries && entries.length > 0 && (
           <div className="space-y-4">
             {/* Stats */}
-            <div className={`text-sm mb-6 ${darkMode ? 'text-slate-400' : 'text-zinc-500'}`}>
+            <div className={`text-sm mb-6 ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
               {entries.length} {entries.length === 1 ? 'article' : 'articles'} shared
             </div>
 
@@ -226,13 +226,13 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
               <article
                 key={entry.id}
                 className={`rounded-2xl overflow-hidden transition-all ${
-                  darkMode ? 'bg-slate-800' : 'bg-white'
+                  darkMode ? 'bg-stone-800' : 'bg-white'
                 } shadow-sm hover:shadow-md`}
               >
                 {/* Entry Header - always visible */}
                 <div
                   className={`p-5 cursor-pointer ${expandedId === entry.id ? 'border-b' : ''} ${
-                    darkMode ? 'border-slate-700' : 'border-zinc-100'
+                    darkMode ? 'border-stone-700' : 'border-zinc-100'
                   }`}
                   onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
                 >
@@ -242,7 +242,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {entry.rss_source_name && (
                           <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                            darkMode ? 'bg-slate-700 text-slate-300' : 'bg-spira-100 text-spira-700'
+                            darkMode ? 'bg-stone-700 text-stone-300' : 'bg-spira-100 text-spira-700'
                           }`}>
                             {entry.rss_source_name}
                           </span>
@@ -274,7 +274,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
                             }
                           }}
                           className={`text-lg font-serif font-semibold leading-snug cursor-pointer hover:underline ${
-                            darkMode ? 'text-slate-100 hover:text-indigo-300' : 'text-zinc-900 hover:text-spira-600'
+                            darkMode ? 'text-stone-100 hover:text-teal-300' : 'text-zinc-900 hover:text-spira-600'
                           }`}
                         >
                           {entry.title}
@@ -283,7 +283,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
 
                       {/* Meta - same style as HomeView */}
                       <div className={`text-sm flex items-center gap-2 ${
-                        darkMode ? 'text-slate-400' : 'text-zinc-500'
+                        darkMode ? 'text-stone-400' : 'text-zinc-500'
                       }`}>
                         {entry.author && <span className="font-medium">{entry.author}</span>}
                         {entry.author && entry.published_at && <span>•</span>}
@@ -293,7 +293,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
                       {/* Preview when collapsed - show brief_summary or ai_summary */}
                       {expandedId !== entry.id && (entry.brief_summary || entry.ai_summary) && (
                         <p className={`mt-3 text-sm line-clamp-2 ${
-                          darkMode ? 'text-slate-300' : 'text-zinc-600'
+                          darkMode ? 'text-stone-300' : 'text-zinc-600'
                         }`}>
                           {entry.brief_summary || entry.ai_summary}
                         </p>
@@ -303,7 +303,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
                     {/* Expand/Collapse icon */}
                     <div className={`flex-shrink-0 p-2 rounded-full transition-transform ${
                       expandedId === entry.id ? 'rotate-180' : ''
-                    } ${darkMode ? 'text-slate-400' : 'text-zinc-400'}`}>
+                    } ${darkMode ? 'text-stone-400' : 'text-zinc-400'}`}>
                       <Icons.ChevronDown />
                     </div>
                   </div>
@@ -323,7 +323,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
         {/* Empty state */}
         {share_type === 'entries' && (!entries || entries.length === 0) && (
           <div className="text-center py-12">
-            <p className={darkMode ? 'text-slate-400' : 'text-zinc-500'}>
+            <p className={darkMode ? 'text-stone-400' : 'text-zinc-500'}>
               No articles in this share.
             </p>
           </div>
@@ -331,9 +331,9 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
       </main>
 
       {/* Footer */}
-      <footer className={`border-t mt-12 py-6 ${darkMode ? 'border-slate-800' : 'border-zinc-200'}`}>
+      <footer className={`border-t mt-12 py-6 ${darkMode ? 'border-stone-800' : 'border-zinc-200'}`}>
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className={`text-sm ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
+          <p className={`text-sm ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>
             Shared via Focus
           </p>
         </div>

@@ -2,6 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Reduced Motion Support ===== */
+/* Respect user's motion preferences for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===== Micro-interaction Utilities ===== */
+/* Unified transition classes for consistent animations */
+.transition-micro {
+  transition: all 200ms ease-out;
+}
+
+.transition-micro-fast {
+  transition: all 150ms ease-out;
+}
+
+.transition-micro-slow {
+  transition: all 300ms ease-out;
+}
+
+/* Interactive element base styles */
+.interactive-base {
+  cursor: pointer;
+  transition: all 200ms ease-out;
+}
+
+.interactive-base:active {
+  transform: scale(0.98);
+}
+
+/* Card hover effect */
+.card-interactive {
+  cursor: pointer;
+  transition: all 200ms ease-out;
+}
+
+.card-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dark .card-interactive:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Button hover scale (subtle, no layout shift) */
+.btn-interactive {
+  cursor: pointer;
+  transition: all 200ms ease-out;
+}
+
+.btn-interactive:hover {
+  transform: scale(1.02);
+}
+
+.btn-interactive:active {
+  transform: scale(0.98);
+}
+
 /* Base styles - Apple-inspired warm white */
 body {
   font-family: 'Source Sans 3', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

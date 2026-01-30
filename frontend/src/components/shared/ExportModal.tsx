@@ -137,13 +137,13 @@ export function ExportModal({
       {/* Modal - Centered */}
       <div
         className={`relative w-full max-w-md rounded-2xl shadow-xl ${
-          darkMode ? "bg-slate-800" : "bg-white"
+          darkMode ? "bg-stone-800" : "bg-white"
         }`}
       >
         {/* Header */}
         <div
           className={`flex items-center justify-between p-4 border-b ${
-            darkMode ? "border-slate-700" : "border-zinc-200"
+            darkMode ? "border-stone-700" : "border-zinc-200"
           }`}
         >
           <h3
@@ -157,7 +157,7 @@ export function ExportModal({
             onClick={onClose}
             className={`p-2 rounded-full transition-colors ${
               darkMode
-                ? "hover:bg-slate-700 text-slate-400"
+                ? "hover:bg-stone-700 text-stone-400"
                 : "hover:bg-zinc-100 text-zinc-500"
             }`}
           >
@@ -168,7 +168,7 @@ export function ExportModal({
         {/* Tabs */}
         <div
           className={`flex p-2 mx-4 mt-4 rounded-lg ${
-            darkMode ? "bg-slate-900" : "bg-zinc-100"
+            darkMode ? "bg-stone-900" : "bg-zinc-100"
           }`}
         >
           {tabs.map((tab) => (
@@ -182,10 +182,10 @@ export function ExportModal({
               className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
                 activeTab === tab.id
                   ? darkMode
-                    ? "bg-slate-700 text-white shadow"
+                    ? "bg-stone-700 text-white shadow"
                     : "bg-white text-zinc-900 shadow"
                   : darkMode
-                  ? "text-slate-400 hover:text-slate-300"
+                  ? "text-stone-400 hover:text-stone-300"
                   : "text-zinc-500 hover:text-zinc-700"
               }`}
             >
@@ -202,7 +202,7 @@ export function ExportModal({
               <div>
                 <label
                   className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
-                    darkMode ? "text-slate-500" : "text-zinc-400"
+                    darkMode ? "text-stone-500" : "text-zinc-400"
                   }`}
                 >
                   Expires in
@@ -212,7 +212,7 @@ export function ExportModal({
                   onChange={(e) => setExpiresInDays(parseInt(e.target.value))}
                   className={`w-full p-2 rounded-lg border text-sm ${
                     darkMode
-                      ? "bg-slate-900 border-slate-600 text-white"
+                      ? "bg-stone-900 border-stone-600 text-white"
                       : "bg-zinc-50 border-zinc-200"
                   }`}
                 >
@@ -227,7 +227,7 @@ export function ExportModal({
                 <div className="space-y-2">
                   <div
                     className={`flex items-center gap-2 p-3 rounded-lg ${
-                      darkMode ? "bg-slate-900" : "bg-zinc-50"
+                      darkMode ? "bg-stone-900" : "bg-zinc-50"
                     }`}
                   >
                     <input
@@ -235,14 +235,14 @@ export function ExportModal({
                       readOnly
                       value={shareUrl}
                       className={`flex-1 bg-transparent text-sm outline-none ${
-                        darkMode ? "text-slate-300" : "text-zinc-700"
+                        darkMode ? "text-stone-300" : "text-zinc-700"
                       }`}
                     />
                     <button
                       onClick={copyShareUrl}
                       className={`p-2 rounded-lg transition-colors ${
                         darkMode
-                          ? "hover:bg-slate-700 text-indigo-400"
+                          ? "hover:bg-stone-700 text-teal-400"
                           : "hover:bg-zinc-200 text-spira-600"
                       }`}
                     >
@@ -256,7 +256,7 @@ export function ExportModal({
                   disabled={loading || entryIds.length === 0}
                   className={`w-full py-3 rounded-xl font-medium transition-all ${
                     darkMode
-                      ? "bg-indigo-600 hover:bg-indigo-500 text-white"
+                      ? "bg-teal-600 hover:bg-teal-500 text-white"
                       : "bg-spira-600 hover:bg-spira-500 text-white"
                   } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
@@ -271,7 +271,7 @@ export function ExportModal({
               <div>
                 <label
                   className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
-                    darkMode ? "text-slate-500" : "text-zinc-400"
+                    darkMode ? "text-stone-500" : "text-zinc-400"
                   }`}
                 >
                   Collection
@@ -283,7 +283,7 @@ export function ExportModal({
                   onChange={(e) => setZoteroCollection(e.target.value)}
                   className={`w-full p-2 rounded-lg border text-sm ${
                     darkMode
-                      ? "bg-slate-900 border-slate-600 text-white"
+                      ? "bg-stone-900 border-stone-600 text-white"
                       : "bg-zinc-50 border-zinc-200"
                   }`}
                 />
@@ -293,7 +293,7 @@ export function ExportModal({
                 disabled={loading || entryIds.length === 0}
                 className={`w-full py-3 rounded-xl font-medium transition-all ${
                   darkMode
-                    ? "bg-indigo-600 hover:bg-indigo-500 text-white"
+                    ? "bg-teal-600 hover:bg-teal-500 text-white"
                     : "bg-spira-600 hover:bg-spira-500 text-white"
                 } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               >
@@ -306,7 +306,7 @@ export function ExportModal({
             <div className="space-y-4">
               <div
                 className={`p-3 rounded-lg max-h-32 overflow-y-auto ${
-                  darkMode ? "bg-slate-900" : "bg-zinc-50"
+                  darkMode ? "bg-stone-900" : "bg-zinc-50"
                 }`}
               >
                 {articles.map((a, i) => (
@@ -315,13 +315,13 @@ export function ExportModal({
                     className={`text-sm py-1 ${
                       i > 0
                         ? "border-t " +
-                          (darkMode ? "border-slate-700" : "border-zinc-200")
+                          (darkMode ? "border-stone-700" : "border-zinc-200")
                         : ""
                     }`}
                   >
                     <div
                       className={`font-medium truncate ${
-                        darkMode ? "text-slate-300" : "text-zinc-700"
+                        darkMode ? "text-stone-300" : "text-zinc-700"
                       }`}
                     >
                       {a.title}
@@ -329,7 +329,7 @@ export function ExportModal({
                     {a._entry?.link && (
                       <div
                         className={`text-xs truncate ${
-                          darkMode ? "text-slate-500" : "text-zinc-400"
+                          darkMode ? "text-stone-500" : "text-zinc-400"
                         }`}
                       >
                         {a._entry.link}
@@ -343,7 +343,7 @@ export function ExportModal({
                 onClick={handleCopy}
                 className={`w-full py-3 rounded-xl font-medium transition-all ${
                   darkMode
-                    ? "bg-indigo-600 hover:bg-indigo-500 text-white"
+                    ? "bg-teal-600 hover:bg-teal-500 text-white"
                     : "bg-spira-600 hover:bg-spira-500 text-white"
                 }`}
               >

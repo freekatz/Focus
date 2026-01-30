@@ -64,7 +64,7 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
-      <div className={`relative w-full max-w-md rounded-2xl shadow-xl p-6 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-zinc-900'}`}>
+      <div className={`relative w-full max-w-md rounded-2xl shadow-xl p-6 ${darkMode ? 'bg-stone-900 text-white' : 'bg-white text-zinc-900'}`}>
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold font-serif">{type === 'my' ? t('sources.subscriptionSettings') : t('sources.editSource')}</h3>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10"><Icons.X /></button>
@@ -75,11 +75,11 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
             <>
               <div>
                 <label className="block text-xs font-medium uppercase text-zinc-500 mb-1">{t('sources.name')}</label>
-                <input name="name" value={formData.name} onChange={handleChange} className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-zinc-50 border-zinc-200'}`} />
+                <input name="name" value={formData.name} onChange={handleChange} className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-zinc-50 border-zinc-200'}`} />
               </div>
               <div>
                 <label className="block text-xs font-medium uppercase text-zinc-500 mb-1">{t('sources.rssUrl')}</label>
-                <input name="url" value={formData.url} onChange={handleChange} className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-zinc-50 border-zinc-200'}`} />
+                <input name="url" value={formData.url} onChange={handleChange} className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-zinc-50 border-zinc-200'}`} />
               </div>
               <div>
                 <label className="block text-xs font-medium uppercase text-zinc-500 mb-1">{t('sources.category')}</label>
@@ -95,7 +95,7 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
                       });
                     }
                   }}
-                  className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-zinc-50 border-zinc-200'}`}
+                  className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-zinc-50 border-zinc-200'}`}
                 >
                   {CATEGORY_OPTIONS.map(cat => (
                     <option key={cat} value={cat}>{t(`categories.${cat}`)}</option>
@@ -104,11 +104,11 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
               </div>
               <div>
                 <label className="block text-xs font-medium uppercase text-zinc-500 mb-1">{t('sources.homepage')}</label>
-                <input name="homepage" value={formData.homepage || ''} onChange={handleChange} className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-zinc-50 border-zinc-200'}`} />
+                <input name="homepage" value={formData.homepage || ''} onChange={handleChange} className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-zinc-50 border-zinc-200'}`} />
               </div>
               <div>
                 <label className="block text-xs font-medium uppercase text-zinc-500 mb-1">{t('sources.description')}</label>
-                <textarea name="description" value={formData.description || ''} onChange={handleChange} className={`w-full p-2 rounded-lg border h-20 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-zinc-50 border-zinc-200'}`} />
+                <textarea name="description" value={formData.description || ''} onChange={handleChange} className={`w-full p-2 rounded-lg border h-20 ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-zinc-50 border-zinc-200'}`} />
               </div>
             </>
           )}
@@ -117,7 +117,7 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
             <>
               <div>
                 <label className="block text-xs font-medium uppercase text-zinc-500 mb-1">{t('sources.refreshTime')}</label>
-                <select name="refreshTime" value={formData.refreshTime || 'default'} onChange={handleChange} className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-zinc-50 border-zinc-200'}`}>
+                <select name="refreshTime" value={formData.refreshTime || 'default'} onChange={handleChange} className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-zinc-50 border-zinc-200'}`}>
                   <option value="default">{t('sources.daily')}</option>
                   <option value="06:00">{t('sources.daily6am')}</option>
                   <option value="08:00">{t('sources.daily8am')}</option>
@@ -139,7 +139,7 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
                       refreshing
                         ? 'opacity-50 cursor-not-allowed'
                         : darkMode
-                          ? 'bg-slate-800 border-slate-700 hover:bg-slate-700'
+                          ? 'bg-stone-800 border-stone-700 hover:bg-stone-700'
                           : 'bg-zinc-50 border-zinc-200 hover:bg-zinc-100'
                     }`}
                   >
@@ -173,7 +173,7 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium ${
-                  darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-zinc-100 hover:bg-zinc-200'
+                  darkMode ? 'bg-stone-700 hover:bg-stone-600' : 'bg-zinc-100 hover:bg-zinc-200'
                 }`}
               >
                 {t('common.cancel')}
@@ -206,8 +206,8 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
           {(type === 'my' || !onDelete || showDeleteConfirm) && <div />}
 
           <div className="flex gap-3">
-            <button onClick={onClose} className={`px-4 py-2 rounded-lg text-sm font-medium ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-zinc-100'}`}>{t('common.cancel')}</button>
-            <button onClick={() => { onSave(formData); onClose(); }} className={`px-4 py-2 rounded-lg text-sm font-medium text-white ${darkMode ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-spira-600 hover:bg-spira-500'}`}>{t('settings.saveChanges')}</button>
+            <button onClick={onClose} className={`px-4 py-2 rounded-lg text-sm font-medium ${darkMode ? 'hover:bg-stone-800' : 'hover:bg-zinc-100'}`}>{t('common.cancel')}</button>
+            <button onClick={() => { onSave(formData); onClose(); }} className={`px-4 py-2 rounded-lg text-sm font-medium text-white ${darkMode ? 'bg-teal-600 hover:bg-teal-500' : 'bg-spira-600 hover:bg-spira-500'}`}>{t('settings.saveChanges')}</button>
           </div>
         </div>
       </div>

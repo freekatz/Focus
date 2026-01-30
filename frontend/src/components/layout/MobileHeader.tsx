@@ -25,9 +25,9 @@ export function MobileHeader({ darkMode, themeMode, setThemeMode, mobileMenuOpen
   };
 
   return (
-    <div className={`md:hidden flex items-center justify-between px-4 py-3 border-b z-30 relative transition-colors ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-zinc-200'} backdrop-blur-md`}>
+    <div className={`md:hidden flex items-center justify-between px-4 py-3 border-b z-30 relative transition-colors ${darkMode ? 'bg-stone-900 border-stone-800' : 'bg-white border-zinc-200'} backdrop-blur-md`}>
       <div className="flex items-center gap-2 cursor-pointer" onClick={onLogoClick}>
-        <div className={`w-6 h-6 rounded flex items-center justify-center ${darkMode ? 'bg-indigo-500' : 'bg-spira-600'} text-white`}>
+        <div className={`w-6 h-6 rounded flex items-center justify-center ${darkMode ? 'bg-teal-600' : 'bg-spira-600'} text-white`}>
           <Icons.Focus />
         </div>
         <span className="font-serif font-bold text-lg tracking-tight">Focus</span>
@@ -37,14 +37,14 @@ export function MobileHeader({ darkMode, themeMode, setThemeMode, mobileMenuOpen
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={cycleTheme}
-          className={`p-2 rounded-full transition-colors ${darkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
+          className={`p-2 rounded-full transition-colors ${darkMode ? 'text-stone-300 hover:bg-stone-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
         >
           {getThemeIcon()}
         </button>
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className={`p-2 -mr-2 rounded-full transition-colors ${darkMode ? 'text-zinc-300 hover:bg-slate-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
+          className={`p-2 -mr-2 rounded-full transition-colors ${darkMode ? 'text-zinc-300 hover:bg-stone-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
           aria-label="Menu"
         >
           {mobileMenuOpen ? <Icons.X /> : <Icons.Menu />}

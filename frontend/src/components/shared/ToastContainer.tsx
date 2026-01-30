@@ -26,7 +26,7 @@ export function ToastContainer({ darkMode }: ToastContainerProps) {
           : 'bg-yellow-50 text-yellow-800 border-yellow-200';
       default:
         return darkMode
-          ? 'bg-slate-800/95 text-slate-100 border-slate-600'
+          ? 'bg-stone-800/95 text-stone-100 border-stone-600'
           : 'bg-white text-zinc-800 border-zinc-200';
     }
   };

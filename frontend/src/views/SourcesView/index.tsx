@@ -223,8 +223,8 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
                 disabled={refreshing || feeds.length === 0}
                 className={`p-2 rounded-lg transition-colors ${
                   refreshing || feeds.length === 0
-                    ? (darkMode ? 'bg-indigo-600/50 text-white/50 cursor-not-allowed' : 'bg-spira-600/50 text-white/50 cursor-not-allowed')
-                    : (darkMode ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-spira-600 hover:bg-spira-500 text-white')
+                    ? (darkMode ? 'bg-teal-600/50 text-white/50 cursor-not-allowed' : 'bg-spira-600/50 text-white/50 cursor-not-allowed')
+                    : (darkMode ? 'bg-teal-600 hover:bg-teal-500 text-white' : 'bg-spira-600 hover:bg-spira-500 text-white')
                 }`}
                 title="Refresh all feeds"
               >
@@ -235,21 +235,21 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
             ) : (
               <button
                 onClick={() => setAddModalOpen(true)}
-                className={`p-2 rounded-lg transition-colors ${darkMode ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-spira-600 hover:bg-spira-500 text-white'}`}
+                className={`p-2 rounded-lg transition-colors ${darkMode ? 'bg-teal-600 hover:bg-teal-500 text-white' : 'bg-spira-600 hover:bg-spira-500 text-white'}`}
               >
                 <Icons.Plus />
               </button>
             )}
-            <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-zinc-100'}`}>
+            <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-stone-800' : 'bg-zinc-100'}`}>
             <button
               onClick={() => setTab('my')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === 'my' ? (darkMode ? 'bg-slate-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === 'my' ? (darkMode ? 'bg-stone-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
             >
               {t('sources.mySubs')}
             </button>
             <button
               onClick={() => setTab('market')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === 'market' ? (darkMode ? 'bg-slate-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === 'market' ? (darkMode ? 'bg-stone-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
             >
               {t('sources.discovery')}
             </button>
@@ -276,8 +276,8 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
               onClick={() => setSelectedCategory(cat)}
               className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
                 selectedCategory === cat
-                  ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-spira-600 text-white')
-                  : (darkMode ? 'bg-slate-800 text-zinc-400 hover:bg-slate-700' : 'bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50')
+                  ? (darkMode ? 'bg-teal-600 text-white' : 'bg-spira-600 text-white')
+                  : (darkMode ? 'bg-stone-800 text-zinc-400 hover:bg-stone-700' : 'bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50')
               }`}
             >
               {t(`categories.${cat}`)}
@@ -301,14 +301,14 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
               <div
                 key={feed.id}
                 onClick={() => setEditingFeed(feed)}
-                className={`flex items-center justify-between p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-zinc-200'}`}
+                className={`flex items-center justify-between p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-white border-zinc-200'}`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-serif font-bold ${darkMode ? 'bg-slate-700 text-indigo-300' : 'bg-spira-100 text-spira-700'}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-serif font-bold ${darkMode ? 'bg-stone-700 text-teal-300' : 'bg-spira-100 text-spira-700'}`}>
                     {feed.name[0]}
                   </div>
                   <div>
-                    <h3 className={`font-medium ${darkMode ? 'text-slate-200' : 'text-zinc-900'}`}>{feed.name}</h3>
+                    <h3 className={`font-medium ${darkMode ? 'text-stone-200' : 'text-zinc-900'}`}>{feed.name}</h3>
                     <p className="text-xs text-zinc-500">{t(`categories.${feed.category}`)}</p>
                   </div>
                 </div>
@@ -316,8 +316,8 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
                   onClick={(e) => toggleFeed(feed.id, e)}
                   className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors min-w-[90px] ${
                     feed.subscribed
-                      ? (darkMode ? 'bg-slate-700 text-slate-300 hover:bg-red-900/30 hover:text-red-400' : 'bg-zinc-100 text-zinc-600 hover:bg-red-50 hover:text-red-500')
-                      : (darkMode ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-zinc-900 text-white hover:bg-zinc-700')
+                      ? (darkMode ? 'bg-stone-700 text-stone-300 hover:bg-red-900/30 hover:text-red-400' : 'bg-zinc-100 text-zinc-600 hover:bg-red-50 hover:text-red-500')
+                      : (darkMode ? 'bg-teal-600 text-white hover:bg-teal-500' : 'bg-zinc-900 text-white hover:bg-zinc-700')
                   }`}
                 >
                   {feed.subscribed ? t('sources.following') : t('sources.follow')}

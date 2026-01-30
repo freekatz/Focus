@@ -206,8 +206,30 @@ export function HomeView({ darkMode }: HomeViewProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin h-8 w-8 border-2 border-spira-500 border-t-transparent rounded-full" />
+      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-6 pb-24 px-2 md:px-3 lg:px-8 animate-pulse">
+        {/* Skeleton: Header */}
+        <div className="flex justify-between items-center mb-6 px-2">
+          <div className="flex items-center gap-2">
+            <div className={`h-5 w-16 rounded ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+            <div className={`h-5 w-20 rounded ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+          </div>
+          <div className={`h-4 w-24 rounded ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+        </div>
+        {/* Skeleton: Title */}
+        <div className={`h-8 md:h-10 rounded w-3/4 mb-4 ml-2 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+        {/* Skeleton: Author */}
+        <div className={`h-4 w-48 rounded mb-8 ml-6 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+        {/* Skeleton: Divider */}
+        <div className={`h-px w-full mb-8 mx-2 ${darkMode ? 'bg-stone-700' : 'bg-zinc-200'}`} />
+        {/* Skeleton: Content */}
+        <div className="space-y-4 px-2">
+          <div className={`h-4 rounded w-full ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+          <div className={`h-4 rounded w-5/6 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+          <div className={`h-4 rounded w-full ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+          <div className={`h-4 rounded w-4/5 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+          <div className={`h-4 rounded w-full ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+          <div className={`h-4 rounded w-3/4 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+        </div>
       </div>
     );
   }
@@ -439,24 +461,24 @@ export function HomeView({ darkMode }: HomeViewProps) {
       {/* Unified Floating Action Bar - PC shows text labels, mobile icons only */}
       <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
         <div
-          className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-full shadow-lg backdrop-blur-sm ${
+          className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-full shadow-xl backdrop-blur-sm transition-micro ${
             darkMode
-              ? "bg-stone-800/95 border border-stone-700"
-              : "bg-white/95 border border-zinc-200"
+              ? "bg-stone-800/95 border border-stone-700 shadow-stone-900/50"
+              : "bg-white/95 border border-zinc-200 shadow-zinc-300/50"
           }`}
         >
           {/* Previous */}
           <button
             onClick={goPrev}
             disabled={currentIndex === 0}
-            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-colors text-sm ${
+            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-micro text-sm ${
               currentIndex === 0
                 ? darkMode
                   ? "text-stone-600 cursor-not-allowed"
                   : "text-zinc-300 cursor-not-allowed"
                 : darkMode
-                  ? "text-stone-300 hover:bg-stone-700"
-                  : "text-zinc-600 hover:bg-zinc-100"
+                  ? "text-stone-300 hover:bg-stone-700 cursor-pointer hover:scale-105 active:scale-95"
+                  : "text-zinc-600 hover:bg-zinc-100 cursor-pointer hover:scale-105 active:scale-95"
             }`}
             title={t("home.prevArticle")}
           >
@@ -484,12 +506,12 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <button
             onClick={handleDiscard}
             disabled={isAnimating}
-            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-colors text-sm ${
+            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-micro text-sm ${
               isAnimating
                 ? "opacity-50 cursor-not-allowed"
                 : darkMode
-                  ? "text-stone-400 hover:bg-stone-700 hover:text-red-400"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-red-500"
+                  ? "text-stone-400 hover:bg-stone-700 hover:text-red-400 cursor-pointer hover:scale-105 active:scale-95"
+                  : "text-zinc-500 hover:bg-zinc-100 hover:text-red-500 cursor-pointer hover:scale-105 active:scale-95"
             }`}
             title={t("home.discard")}
           >
@@ -538,12 +560,12 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <button
             onClick={handleShuffle}
             disabled={isShuffling || isAnimating}
-            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-colors text-sm ${
+            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-micro text-sm ${
               isShuffling || isAnimating
                 ? "opacity-50 cursor-not-allowed"
                 : darkMode
-                  ? "text-stone-400 hover:bg-stone-700 hover:text-stone-200"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                  ? "text-stone-400 hover:bg-stone-700 hover:text-stone-200 cursor-pointer hover:scale-105 active:scale-95"
+                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 cursor-pointer hover:scale-105 active:scale-95"
             }`}
             title={t("home.shuffle")}
           >
@@ -560,12 +582,12 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <button
             onClick={handleSave}
             disabled={isAnimating}
-            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-colors text-sm ${
+            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-micro text-sm ${
               isAnimating
                 ? "opacity-50 cursor-not-allowed"
                 : darkMode
-                  ? "text-teal-400 hover:bg-stone-700"
-                  : "text-spira-600 hover:bg-zinc-100"
+                  ? "text-teal-400 hover:bg-stone-700 cursor-pointer hover:scale-105 active:scale-95"
+                  : "text-spira-600 hover:bg-zinc-100 cursor-pointer hover:scale-105 active:scale-95"
             }`}
             title={t("home.save")}
           >
@@ -577,14 +599,14 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <button
             onClick={goNext}
             disabled={currentIndex === articles.length - 1}
-            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-colors text-sm ${
+            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-micro text-sm ${
               currentIndex === articles.length - 1
                 ? darkMode
                   ? "text-stone-600 cursor-not-allowed"
                   : "text-zinc-300 cursor-not-allowed"
                 : darkMode
-                  ? "text-stone-300 hover:bg-stone-700"
-                  : "text-zinc-600 hover:bg-zinc-100"
+                  ? "text-stone-300 hover:bg-stone-700 cursor-pointer hover:scale-105 active:scale-95"
+                  : "text-zinc-600 hover:bg-zinc-100 cursor-pointer hover:scale-105 active:scale-95"
             }`}
             title={t("home.nextArticle")}
           >

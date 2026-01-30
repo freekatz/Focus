@@ -31,13 +31,13 @@ function Section({
 }) {
   return (
     <section className={`rounded-2xl border mb-6 ${
-      darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-zinc-200'
+      darkMode ? 'bg-stone-800/50 border-stone-700' : 'bg-white border-zinc-200'
     }`}>
       <div className={`flex items-center gap-3 px-5 py-4 border-b ${
-        darkMode ? 'border-slate-700' : 'border-zinc-100'
+        darkMode ? 'border-stone-700' : 'border-zinc-100'
       }`}>
         <div className={`p-2 rounded-lg ${
-          darkMode ? 'bg-indigo-500/20 text-indigo-400' : 'bg-spira-100 text-spira-600'
+          darkMode ? 'bg-teal-500/20 text-teal-400' : 'bg-spira-100 text-spira-600'
         }`}>
           {icon}
         </div>
@@ -60,7 +60,7 @@ function Row({
 }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 last:mb-0">
-      <span className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-zinc-700'}`}>
+      <span className={`text-sm font-medium ${darkMode ? 'text-stone-300' : 'text-zinc-700'}`}>
         {label}
       </span>
       <div className="flex-shrink-0">{children}</div>
@@ -125,10 +125,10 @@ function ChangePasswordModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative w-full max-w-md rounded-2xl shadow-xl ${
-        darkMode ? 'bg-slate-800' : 'bg-white'
+        darkMode ? 'bg-stone-800' : 'bg-white'
       }`}>
         <div className={`flex items-center justify-between p-4 border-b ${
-          darkMode ? 'border-slate-700' : 'border-zinc-200'
+          darkMode ? 'border-stone-700' : 'border-zinc-200'
         }`}>
           <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>
             Change Password
@@ -138,7 +138,7 @@ function ChangePasswordModal({
             onClick={onClose}
             onMouseDown={(e) => e.preventDefault()}
             className={`p-2 rounded-full transition-colors ${
-              darkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-zinc-100 text-zinc-500'
+              darkMode ? 'hover:bg-stone-700 text-stone-400' : 'hover:bg-zinc-100 text-zinc-500'
             }`}
           >
             <Icons.X />
@@ -148,7 +148,7 @@ function ChangePasswordModal({
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
             <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
-              darkMode ? 'text-slate-400' : 'text-zinc-500'
+              darkMode ? 'text-stone-400' : 'text-zinc-500'
             }`}>
               Current Password
             </label>
@@ -159,17 +159,17 @@ function ChangePasswordModal({
               required
               className={`w-full px-3 py-2 rounded-lg border text-sm ${
                 darkMode
-                  ? 'bg-slate-900 border-slate-600 text-white focus:border-indigo-500'
+                  ? 'bg-stone-900 border-stone-600 text-white focus:border-teal-500'
                   : 'bg-white border-zinc-300 text-zinc-900 focus:border-spira-500'
               } focus:outline-none focus:ring-1 ${
-                darkMode ? 'focus:ring-indigo-500' : 'focus:ring-spira-500'
+                darkMode ? 'focus:ring-teal-500' : 'focus:ring-spira-500'
               }`}
             />
           </div>
 
           <div>
             <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
-              darkMode ? 'text-slate-400' : 'text-zinc-500'
+              darkMode ? 'text-stone-400' : 'text-zinc-500'
             }`}>
               New Password
             </label>
@@ -180,17 +180,17 @@ function ChangePasswordModal({
               required
               className={`w-full px-3 py-2 rounded-lg border text-sm ${
                 darkMode
-                  ? 'bg-slate-900 border-slate-600 text-white focus:border-indigo-500'
+                  ? 'bg-stone-900 border-stone-600 text-white focus:border-teal-500'
                   : 'bg-white border-zinc-300 text-zinc-900 focus:border-spira-500'
               } focus:outline-none focus:ring-1 ${
-                darkMode ? 'focus:ring-indigo-500' : 'focus:ring-spira-500'
+                darkMode ? 'focus:ring-teal-500' : 'focus:ring-spira-500'
               }`}
             />
           </div>
 
           <div>
             <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
-              darkMode ? 'text-slate-400' : 'text-zinc-500'
+              darkMode ? 'text-stone-400' : 'text-zinc-500'
             }`}>
               Confirm New Password
             </label>
@@ -201,10 +201,10 @@ function ChangePasswordModal({
               required
               className={`w-full px-3 py-2 rounded-lg border text-sm ${
                 darkMode
-                  ? 'bg-slate-900 border-slate-600 text-white focus:border-indigo-500'
+                  ? 'bg-stone-900 border-stone-600 text-white focus:border-teal-500'
                   : 'bg-white border-zinc-300 text-zinc-900 focus:border-spira-500'
               } focus:outline-none focus:ring-1 ${
-                darkMode ? 'focus:ring-indigo-500' : 'focus:ring-spira-500'
+                darkMode ? 'focus:ring-teal-500' : 'focus:ring-spira-500'
               }`}
             />
           </div>
@@ -224,8 +224,8 @@ function ChangePasswordModal({
             disabled={loading}
             className={`w-full py-2.5 rounded-lg font-medium transition-colors ${
               darkMode
-                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                : 'bg-spira-600 hover:bg-spira-700 text-white'
+                ? 'bg-teal-600 hover:bg-teal-500 text-white'
+                : 'bg-spira-600 hover:bg-spira-500 text-white'
             } disabled:opacity-50`}
           >
             {loading ? (
@@ -361,7 +361,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onChange={(e) => updateFormField('unmarked_retention_days', parseInt(e.target.value) || 30)}
             className={`w-20 px-3 py-1.5 rounded-lg border text-sm text-center ${
               darkMode
-                ? 'bg-slate-900 border-slate-600 text-white'
+                ? 'bg-stone-900 border-stone-600 text-white'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-900'
             }`}
           />
@@ -373,7 +373,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onChange={(e) => updateFormField('trash_retention_days', parseInt(e.target.value) || 7)}
             className={`w-20 px-3 py-1.5 rounded-lg border text-sm text-center ${
               darkMode
-                ? 'bg-slate-900 border-slate-600 text-white'
+                ? 'bg-stone-900 border-stone-600 text-white'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-900'
             }`}
           />
@@ -385,7 +385,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onChange={(e) => updateFormField('archive_after_days', parseInt(e.target.value) || 90)}
             className={`w-20 px-3 py-1.5 rounded-lg border text-sm text-center ${
               darkMode
-                ? 'bg-slate-900 border-slate-600 text-white'
+                ? 'bg-stone-900 border-stone-600 text-white'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-900'
             }`}
           />
@@ -396,7 +396,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
       <Section title={t('settings.appearance')} icon={<Icons.Palette />} darkMode={darkMode}>
         {/* Language */}
         <Row label={t('settings.language')} darkMode={darkMode}>
-          <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-zinc-100'}`}>
+          <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-stone-900' : 'bg-zinc-100'}`}>
             {languages.map((lang) => (
               <button
                 key={lang.code}
@@ -406,10 +406,10 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                   language === lang.code
                     ? darkMode
-                      ? 'bg-slate-700 text-white shadow'
+                      ? 'bg-stone-700 text-white shadow'
                       : 'bg-white text-zinc-900 shadow'
                     : darkMode
-                      ? 'text-slate-400 hover:text-slate-300'
+                      ? 'text-stone-400 hover:text-stone-300'
                       : 'text-zinc-500 hover:text-zinc-700'
                 }`}
               >
@@ -421,7 +421,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
 
         {/* Theme Mode */}
         <Row label={t('settings.theme')} darkMode={darkMode}>
-          <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-zinc-100'}`}>
+          <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-stone-900' : 'bg-zinc-100'}`}>
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
@@ -429,10 +429,10 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                 themeMode === 'light'
                   ? darkMode
-                    ? 'bg-slate-700 text-white shadow'
+                    ? 'bg-stone-700 text-white shadow'
                     : 'bg-white text-zinc-900 shadow'
                   : darkMode
-                    ? 'text-slate-400 hover:text-slate-300'
+                    ? 'text-stone-400 hover:text-stone-300'
                     : 'text-zinc-500 hover:text-zinc-700'
               }`}
             >
@@ -446,10 +446,10 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                 themeMode === 'dark'
                   ? darkMode
-                    ? 'bg-slate-700 text-white shadow'
+                    ? 'bg-stone-700 text-white shadow'
                     : 'bg-white text-zinc-900 shadow'
                   : darkMode
-                    ? 'text-slate-400 hover:text-slate-300'
+                    ? 'text-stone-400 hover:text-stone-300'
                     : 'text-zinc-500 hover:text-zinc-700'
               }`}
             >
@@ -463,10 +463,10 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                 themeMode === 'system'
                   ? darkMode
-                    ? 'bg-slate-700 text-white shadow'
+                    ? 'bg-stone-700 text-white shadow'
                     : 'bg-white text-zinc-900 shadow'
                   : darkMode
-                    ? 'text-slate-400 hover:text-slate-300'
+                    ? 'text-stone-400 hover:text-stone-300'
                     : 'text-zinc-500 hover:text-zinc-700'
               }`}
             >
@@ -478,7 +478,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
 
         {/* Font Theme */}
         <Row label={t('settings.font')} darkMode={darkMode}>
-          <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-zinc-100'}`}>
+          <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-stone-900' : 'bg-zinc-100'}`}>
             {fontOptions.map((option) => (
               <button
                 key={option.value}
@@ -491,10 +491,10 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
                 } ${
                   fontTheme === option.value
                     ? darkMode
-                      ? 'bg-slate-700 text-white shadow'
+                      ? 'bg-stone-700 text-white shadow'
                       : 'bg-white text-zinc-900 shadow'
                     : darkMode
-                      ? 'text-slate-400 hover:text-slate-300'
+                      ? 'text-stone-400 hover:text-stone-300'
                       : 'text-zinc-500 hover:text-zinc-700'
                 }`}
               >
@@ -513,7 +513,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onChange={(e) => updateFormField('ai_provider', e.target.value)}
             className={`w-44 px-3 py-1.5 rounded-lg border text-sm ${
               darkMode
-                ? 'bg-slate-900 border-slate-600 text-white'
+                ? 'bg-stone-900 border-stone-600 text-white'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-900'
             }`}
           >
@@ -531,7 +531,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onChange={(e) => updateFormField('ai_model', e.target.value)}
             className={`w-44 px-3 py-1.5 rounded-lg border text-sm ${
               darkMode
-                ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500'
+                ? 'bg-stone-900 border-stone-600 text-white placeholder-stone-500'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-900 placeholder-zinc-400'
             }`}
           />
@@ -544,7 +544,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onChange={(e) => updateFormField('ai_api_key', e.target.value)}
             className={`w-44 px-3 py-1.5 rounded-lg border text-sm ${
               darkMode
-                ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500'
+                ? 'bg-stone-900 border-stone-600 text-white placeholder-stone-500'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-900 placeholder-zinc-400'
             }`}
           />
@@ -557,7 +557,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onChange={(e) => updateFormField('ai_base_url', e.target.value)}
             className={`w-44 px-3 py-1.5 rounded-lg border text-xs ${
               darkMode
-                ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500'
+                ? 'bg-stone-900 border-stone-600 text-white placeholder-stone-500'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-900 placeholder-zinc-400'
             }`}
           />
@@ -569,8 +569,8 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onClick={() => updateFormField('auto_translate_abstract', !formData.auto_translate_abstract)}
             className={`relative w-12 h-6 rounded-full transition-colors ${
               formData.auto_translate_abstract
-                ? darkMode ? 'bg-indigo-600' : 'bg-spira-600'
-                : darkMode ? 'bg-slate-600' : 'bg-zinc-300'
+                ? darkMode ? 'bg-teal-600' : 'bg-spira-600'
+                : darkMode ? 'bg-stone-600' : 'bg-zinc-300'
             }`}
           >
             <span
@@ -592,7 +592,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onChange={(e) => updateFormField('zotero_api_key', e.target.value)}
             className={`w-44 px-3 py-1.5 rounded-lg border text-sm ${
               darkMode
-                ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500'
+                ? 'bg-stone-900 border-stone-600 text-white placeholder-stone-500'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-900 placeholder-zinc-400'
             }`}
           />
@@ -605,7 +605,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onChange={(e) => updateFormField('zotero_library_id', e.target.value)}
             className={`w-44 px-3 py-1.5 rounded-lg border text-sm ${
               darkMode
-                ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500'
+                ? 'bg-stone-900 border-stone-600 text-white placeholder-stone-500'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-900 placeholder-zinc-400'
             }`}
           />
@@ -618,7 +618,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onChange={(e) => updateFormField('zotero_collection', e.target.value)}
             className={`w-44 px-3 py-1.5 rounded-lg border text-sm ${
               darkMode
-                ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500'
+                ? 'bg-stone-900 border-stone-600 text-white placeholder-stone-500'
                 : 'bg-zinc-50 border-zinc-300 text-zinc-900 placeholder-zinc-400'
             }`}
           />
@@ -628,7 +628,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
       {/* RSS Feed */}
       <Section title={t('settings.rssFeed')} icon={<Icons.Sources />} darkMode={darkMode}>
         <Row label={t('settings.feedType')} darkMode={darkMode}>
-          <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-zinc-100'}`}>
+          <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-stone-900' : 'bg-zinc-100'}`}>
             {(['all', 'interested', 'favorite'] as const).map((type) => (
               <button
                 key={type}
@@ -638,10 +638,10 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                   rssFeedType === type
                     ? darkMode
-                      ? 'bg-slate-700 text-white shadow'
+                      ? 'bg-stone-700 text-white shadow'
                       : 'bg-white text-zinc-900 shadow'
                     : darkMode
-                      ? 'text-slate-400 hover:text-slate-300'
+                      ? 'text-stone-400 hover:text-stone-300'
                       : 'text-zinc-500 hover:text-zinc-700'
                 }`}
               >
@@ -658,7 +658,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
               value={exportApi.getRssFeedUrl(rssFeedType)}
               className={`w-56 px-3 py-1.5 rounded-lg border text-sm ${
                 darkMode
-                  ? 'bg-slate-900 border-slate-600 text-slate-300'
+                  ? 'bg-stone-900 border-stone-600 text-stone-300'
                   : 'bg-zinc-50 border-zinc-300 text-zinc-700'
               }`}
             />
@@ -675,7 +675,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
                 rssFeedCopied
                   ? 'bg-green-500 text-white'
                   : darkMode
-                    ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    ? 'bg-stone-700 text-stone-300 hover:bg-stone-600'
                     : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
               }`}
             >
@@ -690,7 +690,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
-              darkMode ? 'bg-indigo-600' : 'bg-spira-600'
+              darkMode ? 'bg-teal-600' : 'bg-spira-600'
             }`}>
               A
             </div>
@@ -698,7 +698,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
               <div className={`font-medium ${darkMode ? 'text-white' : 'text-zinc-900'}`}>
                 {t('settings.adminUser')}
               </div>
-              <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-zinc-500'}`}>
+              <div className={`text-xs ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>
                 {t('settings.singleUserMode')}
               </div>
             </div>
@@ -709,7 +709,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onClick={() => setPasswordModalOpen(true)}
             className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
               darkMode
-                ? 'border-slate-600 text-slate-300 hover:bg-slate-700'
+                ? 'border-stone-600 text-stone-300 hover:bg-stone-700'
                 : 'border-zinc-300 text-zinc-700 hover:bg-zinc-50'
             }`}
           >
@@ -722,12 +722,12 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
       <Section title={t('settings.about')} icon={<Icons.Info />} darkMode={darkMode}>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className={darkMode ? 'text-slate-400' : 'text-zinc-500'}>{t('settings.version')}</span>
-            <span className={darkMode ? 'text-slate-200' : 'text-zinc-800'}>1.0.0 (Beta)</span>
+            <span className={darkMode ? 'text-stone-400' : 'text-zinc-500'}>{t('settings.version')}</span>
+            <span className={darkMode ? 'text-stone-200' : 'text-zinc-800'}>1.0.0 (Beta)</span>
           </div>
           <div className="flex justify-between">
-            <span className={darkMode ? 'text-slate-400' : 'text-zinc-500'}>{t('settings.build')}</span>
-            <span className={darkMode ? 'text-slate-200' : 'text-zinc-800'}>2025.12.16</span>
+            <span className={darkMode ? 'text-stone-400' : 'text-zinc-500'}>{t('settings.build')}</span>
+            <span className={darkMode ? 'text-stone-200' : 'text-zinc-800'}>2025.12.16</span>
           </div>
         </div>
       </Section>
@@ -742,7 +742,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             onClick={handleSaveAll}
             className={`px-6 py-3 rounded-xl text-sm font-medium shadow-lg transition-all ${
               darkMode
-                ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                ? 'bg-teal-600 hover:bg-teal-500 text-white'
                 : 'bg-spira-600 hover:bg-spira-500 text-white'
             } disabled:opacity-50`}
           >
