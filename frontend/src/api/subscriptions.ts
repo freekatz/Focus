@@ -23,11 +23,10 @@ export const subscriptionsApi = {
     return apiClient.get<SubscriptionListResponse>(`/subscriptions/my${query ? `?${query}` : ''}`);
   },
 
-  subscribe: (rssSourceId: number, customFetchInterval?: number) =>
+  subscribe: (rssSourceId: number) =>
     apiClient.post<Subscription>('/subscriptions/subscribe', {
       rss_source_id: rssSourceId,
       is_active: true,
-      custom_fetch_interval: customFetchInterval,
     }),
 
   batchSubscribe: (rssSourceIds: number[]) =>
@@ -36,7 +35,7 @@ export const subscriptionsApi = {
       { rss_source_ids: rssSourceIds }
     ),
 
-  updateSubscription: (subscriptionId: number, data: { is_active?: boolean; custom_fetch_interval?: number }) =>
+  updateSubscription: (subscriptionId: number, data: { is_active?: boolean; custom_refresh_time?: string }) =>
     apiClient.put<Subscription>(`/subscriptions/my/${subscriptionId}`, data),
 
   unsubscribe: (subscriptionId: number) =>

@@ -13,14 +13,30 @@ interface SourcesViewProps {
 
 export function SourcesView({ darkMode }: SourcesViewProps) {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<'my' | 'market'>('my');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  // Persist tab and category state in sessionStorage
+  const [tab, setTab] = useState<'my' | 'market'>(() => {
+    const saved = sessionStorage.getItem('sourcesView_tab');
+    return (saved === 'my' || saved === 'market') ? saved : 'my';
+  });
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    return sessionStorage.getItem('sourcesView_category') || 'all';
+  });
   const [editingFeed, setEditingFeed] = useState<Feed | null>(null);
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Save tab state to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('sourcesView_tab', tab);
+  }, [tab]);
+
+  // Save category state to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('sourcesView_category', selectedCategory);
+  }, [selectedCategory]);
 
   // Fetch feeds based on tab
   const fetchFeeds = useCallback(async () => {
@@ -75,22 +91,16 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
       if (updatedFeed._subscription) {
         // Update subscription settings (my tab)
         await subscriptionsApi.updateSubscription(updatedFeed._subscription.id, {
-          custom_fetch_interval: updatedFeed.refreshRate === 'Default' ? undefined :
-            updatedFeed.refreshRate === '15min' ? 15 :
-            updatedFeed.refreshRate === '30min' ? 30 :
-            updatedFeed.refreshRate === 'Hourly' ? 60 :
-            updatedFeed.refreshRate === '4Hours' ? 240 : 1440,
+          custom_refresh_time: updatedFeed.refreshTime === 'default' ? undefined : updatedFeed.refreshTime,
         });
       } else if (updatedFeed._marketItem) {
         // Update RSS source (market tab)
-        console.log('Updating RSS source, allow_ssl_bypass:', updatedFeed.allow_ssl_bypass);
         await rssApi.update(updatedFeed._marketItem.id, {
           name: updatedFeed.name,
           url: updatedFeed.url,
           category: updatedFeed._marketItem.category,
           description: updatedFeed.description || undefined,
           website_url: updatedFeed.homepage || undefined,
-          allow_ssl_bypass: updatedFeed.allow_ssl_bypass,
         });
       }
       fetchFeeds();
@@ -189,17 +199,23 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
   // Get unique categories
   const categories = getUniqueCategories(feeds);
 
+  // Reset category if it doesn't exist in current feeds (e.g., after tab switch)
+  useEffect(() => {
+    if (selectedCategory !== 'all' && !categories.includes(selectedCategory)) {
+      setSelectedCategory('all');
+    }
+  }, [categories, selectedCategory]);
+
   // Filter Logic
   const filteredFeeds = feeds.filter(f => {
-    const matchCategory = selectedCategory === 'All' || f.category === selectedCategory;
+    const matchCategory = selectedCategory === 'all' || f.category === selectedCategory;
     return matchCategory;
   });
 
   return (
     <div className="animate-fade-in space-y-6 pb-20">
       <header className="flex flex-col gap-4 sticky top-0 z-10 pt-2 backdrop-blur-md">
-        <div className="flex justify-between items-center">
-          <h2 className={`text-3xl font-serif font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>{t('sources.title')}</h2>
+        <div className="flex justify-end items-center">
           <div className="flex items-center gap-3">
             {tab === 'my' ? (
               <button
@@ -226,13 +242,13 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
             )}
             <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-zinc-100'}`}>
             <button
-              onClick={() => { setTab('my'); setSelectedCategory('All'); }}
+              onClick={() => setTab('my')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === 'my' ? (darkMode ? 'bg-slate-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
             >
               {t('sources.mySubs')}
             </button>
             <button
-              onClick={() => { setTab('market'); setSelectedCategory('All'); }}
+              onClick={() => setTab('market')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === 'market' ? (darkMode ? 'bg-slate-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
             >
               {t('sources.discovery')}
@@ -264,7 +280,7 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
                   : (darkMode ? 'bg-slate-800 text-zinc-400 hover:bg-slate-700' : 'bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50')
               }`}
             >
-              {cat}
+              {t(`categories.${cat}`)}
             </button>
           ))}
         </div>
@@ -293,7 +309,7 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
                   </div>
                   <div>
                     <h3 className={`font-medium ${darkMode ? 'text-slate-200' : 'text-zinc-900'}`}>{feed.name}</h3>
-                    <p className="text-xs text-zinc-500">{feed.category}</p>
+                    <p className="text-xs text-zinc-500">{t(`categories.${feed.category}`)}</p>
                   </div>
                 </div>
                 <button

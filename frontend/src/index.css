@@ -41,11 +41,11 @@ html {
   }
 }
 
-/* Dark mode base */
+/* Dark mode base - Warm reading colors (sepia-toned) */
 .dark body,
 body.dark {
-  background-color: #121212;
-  color: rgba(255, 255, 255, 0.87);
+  background-color: #1C1917;  /* warm stone-900 */
+  color: #E7E5E4;  /* warm stone-200 */
 }
 
 /* Hide scrollbar utility */
@@ -58,10 +58,10 @@ body.dark {
   scrollbar-width: none;
 }
 
-/* Custom styled scrollbar - Light mode */
+/* Custom styled scrollbar - Light mode (Claude AI inspired - minimal) */
 .scrollbar-styled::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 .scrollbar-styled::-webkit-scrollbar-track {
@@ -69,21 +69,18 @@ body.dark {
 }
 
 .scrollbar-styled::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: content-box;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
 }
 
 .scrollbar-styled::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
-  background-clip: content-box;
+  background: rgba(0, 0, 0, 0.15);
 }
 
-/* Dark mode scrollbar - subtle white overlay */
+/* Dark mode scrollbar - minimal */
 .scrollbar-styled-dark::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 .scrollbar-styled-dark::-webkit-scrollbar-track {
@@ -91,25 +88,23 @@ body.dark {
 }
 
 .scrollbar-styled-dark::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: content-box;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
 }
 
 .scrollbar-styled-dark::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-  background-clip: content-box;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 /* Firefox scrollbar */
 .scrollbar-styled {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
 }
 
 .scrollbar-styled-dark {
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
 /* Animations from refer prototype */
@@ -200,18 +195,19 @@ body.dark {
 .article-content-light h6 {
   color: #1C1C1E;  /* Primary text for headings */
   font-weight: 600;
-  line-height: 1.3;
-  margin-top: 1.75em;
-  margin-bottom: 0.75em;
-  letter-spacing: -0.02em;
+  line-height: 1.5;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  letter-spacing: -0.01em;
 }
 
-.article-content-light h1 { font-size: 1.875rem; font-weight: 700; }
-.article-content-light h2 { font-size: 1.5rem; }
-.article-content-light h3 { font-size: 1.25rem; }
-.article-content-light h4 { font-size: 1.125rem; }
-.article-content-light h5 { font-size: 1rem; }
-.article-content-light h6 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+/* Uniform font sizing - subtle hierarchy through weight, not size */
+.article-content-light h1 { font-size: 1.125rem; font-weight: 700; }
+.article-content-light h2 { font-size: 1.0625rem; font-weight: 600; }
+.article-content-light h3 { font-size: 1rem; font-weight: 600; }
+.article-content-light h4 { font-size: 1rem; font-weight: 600; }
+.article-content-light h5 { font-size: 1rem; font-weight: 600; }
+.article-content-light h6 { font-size: 1rem; font-weight: 600; color: #636366; }
 
 .article-content-light p {
   margin-bottom: 1.25em;
@@ -344,10 +340,9 @@ body.dark {
 }
 
 /* ===== Article Content Styles - Dark Mode ===== */
-/* Following Google Material Design 3 dark theme guidelines */
-/* Using reduced white brightness (87%) and dark gray surfaces */
+/* Warm reading mode with sepia-toned colors for eye comfort */
 .article-content-dark {
-  color: rgba(255, 255, 255, 0.70);  /* Slightly reduced for body text */
+  color: #D6D3D1;  /* warm stone-300 for body text */
   font-size: 1rem;       /* Base size, scales with responsive html font-size */
   line-height: 1.75;
   letter-spacing: -0.01em;
@@ -366,40 +361,41 @@ body.dark {
 .article-content-dark h4,
 .article-content-dark h5,
 .article-content-dark h6 {
-  color: rgba(255, 255, 255, 0.87);  /* High emphasis text */
+  color: #E7E5E4;  /* warm stone-200 for headings */
   font-weight: 600;
-  line-height: 1.3;
-  margin-top: 1.75em;
-  margin-bottom: 0.75em;
-  letter-spacing: -0.02em;
+  line-height: 1.5;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  letter-spacing: -0.01em;
 }
 
-.article-content-dark h1 { font-size: 1.875rem; font-weight: 700; }
-.article-content-dark h2 { font-size: 1.5rem; }
-.article-content-dark h3 { font-size: 1.25rem; }
-.article-content-dark h4 { font-size: 1.125rem; }
-.article-content-dark h5 { font-size: 1rem; }
-.article-content-dark h6 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+/* Uniform font sizing - subtle hierarchy through weight, not size */
+.article-content-dark h1 { font-size: 1.125rem; font-weight: 700; }
+.article-content-dark h2 { font-size: 1.0625rem; font-weight: 600; }
+.article-content-dark h3 { font-size: 1rem; font-weight: 600; }
+.article-content-dark h4 { font-size: 1rem; font-weight: 600; }
+.article-content-dark h5 { font-size: 1rem; font-weight: 600; }
+.article-content-dark h6 { font-size: 1rem; font-weight: 600; color: #A8A29E; }
 
 .article-content-dark p {
   margin-bottom: 1.25em;
 }
 
 .article-content-dark a {
-  color: #80CBC4;  /* Desaturated teal for dark mode */
+  color: #5EEAD4;  /* teal-300 for warm dark mode */
   text-decoration: none;
-  border-bottom: 1px solid rgba(128, 203, 196, 0.3);
+  border-bottom: 1px solid rgba(94, 234, 212, 0.3);
   transition: border-color 0.2s ease;
 }
 
 .article-content-dark a:hover {
-  border-bottom-color: #80CBC4;
+  border-bottom-color: #5EEAD4;
 }
 
 .article-content-dark strong,
 .article-content-dark b {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.87);
+  color: #E7E5E4;  /* warm stone-200 */
 }
 
 .article-content-dark em,
@@ -408,16 +404,16 @@ body.dark {
 }
 
 .article-content-dark blockquote {
-  border-left: 3px solid #4DB6AC;  /* Desaturated teal accent */
+  border-left: 3px solid #14B8A6;  /* teal-500 accent */
   padding-left: 1.25rem;
   margin: 1.75em 0;
-  color: rgba(255, 255, 255, 0.60);  /* Medium emphasis */
+  color: #A8A29E;  /* warm stone-400 */
   font-style: italic;
 }
 
 .article-content-dark pre {
-  background-color: #1E1E1E;  /* Raised surface */
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: #292524;  /* warm stone-800 raised surface */
+  border: 1px solid #44403C;  /* stone-700 */
   border-radius: 0.75rem;
   padding: 1.25rem;
   overflow-x: auto;
@@ -431,10 +427,10 @@ body.dark {
 }
 
 .article-content-dark :not(pre) > code {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: #292524;  /* warm stone-800 */
   padding: 0.2rem 0.4rem;
   border-radius: 0.375rem;
-  color: #80CBC4;  /* Desaturated teal */
+  color: #5EEAD4;  /* teal-300 */
 }
 
 .article-content-dark ul,
@@ -464,7 +460,7 @@ body.dark {
 .article-content-dark hr {
   border: none;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.12), transparent);
+  background: linear-gradient(to right, transparent, #44403C, transparent);  /* stone-700 */
   margin: 2.5em 0;
 }
 
@@ -484,15 +480,15 @@ body.dark {
 
 .article-content-dark th,
 .article-content-dark td {
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid #44403C;  /* stone-700 */
   padding: 0.75rem 1rem;
   text-align: left;
 }
 
 .article-content-dark th {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: #292524;  /* warm stone-800 */
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.87);
+  color: #E7E5E4;  /* warm stone-200 */
 }
 
 .article-content-dark figure {
@@ -501,14 +497,14 @@ body.dark {
 
 .article-content-dark figcaption {
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.60);
+  color: #A8A29E;  /* warm stone-400 */
   text-align: center;
   margin-top: 0.75rem;
 }
 
 .article-content-dark del {
   text-decoration: line-through;
-  color: rgba(255, 255, 255, 0.38);
+  color: #78716C;  /* warm stone-500 */
 }
 
 /* First element should not have top margin */
@@ -523,11 +519,116 @@ body.dark {
   margin-bottom: 0;
 }
 
+/* Table wrapper for horizontal scroll on wide tables */
+.article-content-light .table-wrapper,
+.article-content-dark .table-wrapper {
+  overflow-x: auto;
+  margin: 1.5em 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.article-content-light .table-wrapper table,
+.article-content-dark .table-wrapper table {
+  margin: 0;
+}
+
+/* Code block styling */
+.article-content-light .code-block,
+.article-content-dark .code-block {
+  margin: 1.5em 0;
+  overflow-x: auto;
+}
+
+/* Inline code styling */
+.article-content-light .inline-code {
+  background-color: #F5F5F4;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.375rem;
+  color: #0d947c;
+  font-family: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 0.875em;
+}
+
+.article-content-dark .inline-code {
+  background-color: #292524;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.375rem;
+  color: #5EEAD4;
+  font-family: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 0.875em;
+}
+
 /* Selection colors */
 .article-content-light ::selection {
   background-color: rgba(13, 148, 124, 0.2);
 }
 
 .article-content-dark ::selection {
-  background-color: rgba(77, 182, 172, 0.3);
+  background-color: rgba(20, 184, 166, 0.3);  /* teal-500 */
+}
+
+/* ===== KaTeX Math Formula Styles ===== */
+/* Base KaTeX styling */
+.article-content-light .katex,
+.article-content-dark .katex {
+  font-size: 1.1em;
+}
+
+/* Light mode math */
+.article-content-light .katex {
+  color: #1C1C1E;
+}
+
+/* Dark mode math */
+.article-content-dark .katex {
+  color: #E7E5E4;
+}
+
+/* Block math (display mode) */
+.article-content-light .katex-display,
+.article-content-dark .katex-display {
+  margin: 1.5em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+
+/* Block math background for dark mode */
+.article-content-dark .katex-display {
+  background-color: rgba(41, 37, 36, 0.5);  /* stone-800 with transparency */
+  border-radius: 0.5rem;
+  padding: 1em;
+}
+
+/* Inline math spacing */
+.article-content-light .katex:not(.katex-display .katex),
+.article-content-dark .katex:not(.katex-display .katex) {
+  padding: 0 0.1em;
+}
+
+/* Math error styling */
+.article-content-light .katex-error,
+.article-content-dark .katex-error {
+  color: #EF4444;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  background-color: rgba(239, 68, 68, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 0.25em;
+}
+
+/* Ensure math formulas in tables display correctly */
+.article-content-light td .katex,
+.article-content-light th .katex,
+.article-content-dark td .katex,
+.article-content-dark th .katex {
+  font-size: 1em;
+}
+
+/* Responsive math - allow horizontal scroll on mobile */
+@media (max-width: 640px) {
+  .article-content-light .katex-display,
+  .article-content-dark .katex-display {
+    font-size: 0.9em;
+  }
 }

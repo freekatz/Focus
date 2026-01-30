@@ -1,6 +1,7 @@
 """
 FastAPI 应用入口
 """
+import asyncio
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
@@ -33,6 +34,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.tasks.scheduler import start_scheduler
     start_scheduler()
     logger.info("Scheduler started")
+
+    # 扫描并处理未完成的 ArXiv 翻译和解读任务
+    from app.tasks.fetch_rss import scan_pending_arxiv_tasks
+    asyncio.create_task(scan_pending_arxiv_tasks())
 
     yield
 

@@ -1,4 +1,9 @@
 import { useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface ArticleContentProps {
   content: string;
@@ -42,6 +47,10 @@ function detectContentType(content: string): ContentType {
     /~~[^~]+~~/,                         // Strikethrough: ~~text~~
     /^\s*[-*_]{3,}\s*$/m,                // Horizontal rule
     /^\|.+\|$/m,                         // Tables
+    /\$\$[\s\S]+?\$\$/,                  // Block math: $$...$$
+    /\$[^$\n]+\$/,                       // Inline math: $...$
+    /\\\[[\s\S]+?\\\]/,                  // Block math: \[...\]
+    /\\\([\s\S]+?\\\)/,                  // Inline math: \(...\)
   ];
 
   let markdownMatches = 0;
@@ -53,6 +62,11 @@ function detectContentType(content: string): ContentType {
 
   // If multiple markdown patterns match, it's likely markdown
   if (markdownMatches >= 2) {
+    return 'markdown';
+  }
+
+  // Also check for math formulas specifically - if found, treat as markdown
+  if (/\$\$[\s\S]+?\$\$|\$[^$\n]+\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)/.test(trimmed)) {
     return 'markdown';
   }
 
@@ -75,86 +89,6 @@ function sanitizeHtml(html: string): string {
   sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
 
   return sanitized;
-}
-
-// Convert Markdown to HTML
-function markdownToHtml(markdown: string): string {
-  let html = markdown;
-
-  // Escape HTML entities first (but preserve existing HTML-like structures)
-  // We'll be more conservative here
-
-  // Code blocks (must be processed first to protect content)
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>');
-
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // Headers
-  html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
-  html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
-  html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
-  html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
-
-  // Bold and italic
-  html = html.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/___([^_]+)___/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
-
-  // Strikethrough
-  html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
-
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-  // Images
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />');
-
-  // Blockquotes
-  html = html.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
-  // Merge consecutive blockquotes
-  html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
-
-  // Horizontal rules
-  html = html.replace(/^[-*_]{3,}$/gm, '<hr />');
-
-  // Unordered lists
-  html = html.replace(/^(\s*)[-*+]\s+(.+)$/gm, '$1<li>$2</li>');
-
-  // Ordered lists
-  html = html.replace(/^(\s*)\d+\.\s+(.+)$/gm, '$1<li>$2</li>');
-
-  // Wrap consecutive li elements in ul/ol
-  html = html.replace(/(<li>[\s\S]*?<\/li>)(\n<li>[\s\S]*?<\/li>)*/g, (match) => {
-    return '<ul>' + match + '</ul>';
-  });
-
-  // Paragraphs: wrap text blocks not already in tags
-  const lines = html.split('\n');
-  const processedLines = lines.map(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return '';
-    // Skip if already wrapped in a block element
-    if (/^<(?:h[1-6]|p|div|ul|ol|li|pre|blockquote|hr|table|tr|td|th)/.test(trimmed)) {
-      return line;
-    }
-    // Skip if it's a closing tag
-    if (/^<\//.test(trimmed)) {
-      return line;
-    }
-    return `<p>${line}</p>`;
-  });
-  html = processedLines.join('\n');
-
-  // Clean up empty paragraphs
-  html = html.replace(/<p>\s*<\/p>/g, '');
-
-  return html;
 }
 
 // Convert plain text to HTML with proper formatting
@@ -184,22 +118,69 @@ function plainTextToHtml(text: string): string {
   return html;
 }
 
+// Markdown content component using react-markdown with KaTeX support
+function MarkdownContent({ content, darkMode }: { content: string; darkMode: boolean }) {
+  return (
+    <article className={`article-content ${darkMode ? 'article-content-dark' : 'article-content-light'}`}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+          // Custom link renderer to open in new tab
+          a: ({ href, children, ...props }) => (
+            <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+              {children}
+            </a>
+          ),
+          // Custom code block renderer
+          code: ({ className, children, ...props }) => {
+            const match = /language-(\w+)/.exec(className || '');
+            const isInline = !match && !className;
+
+            if (isInline) {
+              return <code className="inline-code" {...props}>{children}</code>;
+            }
+
+            return (
+              <pre className={`code-block ${match ? `language-${match[1]}` : ''}`}>
+                <code {...props}>{children}</code>
+              </pre>
+            );
+          },
+          // Custom table renderer for better styling
+          table: ({ children, ...props }) => (
+            <div className="table-wrapper">
+              <table {...props}>{children}</table>
+            </div>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </article>
+  );
+}
+
 export function ArticleContent({ content, darkMode }: ArticleContentProps) {
+  const contentType = useMemo(() => detectContentType(content), [content]);
+
+  // Use react-markdown for markdown content
+  if (contentType === 'markdown') {
+    return <MarkdownContent content={content} darkMode={darkMode} />;
+  }
+
+  // For HTML and plain text, use dangerouslySetInnerHTML
   const processedContent = useMemo(() => {
     if (!content) return '';
-
-    const contentType = detectContentType(content);
 
     switch (contentType) {
       case 'html':
         return sanitizeHtml(content);
-      case 'markdown':
-        return markdownToHtml(content);
       case 'plain':
       default:
         return plainTextToHtml(content);
     }
-  }, [content]);
+  }, [content, contentType]);
 
   return (
     <article

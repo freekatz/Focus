@@ -283,6 +283,25 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
     window.open(link, '_blank', 'noopener,noreferrer');
   };
 
+  const handleReinterpret = async (e: React.MouseEvent, article: Article) => {
+    e.stopPropagation();
+    if (!article._entry?.id) return;
+
+    try {
+      await entriesApi.reinterpret(article._entry.id);
+      // Update local state to show interpreting status
+      setArticles(prev => prev.map(a =>
+        a.id === article.id
+          ? { ...a, _entry: { ...a._entry!, ai_content_type: 'interpreting', ai_summary: null } }
+          : a
+      ));
+      showToast(t('home.reinterpretStarted'), 'success');
+    } catch (error) {
+      console.error('Failed to reinterpret:', error);
+      showToast(t('home.reinterpretFailed'), 'error');
+    }
+  };
+
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -309,8 +328,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
   return (
     <div className="animate-fade-in space-y-4 pb-32 relative">
       {/* Header */}
-      <header className="flex justify-between items-center">
-        <h2 className={`text-3xl font-serif font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>{t('library.title')}</h2>
+      <header className="flex justify-end items-center">
         <span className={`text-sm ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
           {filteredAndSorted.length} {t('library.articles')}
         </span>
@@ -539,10 +557,52 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
                         article._entry?.status === 'trash' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
                         'bg-zinc-100 text-zinc-600 dark:bg-slate-700 dark:text-slate-400'
                       }`}>{getStatusLabel(article._entry?.status || 'unread')}</span>
+                      {/* ArXiv 翻译/解读状态徽章 */}
+                      {article._entry?.link?.includes('arxiv.org') && (
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          article._entry?.ai_content_type === 'arxiv_interpretation'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : article._entry?.ai_content_type === 'error'
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                              : article._entry?.ai_content_type === 'interpreting'
+                                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                : article._entry?.translation_status === 'translating'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                  : article._entry?.translation_status === 'completed'
+                                    ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
+                                    : article._entry?.translation_status === 'pending'
+                                      ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                      : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                        }`}>
+                          {article._entry?.ai_content_type === 'arxiv_interpretation'
+                            ? t('home.interpreted')
+                            : article._entry?.ai_content_type === 'error'
+                              ? t('home.interpretFailed')
+                              : article._entry?.ai_content_type === 'interpreting'
+                                ? t('home.interpreting')
+                                : article._entry?.translation_status === 'translating'
+                                  ? t('library.translating')
+                                  : article._entry?.translation_status === 'completed'
+                                    ? t('library.translated')
+                                    : article._entry?.translation_status === 'pending'
+                                      ? t('library.pendingTranslation')
+                                      : 'ArXiv'}
+                        </span>
+                      )}
                       <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>{article.timestamp}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       {article.isFavorite && <div className="text-yellow-400 scale-75"><Icons.Star /></div>}
+                      {/* Reinterpret button for failed ArXiv articles */}
+                      {article._entry?.link?.includes('arxiv.org') && article._entry?.ai_content_type === 'error' && (
+                        <button
+                          onClick={(e) => handleReinterpret(e, article)}
+                          className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'hover:bg-slate-700 text-orange-400' : 'hover:bg-zinc-100 text-orange-500'}`}
+                          title={t('home.reinterpret')}
+                        >
+                          <Icons.Refresh />
+                        </button>
+                      )}
                       {article._entry?.link && (
                         <button
                           onClick={(e) => openOriginalLink(e, article._entry!.link)}

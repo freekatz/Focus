@@ -137,7 +137,7 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className={`flex h-screen w-full items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-spira-50'}`}>
+      <div className={`flex h-screen w-full items-center justify-center ${darkMode ? 'bg-stone-900' : 'bg-spira-50'}`}>
         <div className="animate-spin h-8 w-8 border-2 border-spira-500 border-t-transparent rounded-full"/>
       </div>
     );
@@ -166,7 +166,7 @@ function App() {
   };
 
   return (
-    <div className={`flex h-screen w-full transition-colors duration-300 ${fontClass} ${darkMode ? 'bg-[#121212] text-[rgba(255,255,255,0.87)]' : 'bg-[#FAFAF9] text-[#1C1C1E]'}`}>
+    <div className={`flex h-screen w-full transition-colors duration-300 ${fontClass} ${darkMode ? 'bg-stone-900 text-stone-200' : 'bg-[#FAFAF9] text-[#1C1C1E]'}`}>
 
       {/* Sidebar (Desktop) */}
       <Sidebar
@@ -199,34 +199,38 @@ function App() {
           />
         )}
 
-        {/* View Container */}
+        {/* View Container - scrollbar at edge */}
         <div
           ref={scrollContainerRef}
           onScroll={(e) => { scrollPositionRef.current = e.currentTarget.scrollTop; }}
-          className={`flex-1 overflow-y-auto p-4 md:p-8 max-w-5xl mx-auto w-full relative ${darkMode ? 'scrollbar-styled-dark' : 'scrollbar-styled'}`}
+          className={`flex-1 overflow-y-auto overflow-x-hidden ${darkMode ? 'scrollbar-styled-dark' : 'scrollbar-styled'}`}
         >
-          {activeTab === 'home' && (
-            <HomeView darkMode={darkMode} />
-          )}
-          {activeTab === 'sources' && (
-            <SourcesView darkMode={darkMode} />
-          )}
-          {activeTab === 'library' && (
-            <LibraryView
-              key={libraryRefreshKey}
-              darkMode={darkMode}
-              onOpenArticle={handleOpenArticle}
-            />
-          )}
-          {activeTab === 'settings' && (
-            <SettingsView
-              darkMode={darkMode}
-              themeMode={themeMode}
-              setThemeMode={setThemeMode}
-              fontTheme={fontTheme}
-              setFontTheme={setFontTheme}
-            />
-          )}
+          <div className="relative w-full min-h-full">
+            <div className="mx-auto flex size-full max-w-5xl flex-col px-4 md:px-8">
+              {activeTab === 'home' && (
+                <HomeView darkMode={darkMode} />
+              )}
+              {activeTab === 'sources' && (
+                <SourcesView darkMode={darkMode} />
+              )}
+              {activeTab === 'library' && (
+                <LibraryView
+                  key={libraryRefreshKey}
+                  darkMode={darkMode}
+                  onOpenArticle={handleOpenArticle}
+                />
+              )}
+              {activeTab === 'settings' && (
+                <SettingsView
+                  darkMode={darkMode}
+                  themeMode={themeMode}
+                  setThemeMode={setThemeMode}
+                  fontTheme={fontTheme}
+                  setFontTheme={setFontTheme}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </main>
 

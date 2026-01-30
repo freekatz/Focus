@@ -1,6 +1,8 @@
 """
 配置管理 API
 """
+from typing import Optional
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +12,20 @@ from app.models.user_config import UserConfig
 from app.schemas.user import UserConfigResponse, UserConfigUpdateRequest
 
 router = APIRouter()
+
+
+class AIValidateRequest(BaseModel):
+    """AI API Key 验证请求"""
+    api_key: str
+    base_url: Optional[str] = None
+    model: Optional[str] = None
+
+
+class AIValidateResponse(BaseModel):
+    """AI API Key 验证响应"""
+    valid: bool
+    error: Optional[str] = None
+    model: Optional[str] = None
 
 
 async def get_user_config(db: AsyncSession, user_id: int) -> UserConfig:
@@ -30,7 +46,6 @@ async def get_config(db: DbSession, current_user: CurrentUser):
     # 构建响应，添加 API Key 配置状态标识
     return UserConfigResponse(
         id=config.id,
-        rss_fetch_interval=config.rss_fetch_interval,
         unmarked_retention_days=config.unmarked_retention_days,
         trash_retention_days=config.trash_retention_days,
         archive_after_days=config.archive_after_days,
@@ -39,6 +54,7 @@ async def get_config(db: DbSession, current_user: CurrentUser):
         ai_base_url=config.ai_base_url,
         ai_api_key_configured=bool(config.ai_api_key),  # 不返回实际 key，只返回是否已配置
         sage_prompt=config.sage_prompt,
+        auto_translate_abstract=getattr(config, 'auto_translate_abstract', True),
         zotero_library_id=config.zotero_library_id,
         zotero_library_type=config.zotero_library_type,
         zotero_collection=config.zotero_collection,
@@ -66,7 +82,6 @@ async def update_config(
     # 返回响应，添加 API Key 配置状态标识
     return UserConfigResponse(
         id=config.id,
-        rss_fetch_interval=config.rss_fetch_interval,
         unmarked_retention_days=config.unmarked_retention_days,
         trash_retention_days=config.trash_retention_days,
         archive_after_days=config.archive_after_days,
@@ -75,6 +90,7 @@ async def update_config(
         ai_base_url=config.ai_base_url,
         ai_api_key_configured=bool(config.ai_api_key),
         sage_prompt=config.sage_prompt,
+        auto_translate_abstract=getattr(config, 'auto_translate_abstract', True),
         zotero_library_id=config.zotero_library_id,
         zotero_library_type=config.zotero_library_type,
         zotero_collection=config.zotero_collection,
@@ -82,3 +98,23 @@ async def update_config(
         theme=config.theme,
         entries_per_page=config.entries_per_page,
     )
+
+
+@router.post("/ai/validate", response_model=AIValidateResponse)
+async def validate_ai_api_key_endpoint(
+    data: AIValidateRequest,
+    current_user: CurrentUser,
+):
+    """验证 AI API Key 是否有效
+
+    发送一个简单的测试请求来验证 API Key 的有效性。
+    可用于在保存配置前先验证 API Key。
+    """
+    from app.services.arxiv_service import validate_ai_api_key
+
+    result = await validate_ai_api_key(
+        api_key=data.api_key,
+        base_url=data.base_url,
+        model=data.model,
+    )
+    return AIValidateResponse(**result)

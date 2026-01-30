@@ -6,7 +6,7 @@ export interface Subscription {
   id: number;
   rss_source_id: number;
   is_active: boolean;
-  custom_fetch_interval: number | null;
+  custom_refresh_time: string | null;  // 每日刷新时间，如 "08:00"
   created_at: string;
   rss_source_name: string;
   rss_source_url: string;
@@ -17,6 +17,17 @@ export interface Subscription {
   last_fetched_at: string | null;
   last_fetch_status: string;
 }
+
+// 可用的刷新时间选项
+export const REFRESH_TIME_OPTIONS = [
+  { value: 'default', label: 'Default' },
+  { value: '06:00', label: '6:00 AM' },
+  { value: '08:00', label: '8:00 AM' },
+  { value: '09:00', label: '9:00 AM' },
+  { value: '12:00', label: '12:00 PM' },
+  { value: '18:00', label: '6:00 PM' },
+  { value: '20:00', label: '8:00 PM' },
+] as const;
 
 export interface SubscriptionListResponse {
   items: Subscription[];
@@ -34,7 +45,6 @@ export interface RssMarketItem {
   icon_url: string | null;
   entry_count: number;
   is_subscribed: boolean;
-  allow_ssl_bypass: boolean;
 }
 
 export interface RssMarketListResponse {
@@ -51,19 +61,11 @@ export interface Feed {
   subscribed: boolean;
   description?: string;
   homepage?: string;
-  refreshRate?: string;
-  allow_ssl_bypass?: boolean;
+  refreshTime?: string;  // 每日刷新时间，如 "08:00" 或 "default"
   // Keep original data for API calls
   _subscription?: Subscription;
   _marketItem?: RssMarketItem;
 }
 
-// Category display mapping (unified simple labels)
-export const CATEGORY_DISPLAY: Record<RssCategory, string> = {
-  blog: 'Blog',
-  community: 'Community',
-  paper: 'Research',
-  social: 'Social',
-  news_podcast: 'News',
-  other: 'Other',
-};
+// All category options for filters - use with i18n: t(`categories.${category}`)
+export const CATEGORY_OPTIONS: RssCategory[] = ['blog', 'community', 'paper', 'social', 'news_podcast', 'other'];

@@ -1,7 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icons } from '../../components/icons/Icons';
-import { configApi, aiApi, exportApi, authApi } from '../../api';
+import { configApi, exportApi, authApi } from '../../api';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
 import type { UserConfig } from '../../types';
@@ -261,12 +261,11 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
     ai_model: '',
     ai_api_key: '',
     ai_base_url: '',
+    auto_translate_abstract: true,
     zotero_api_key: '',
     zotero_library_id: '',
     zotero_collection: '',
-    systemPrompt: '',
   });
-  const [isDefaultPrompt, setIsDefaultPrompt] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
 
   const fontOptions: { value: FontTheme; label: string }[] = [
@@ -278,10 +277,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const [configData, promptData] = await Promise.all([
-          configApi.get(),
-          aiApi.getPrompt(),
-        ]);
+        const configData = await configApi.get();
         setConfig(configData);
         setFormData({
           unmarked_retention_days: configData.unmarked_retention_days ?? 30,
@@ -291,12 +287,11 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
           ai_model: configData.ai_model ?? '',
           ai_api_key: '',
           ai_base_url: configData.ai_base_url ?? '',
+          auto_translate_abstract: configData.auto_translate_abstract ?? true,
           zotero_api_key: '',
           zotero_library_id: configData.zotero_library_id ?? '',
           zotero_collection: configData.zotero_collection ?? '',
-          systemPrompt: promptData.prompt || '',
         });
-        setIsDefaultPrompt(promptData.is_default);
       } catch (error) {
         console.error('Failed to load config:', error);
       } finally {
@@ -306,7 +301,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
     loadConfig();
   }, []);
 
-  const updateFormField = (field: keyof typeof formData, value: string | number) => {
+  const updateFormField = (field: keyof typeof formData, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
   };
@@ -322,6 +317,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
         ai_provider: formData.ai_provider,
         ai_model: formData.ai_model,
         ai_base_url: formData.ai_base_url || undefined,
+        auto_translate_abstract: formData.auto_translate_abstract,
         zotero_library_id: formData.zotero_library_id || undefined,
         zotero_collection: formData.zotero_collection || undefined,
       };
@@ -335,12 +331,6 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
       }
 
       await configApi.update(updates);
-
-      // Save prompt if changed
-      if (formData.systemPrompt !== config?.sage_prompt) {
-        await aiApi.updatePrompt(formData.systemPrompt);
-        setIsDefaultPrompt(false);
-      }
 
       showToast(t('settings.settingsSaved'), 'success');
       setHasChanges(false);
@@ -361,13 +351,7 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
   }
 
   return (
-    <div className="animate-fade-in pb-20 max-w-3xl mx-auto">
-      <header className="mb-8">
-        <h2 className={`text-3xl font-serif font-bold ${darkMode ? 'text-white' : 'text-zinc-900'}`}>
-          {t('settings.title')}
-        </h2>
-      </header>
-
+    <div className="animate-fade-in pb-20 space-y-6">
       {/* General Settings */}
       <Section title={t('settings.general')} icon={<Icons.Sliders />} darkMode={darkMode}>
         <Row label={t('settings.unreadRetention')} darkMode={darkMode}>
@@ -578,45 +562,24 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
             }`}
           />
         </Row>
-
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-zinc-700'}`}>
-              {t('settings.systemPrompt')}
-            </span>
-            {!isDefaultPrompt && (
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={async () => {
-                  try {
-                    const response = await aiApi.resetPrompt();
-                    updateFormField('systemPrompt', response.prompt);
-                    setIsDefaultPrompt(true);
-                    showToast(t('settings.promptReset'), 'success');
-                  } catch {
-                    showToast(t('settings.promptResetFailed'), 'error');
-                  }
-                }}
-                className={`text-xs font-medium ${
-                  darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-spira-600 hover:text-spira-700'
-                }`}
-              >
-                {t('settings.resetToDefault')}
-              </button>
-            )}
-          </div>
-          <textarea
-            className={`w-full h-48 px-3 py-2 rounded-lg border text-xs font-mono leading-relaxed resize-none ${
-              darkMode
-                ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder-slate-500'
-                : 'bg-zinc-50 border-zinc-300 text-zinc-800 placeholder-zinc-400'
+        <Row label={t('settings.autoTranslateAbstract')} darkMode={darkMode}>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => updateFormField('auto_translate_abstract', !formData.auto_translate_abstract)}
+            className={`relative w-12 h-6 rounded-full transition-colors ${
+              formData.auto_translate_abstract
+                ? darkMode ? 'bg-indigo-600' : 'bg-spira-600'
+                : darkMode ? 'bg-slate-600' : 'bg-zinc-300'
             }`}
-            placeholder={t('settings.promptPlaceholder')}
-            value={formData.systemPrompt}
-            onChange={(e) => updateFormField('systemPrompt', e.target.value)}
-          />
-        </div>
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                formData.auto_translate_abstract ? 'translate-x-6' : ''
+              }`}
+            />
+          </button>
+        </Row>
       </Section>
 
       {/* Zotero Integration */}

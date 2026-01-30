@@ -163,14 +163,23 @@ class ZoteroClient:
                 clean_content = re.sub(r'<[^>]+>', '', entry.content)
                 template["abstractNote"] = clean_content[:1000].strip()
 
-            # AI 总结放在「额外」(extra) 字段
+            # AI 内容放在「额外」(extra) 字段
             extra_parts = []
-            if entry.ai_summary:
-                extra_parts.append(f"AI 总结：{entry.ai_summary}")
-            if entry.ai_content_type:
-                extra_parts.append(f"内容类型：{entry.ai_content_type}")
+
+            # ArXiv 论文：优先使用深度解读，其次是翻译摘要
+            if entry.ai_content_type == "arxiv_interpretation" and entry.ai_summary:
+                extra_parts.append(f"【AI 深度解读】\n{entry.ai_summary}")
+            elif entry.translated_abstract:
+                # 有翻译摘要
+                if entry.brief_summary:
+                    extra_parts.append(f"【简要总结】\n{entry.brief_summary}")
+                extra_parts.append(f"【翻译摘要】\n{entry.translated_abstract}")
+            elif entry.ai_summary:
+                # 其他 AI 总结
+                extra_parts.append(f"【AI 总结】\n{entry.ai_summary}")
+
             if extra_parts:
-                template["extra"] = "\n\n".join(extra_parts)
+                template["extra"] = "\n\n---\n\n".join(extra_parts)
 
             # 添加标签
             tags = []

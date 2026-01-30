@@ -1,6 +1,9 @@
 // Backend entry status enum values
 export type EntryStatus = 'unread' | 'interested' | 'trash' | 'favorite' | 'archived';
 
+// Translation status for ArXiv articles
+export type TranslationStatus = 'pending' | 'translating' | 'completed' | 'failed';
+
 // Backend entry response type
 export interface Entry {
   id: number;
@@ -22,6 +25,9 @@ export interface Entry {
   fetched_at: string;
   created_at: string;
   rss_source_name: string | null;
+  translated_abstract: string | null;
+  brief_summary: string | null;
+  translation_status: TranslationStatus | null;
 }
 
 export interface EntryListResponse {

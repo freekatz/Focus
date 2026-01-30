@@ -1,8 +1,7 @@
 export interface UserConfig {
   id: number;
   user_id: number;
-  // RSS config
-  rss_fetch_interval: number;
+  // Retention config
   unmarked_retention_days: number;
   trash_retention_days: number;
   archive_after_days: number;
@@ -13,6 +12,8 @@ export interface UserConfig {
   ai_api_key_configured: boolean;
   ai_base_url: string | null;
   sage_prompt: string | null;
+  // ArXiv config
+  auto_translate_abstract: boolean;
   // Zotero config
   zotero_library_id: string | null;
   zotero_library_type: string | null;
@@ -30,6 +31,7 @@ export interface UserConfigUpdateRequest {
   ai_api_key?: string;
   ai_base_url?: string;
   sage_prompt?: string;
+  auto_translate_abstract?: boolean;
   zotero_library_id?: string;
   zotero_library_type?: string;
   zotero_api_key?: string;

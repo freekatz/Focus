@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icons } from '../../components/icons/Icons';
 import type { Feed } from '../../types';
-import { CATEGORY_DISPLAY, type RssCategory } from '../../types/subscription';
-
-// Build categories from shared CATEGORY_DISPLAY
-const CATEGORIES = (Object.entries(CATEGORY_DISPLAY) as [RssCategory, string][]).map(
-  ([value, label]) => ({ value, label })
-);
+import { CATEGORY_OPTIONS, type RssCategory } from '../../types/subscription';
 
 interface SourceConfigModalProps {
   feed: Feed;
@@ -21,7 +16,7 @@ interface SourceConfigModalProps {
 
 export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRefresh, darkMode }: SourceConfigModalProps) {
   const { t } = useTranslation();
-  const [formData, setFormData] = useState<Feed>({ ...feed, allow_ssl_bypass: feed.allow_ssl_bypass ?? true });
+  const [formData, setFormData] = useState<Feed>({ ...feed });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshResult, setRefreshResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -95,15 +90,15 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
                     if (formData._marketItem) {
                       setFormData({
                         ...formData,
-                        category: CATEGORY_DISPLAY[e.target.value as RssCategory] || e.target.value,
+                        category: e.target.value,
                         _marketItem: { ...formData._marketItem, category: e.target.value as RssCategory }
                       });
                     }
                   }}
                   className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-zinc-50 border-zinc-200'}`}
                 >
-                  {CATEGORIES.map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  {CATEGORY_OPTIONS.map(cat => (
+                    <option key={cat} value={cat}>{t(`categories.${cat}`)}</option>
                   ))}
                 </select>
               </div>
@@ -115,40 +110,21 @@ export function SourceConfigModal({ feed, type, onClose, onSave, onDelete, onRef
                 <label className="block text-xs font-medium uppercase text-zinc-500 mb-1">{t('sources.description')}</label>
                 <textarea name="description" value={formData.description || ''} onChange={handleChange} className={`w-full p-2 rounded-lg border h-20 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-zinc-50 border-zinc-200'}`} />
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="block text-xs font-medium uppercase text-zinc-500">{t('sources.allowSslBypass')}</label>
-                  <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>{t('sources.allowSslBypassDesc')}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, allow_ssl_bypass: !formData.allow_ssl_bypass })}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${
-                    formData.allow_ssl_bypass
-                      ? (darkMode ? 'bg-indigo-600' : 'bg-spira-600')
-                      : (darkMode ? 'bg-slate-700' : 'bg-zinc-200')
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-transform ${
-                      darkMode ? 'bg-slate-300' : 'bg-white'
-                    } ${formData.allow_ssl_bypass ? 'translate-x-5' : 'translate-x-0'}`}
-                  />
-                </button>
-              </div>
             </>
           )}
 
           {type === 'my' && (
             <>
               <div>
-                <label className="block text-xs font-medium uppercase text-zinc-500 mb-1">{t('sources.autoRefreshInterval')}</label>
-                <select name="refreshRate" value={formData.refreshRate || 'Daily'} onChange={handleChange} className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-zinc-50 border-zinc-200'}`}>
-                  <option value="15min">{t('sources.every15min')}</option>
-                  <option value="30min">{t('sources.every30min')}</option>
-                  <option value="Hourly">{t('sources.hourly')}</option>
-                  <option value="4Hours">{t('sources.every4hours')}</option>
-                  <option value="Daily">{t('sources.daily')}</option>
+                <label className="block text-xs font-medium uppercase text-zinc-500 mb-1">{t('sources.refreshTime')}</label>
+                <select name="refreshTime" value={formData.refreshTime || 'default'} onChange={handleChange} className={`w-full p-2 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-zinc-50 border-zinc-200'}`}>
+                  <option value="default">{t('sources.daily')}</option>
+                  <option value="06:00">{t('sources.daily6am')}</option>
+                  <option value="08:00">{t('sources.daily8am')}</option>
+                  <option value="09:00">{t('sources.daily9am')}</option>
+                  <option value="12:00">{t('sources.daily12pm')}</option>
+                  <option value="18:00">{t('sources.daily6pm')}</option>
+                  <option value="20:00">{t('sources.daily8pm')}</option>
                 </select>
               </div>
 

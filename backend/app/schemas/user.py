@@ -39,7 +39,6 @@ class UserResponse(BaseModel):
 class UserConfigResponse(BaseModel):
     """用户配置响应"""
     id: int
-    rss_fetch_interval: int
     unmarked_retention_days: int
     trash_retention_days: int
     archive_after_days: int
@@ -48,6 +47,7 @@ class UserConfigResponse(BaseModel):
     ai_base_url: Optional[str]
     ai_api_key_configured: bool = False  # 标识 AI API Key 是否已配置
     sage_prompt: Optional[str]
+    auto_translate_abstract: bool = True  # 是否自动翻译 ArXiv 摘要
     zotero_library_id: Optional[str]
     zotero_library_type: str
     zotero_collection: Optional[str]
@@ -60,7 +60,6 @@ class UserConfigResponse(BaseModel):
 
 class UserConfigUpdateRequest(BaseModel):
     """用户配置更新请求"""
-    rss_fetch_interval: Optional[int] = Field(None, ge=5, le=1440)
     unmarked_retention_days: Optional[int] = Field(None, ge=1, le=365)
     trash_retention_days: Optional[int] = Field(None, ge=1, le=90)
     archive_after_days: Optional[int] = Field(None, ge=30, le=365)
@@ -69,6 +68,7 @@ class UserConfigUpdateRequest(BaseModel):
     ai_api_key: Optional[str] = None
     ai_base_url: Optional[str] = None
     sage_prompt: Optional[str] = None
+    auto_translate_abstract: Optional[bool] = None  # 是否自动翻译 ArXiv 摘要
     zotero_library_id: Optional[str] = None
     zotero_library_type: Optional[str] = None
     zotero_api_key: Optional[str] = None

@@ -1,6 +1,7 @@
 """
 文章条目 API
 """
+import asyncio
 from datetime import datetime
 from typing import Optional, Literal
 
@@ -18,6 +19,7 @@ from app.schemas.entry import (
     EntryStatsResponse,
 )
 from app.services import entry_service
+from app.services.arxiv_service import is_arxiv_entry
 
 router = APIRouter()
 
@@ -49,6 +51,8 @@ def entry_to_response(entry) -> EntryResponse:
         exported_to_zotero=entry.exported_to_zotero,
         fetched_at=entry.fetched_at,
         created_at=entry.created_at,
+        translated_abstract=getattr(entry, 'translated_abstract', None),
+        translation_status=getattr(entry, 'translation_status', None),
         rss_source_name=source_name,
     )
 
@@ -102,7 +106,10 @@ async def list_unread_entries(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
-    """获取未读条目列表"""
+    """获取未读条目列表
+
+    注意：ArXiv 文章只有翻译完成后才会返回，未翻译的 ArXiv 文章会在后台自动翻译。
+    """
     skip = (page - 1) * page_size
     items, total = await entry_service.get_entries(
         db,
@@ -110,6 +117,7 @@ async def list_unread_entries(
         period=period,
         skip=skip,
         limit=page_size,
+        exclude_untranslated_arxiv=True,  # 排除未翻译的 ArXiv 文章
     )
 
     return EntryListResponse(
@@ -176,12 +184,30 @@ async def update_entry_status(
     db: DbSession,
     current_user: CurrentUser,
 ):
-    """更新条目状态"""
+    """更新条目状态
+
+    当文章被保存（标记为 interested）时，如果是 ArXiv 文章且未解读，
+    会在后台触发解读任务。
+    """
     entry = await entry_service.get_entry_by_id(db, entry_id)
     if not entry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
 
     updated = await entry_service.update_entry_status(db, entry, data.status)
+
+    # 如果是保存操作且是 ArXiv 文章，触发后台解读
+    if data.status == EntryStatus.INTERESTED and is_arxiv_entry(entry):
+        # 检查是否需要解读：未解读或解读失败都需要重新解读
+        needs_interpretation = (
+            not entry.ai_summary or
+            entry.ai_content_type == "error" or
+            entry.ai_content_type is None
+        )
+        # 排除正在解读中的
+        if needs_interpretation and entry.ai_content_type != "interpreting":
+            from app.tasks.fetch_rss import interpret_arxiv_entry
+            asyncio.create_task(interpret_arxiv_entry(entry.id))
+
     return entry_to_response(updated)
 
 
@@ -191,7 +217,33 @@ async def batch_update_status(
     db: DbSession,
     current_user: CurrentUser,
 ):
-    """批量更新条目状态"""
+    """批量更新条目状态
+
+    当批量保存（标记为 interested）时，会为所有需要解读的 ArXiv 文章触发后台解读任务。
+    """
+    # 如果是保存操作，需要获取文章详情来触发解读
+    if data.status == EntryStatus.INTERESTED:
+        from app.tasks.fetch_rss import interpret_arxiv_entry
+
+        # 获取所有文章
+        entries = await entry_service.get_entries_by_ids(db, data.ids)
+
+        # 先更新状态
+        updated_count = await entry_service.batch_update_status(db, data.ids, data.status)
+
+        # 为需要解读的 ArXiv 文章触发后台任务
+        for entry in entries:
+            if is_arxiv_entry(entry):
+                needs_interpretation = (
+                    not entry.ai_summary or
+                    entry.ai_content_type == "error" or
+                    entry.ai_content_type is None
+                )
+                if needs_interpretation and entry.ai_content_type != "interpreting":
+                    asyncio.create_task(interpret_arxiv_entry(entry.id))
+
+        return EntryBatchResponse(updated_count=updated_count)
+
     updated_count = await entry_service.batch_update_status(db, data.ids, data.status)
     return EntryBatchResponse(updated_count=updated_count)
 
@@ -232,3 +284,41 @@ async def update_entry_notes(
 
     updated = await entry_service.update_entry_notes(db, entry, data.notes)
     return entry_to_response(updated)
+
+
+@router.post("/{entry_id}/reinterpret", response_model=EntryResponse)
+async def reinterpret_entry(
+    entry_id: int,
+    db: DbSession,
+    current_user: CurrentUser,
+):
+    """重新解读 ArXiv 文章
+
+    仅对 ArXiv 文章有效，会清除之前的解读状态并重新开始解读。
+    适用于解读失败或长时间处于解读中状态的文章。
+    """
+    entry = await entry_service.get_entry_by_id(db, entry_id)
+    if not entry:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+
+    # 检查是否是 ArXiv 文章
+    if not is_arxiv_entry(entry):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only ArXiv entries can be reinterpreted"
+        )
+
+    # 重置解读状态
+    entry.ai_summary = None
+    entry.ai_content_type = None
+    entry.ai_processed_at = None
+    entry.interpretation_file = None
+    await db.commit()
+
+    # 触发重新解读
+    from app.tasks.fetch_rss import interpret_arxiv_entry
+    asyncio.create_task(interpret_arxiv_entry(entry.id))
+
+    # 重新获取更新后的条目
+    await db.refresh(entry)
+    return entry_to_response(entry)

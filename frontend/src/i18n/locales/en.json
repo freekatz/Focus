@@ -25,7 +25,7 @@
     "parsing": "Parsing..."
   },
   "nav": {
-    "home": "Focus",
+    "home": "Home",
     "sources": "Sources",
     "library": "Library",
     "settings": "Settings",
@@ -85,7 +85,8 @@
     "feedUrlCopied": "Feed URL copied",
     "promptReset": "Prompt reset to default",
     "promptResetFailed": "Failed to reset prompt",
-    "enterApiKey": "Enter API key"
+    "enterApiKey": "Enter API key",
+    "autoTranslateAbstract": "Auto-translate ArXiv Abstracts"
   },
   "password": {
     "changePassword": "Change Password",
@@ -137,8 +138,6 @@
     "validUrl": "Valid RSS feed",
     "invalidUrl": "Invalid RSS feed",
     "getFeedInfo": "Get Feed Info",
-    "allowSslBypass": "Allow SSL Bypass",
-    "allowSslBypassDesc": "Allow bypass SSL certificate verification when fetching fails",
     "following": "Following",
     "follow": "Follow",
     "refreshAllFeeds": "Refresh all feeds",
@@ -150,6 +149,13 @@
     "foundNewArticles": "Found {{count}} new article(s)",
     "alreadyUpToDate": "Already up to date",
     "refreshFeedFailed": "Refresh failed",
+    "refreshTime": "Daily Refresh Time",
+    "daily6am": "Daily 6:00 AM",
+    "daily8am": "Daily 8:00 AM",
+    "daily9am": "Daily 9:00 AM",
+    "daily12pm": "Daily 12:00 PM",
+    "daily6pm": "Daily 6:00 PM",
+    "daily8pm": "Daily 8:00 PM",
     "deleteConfirmTitle": "Delete Source",
     "deleteConfirmMessage": "Are you sure you want to delete \"{{name}}\"? This will remove the source and all its unread articles.",
     "pleaseEnterUrl": "Please enter a URL",
@@ -201,7 +207,10 @@
     "articlesSaved": "{{count}} article(s) saved",
     "failedToDiscard": "Failed to discard articles",
     "failedToFavorite": "Failed to favorite articles",
-    "failedToSave": "Failed to save articles"
+    "failedToSave": "Failed to save articles",
+    "translating": "Translating...",
+    "translated": "Translated",
+    "pendingTranslation": "Pending"
   },
   "entry": {
     "title": "Title",
@@ -229,7 +238,26 @@
     "unreadEntries": "Unread Entries",
     "allCaughtUp": "All caught up",
     "allCaughtUpDesc": "You've processed all incoming items. Enjoy your focus time or check your Library.",
-    "insight": "Insight"
+    "insight": "Insight",
+    "originalAbstract": "Original Abstract",
+    "translatedAbstract": "Translated Abstract",
+    "briefSummary": "Key Points",
+    "aiInterpretation": "AI Interpretation",
+    "interpreted": "Interpreted",
+    "interpreting": "Interpreting...",
+    "interpretingArticle": "Interpreting article...",
+    "interpretFailed": "Interpret Failed",
+    "reinterpret": "Reinterpret",
+    "reinterpretStarted": "Reinterpretation started",
+    "reinterpretFailed": "Failed to start reinterpretation",
+    "translationFailed": "Translation Failed",
+    "retryTranslation": "Retry Translation",
+    "discard": "Skip",
+    "save": "Save",
+    "shuffle": "Shuffle",
+    "prevArticle": "Previous",
+    "nextArticle": "Next",
+    "goToArticle": "Go to"
   },
   "errors": {
     "networkError": "Network error. Please check your connection.",
@@ -237,5 +265,14 @@
     "unauthorized": "Please login to continue.",
     "notFound": "Resource not found.",
     "unknown": "An unknown error occurred."
+  },
+  "categories": {
+    "all": "All",
+    "blog": "Blog",
+    "community": "Community",
+    "paper": "Research",
+    "social": "Social",
+    "news_podcast": "News",
+    "other": "Other"
   }
 }

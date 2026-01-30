@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../../components/icons/Icons';
 import { ArticleContent } from '../../components/shared/ArticleContent';
 import { shareApi, type ShareDetailResponse } from '../../api/share';
 import type { Entry } from '../../types';
+
+// Check if article is from ArXiv
+function isArxivEntry(entry: Entry): boolean {
+  const link = entry.link || "";
+  if (link.includes("arxiv.org")) return true;
+  const sourceName = (entry.rss_source_name || "").toLowerCase();
+  return sourceName.includes("arxiv");
+}
 
 interface ShareViewProps {
   code: string;
@@ -10,10 +19,133 @@ interface ShareViewProps {
 }
 
 export function ShareView({ code, darkMode }: ShareViewProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shareData, setShareData] = useState<ShareDetailResponse | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  // Render entry content based on ArXiv status (same logic as ReadingModal)
+  const renderEntryContent = (entry: Entry) => {
+    const isArxiv = isArxivEntry(entry);
+    const hasInterpretation = entry.ai_summary && entry.ai_content_type === 'arxiv_interpretation';
+    const translatedAbstract = entry.translated_abstract;
+    const briefSummary = entry.brief_summary;
+    const isTranslationCompleted = entry.translation_status === 'completed';
+
+    if (!isArxiv) {
+      // Non-ArXiv: show original content
+      return <ArticleContent content={entry.content || ''} darkMode={darkMode} />;
+    }
+
+    // ArXiv article with interpretation
+    if (hasInterpretation) {
+      return (
+        <>
+          {/* Original Abstract - Collapsible */}
+          <details className="mb-6 group">
+            <summary
+              className={`cursor-pointer flex items-center gap-2 text-sm font-medium ${
+                darkMode ? "text-slate-400 hover:text-slate-200" : "text-zinc-500 hover:text-zinc-700"
+              }`}
+            >
+              <span className="transform transition-transform group-open:rotate-90">▶</span>
+              {t("home.originalAbstract")}
+            </summary>
+            <div className="mt-4 pl-6">
+              <ArticleContent content={entry.content || ''} darkMode={darkMode} />
+            </div>
+          </details>
+
+          {/* AI Interpretation */}
+          <section>
+            <h2
+              className={`text-lg font-semibold mb-4 flex items-center gap-2 ${
+                darkMode ? "text-slate-200" : "text-zinc-800"
+              }`}
+            >
+              <span className={darkMode ? "text-teal-400" : "text-spira-600"}>
+                <Icons.Sparkles />
+              </span>
+              {t("home.aiInterpretation")}
+            </h2>
+            <ArticleContent content={entry.ai_summary!} darkMode={darkMode} />
+          </section>
+        </>
+      );
+    }
+
+    // ArXiv article with translation but no interpretation
+    if (isTranslationCompleted || translatedAbstract) {
+      return (
+        <>
+          {/* Brief Summary - Key Points */}
+          {briefSummary && (
+            <section className="mb-6">
+              <div
+                className={`rounded-lg p-4 ${
+                  darkMode
+                    ? "bg-teal-900/20 border border-teal-800/30"
+                    : "bg-spira-50 border border-spira-200"
+                }`}
+              >
+                <h2
+                  className={`text-base font-semibold mb-2 flex items-center gap-2 ${
+                    darkMode ? "text-teal-300" : "text-spira-700"
+                  }`}
+                >
+                  <Icons.Sparkles />
+                  {t("home.briefSummary")}
+                </h2>
+                <p
+                  className={`text-sm leading-relaxed ${
+                    darkMode ? "text-slate-300" : "text-zinc-700"
+                  }`}
+                >
+                  {briefSummary}
+                </p>
+              </div>
+            </section>
+          )}
+
+          {/* Original Abstract - Collapsible */}
+          <details className="mb-6 group">
+            <summary
+              className={`cursor-pointer flex items-center gap-2 text-sm font-medium ${
+                darkMode ? "text-slate-400 hover:text-slate-200" : "text-zinc-500 hover:text-zinc-700"
+              }`}
+            >
+              <span className="transform transition-transform group-open:rotate-90">▶</span>
+              {t("home.originalAbstract")}
+            </summary>
+            <div className="mt-4 pl-6">
+              <ArticleContent content={entry.content || ''} darkMode={darkMode} />
+            </div>
+          </details>
+
+          {/* Translated Abstract */}
+          {translatedAbstract && (
+            <section className="mb-6">
+              <h2
+                className={`text-lg font-semibold mb-4 flex items-center gap-2 ${
+                  darkMode ? "text-slate-200" : "text-zinc-800"
+                }`}
+              >
+                <span className={darkMode ? "text-teal-400" : "text-spira-600"}>
+                  <Icons.Language />
+                </span>
+                {t("home.translatedAbstract")}
+              </h2>
+              <ArticleContent content={translatedAbstract} darkMode={darkMode} />
+            </section>
+          )}
+        </>
+      );
+    }
+
+    // ArXiv article not translated yet: show original content
+    return <ArticleContent content={entry.content || ''} darkMode={darkMode} />;
+  };
 
   useEffect(() => {
     const fetchShare = async () => {
@@ -144,14 +276,31 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      {/* Source tag */}
-                      {entry.rss_source_name && (
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-2 ${
-                          darkMode ? 'bg-slate-700 text-slate-300' : 'bg-spira-100 text-spira-700'
-                        }`}>
-                          {entry.rss_source_name}
-                        </span>
-                      )}
+                      {/* Source tag and ArXiv status */}
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        {entry.rss_source_name && (
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                            darkMode ? 'bg-slate-700 text-slate-300' : 'bg-spira-100 text-spira-700'
+                          }`}>
+                            {entry.rss_source_name}
+                          </span>
+                        )}
+                        {isArxivEntry(entry) && (
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                            entry.ai_summary && entry.ai_content_type === 'arxiv_interpretation'
+                              ? darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'
+                              : entry.translation_status === 'completed'
+                                ? darkMode ? 'bg-teal-900/30 text-teal-400' : 'bg-teal-100 text-teal-700'
+                                : darkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-700'
+                          }`}>
+                            {entry.ai_summary && entry.ai_content_type === 'arxiv_interpretation'
+                              ? t("home.interpreted")
+                              : entry.translation_status === 'completed'
+                                ? t("library.translated")
+                                : 'ArXiv'}
+                          </span>
+                        )}
+                      </div>
 
                       {/* Title - clickable to open original */}
                       <h2 className="mb-2 line-clamp-2">
@@ -179,12 +328,12 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
                         {entry.published_at && <span>{formatDate(entry.published_at)}</span>}
                       </div>
 
-                      {/* AI Summary preview when collapsed */}
-                      {expandedId !== entry.id && entry.ai_summary && (
+                      {/* Preview when collapsed - show brief_summary or ai_summary */}
+                      {expandedId !== entry.id && (entry.brief_summary || entry.ai_summary) && (
                         <p className={`mt-3 text-sm line-clamp-2 ${
                           darkMode ? 'text-slate-300' : 'text-zinc-600'
                         }`}>
-                          {entry.ai_summary}
+                          {entry.brief_summary || entry.ai_summary}
                         </p>
                       )}
                     </div>
@@ -201,27 +350,7 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
                 {/* Expanded Content */}
                 {expandedId === entry.id && (
                   <div className="p-5 pt-4">
-                    {/* AI Summary */}
-                    {entry.ai_summary && (
-                      <div className={`mb-6 p-4 rounded-xl ${
-                        darkMode ? 'bg-slate-700/50' : 'bg-spira-50'
-                      }`}>
-                        <div className={`flex items-center gap-2 mb-2 text-sm font-medium ${
-                          darkMode ? 'text-indigo-400' : 'text-spira-600'
-                        }`}>
-                          <span className="w-4 h-4"><Icons.Sparkles /></span>
-                          AI Summary
-                        </div>
-                        <p className={darkMode ? 'text-slate-200' : 'text-zinc-700'}>
-                          {entry.ai_summary}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Full Content */}
-                    {entry.content && (
-                      <ArticleContent content={entry.content} darkMode={darkMode} />
-                    )}
+                    {renderEntryContent(entry)}
                   </div>
                 )}
               </article>

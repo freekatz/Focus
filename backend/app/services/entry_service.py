@@ -23,8 +23,15 @@ async def get_entries(
     is_read: Optional[bool] = None,
     skip: int = 0,
     limit: int = 20,
+    exclude_untranslated_arxiv: bool = False,
 ) -> Tuple[List[Entry], int]:
-    """获取条目列表"""
+    """获取条目列表
+
+    Args:
+        exclude_untranslated_arxiv: 如果为 True，排除未翻译完成的 ArXiv 文章
+    """
+    from app.models.entry import TranslationStatus
+
     query = select(Entry).options(selectinload(Entry.rss_source))
 
     # 状态筛选
@@ -56,6 +63,16 @@ async def get_entries(
     # 已读筛选
     if is_read is not None:
         query = query.where(Entry.is_read == is_read)
+
+    # 排除未翻译的 ArXiv 文章
+    # ArXiv 文章（link 包含 arxiv.org）必须翻译完成才显示，非 ArXiv 文章正常显示
+    if exclude_untranslated_arxiv:
+        query = query.where(
+            or_(
+                ~Entry.link.contains('arxiv.org'),  # 非 ArXiv 文章
+                Entry.translation_status == TranslationStatus.COMPLETED.value,  # 或已翻译完成
+            )
+        )
 
     # 获取总数
     count_query = select(func.count()).select_from(query.subquery())
@@ -346,11 +363,27 @@ async def cleanup_expired_entries(db: AsyncSession, unmarked_days: int, trash_da
     return deleted_count
 
 
-async def shuffle_unread_entries(db: AsyncSession) -> int:
-    """随机打乱未读条目的显示顺序"""
-    # 获取所有未读条目
+async def shuffle_unread_entries(db: AsyncSession, source_id: Optional[int] = None) -> int:
+    """
+    随机打乱未读条目的显示顺序
+
+    使用批量 CASE WHEN 更新，避免 N+1 查询问题
+
+    Args:
+        db: 数据库会话
+        source_id: 可选的源 ID，如果指定则只打乱该源的条目
+
+    Returns:
+        打乱的条目数量
+    """
+    # 构建查询条件
+    conditions = [Entry.status == EntryStatus.UNREAD]
+    if source_id is not None:
+        conditions.append(Entry.rss_source_id == source_id)
+
+    # 获取所有符合条件的条目 ID
     result = await db.execute(
-        select(Entry.id).where(Entry.status == EntryStatus.UNREAD)
+        select(Entry.id).where(and_(*conditions))
     )
     entry_ids = [row[0] for row in result.all()]
 
@@ -359,17 +392,26 @@ async def shuffle_unread_entries(db: AsyncSession) -> int:
 
     # 生成随机顺序
     random.shuffle(entry_ids)
+    total = len(entry_ids)
 
-    # 批量更新 display_order
-    for order, entry_id in enumerate(entry_ids):
-        await db.execute(
-            update(Entry)
-            .where(Entry.id == entry_id)
-            .values(display_order=len(entry_ids) - order)  # 倒序，让第一个有最大的 order
-        )
+    # 使用 CASE WHEN 批量更新（单次查询替代 N 次更新）
+    # 构建: CASE WHEN id=1 THEN 100 WHEN id=2 THEN 99 ... END
+    case_conditions = [
+        (Entry.id == eid, total - i)  # 倒序，让第一个有最大的 order
+        for i, eid in enumerate(entry_ids)
+    ]
+
+    case_stmt = case(*case_conditions, else_=Entry.display_order)
+
+    await db.execute(
+        update(Entry)
+        .where(Entry.id.in_(entry_ids))
+        .values(display_order=case_stmt)
+    )
 
     await db.commit()
-    return len(entry_ids)
+    logger.info(f"Shuffled {total} unread entries" + (f" for source {source_id}" if source_id else ""))
+    return total
 
 
 async def archive_old_entries(db: AsyncSession, archive_after_days: int) -> int:

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icons } from '../icons/Icons';
 import { rssApi } from '../../api';
-import { CATEGORY_DISPLAY, type RssCategory } from '../../types/subscription';
+import { CATEGORY_OPTIONS } from '../../types/subscription';
 
 interface AddSourceModalProps {
   isOpen: boolean;
@@ -10,11 +10,6 @@ interface AddSourceModalProps {
   onSuccess: () => void;
   darkMode: boolean;
 }
-
-// Build categories from shared CATEGORY_DISPLAY
-const CATEGORIES = (Object.entries(CATEGORY_DISPLAY) as [RssCategory, string][]).map(
-  ([value, label]) => ({ value, label })
-);
 
 export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSourceModalProps) {
   const { t } = useTranslation();
@@ -24,7 +19,6 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
   const [description, setDescription] = useState('');
   const [homepage, setHomepage] = useState('');
   const [category, setCategory] = useState('blog');
-  const [allowSslBypass, setAllowSslBypass] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,8 +34,7 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
     setError(null);
 
     try {
-      console.log('Parsing URL with allowSslBypass:', allowSslBypass);
-      const response = await rssApi.parseUrl(url, allowSslBypass);
+      const response = await rssApi.parseUrl(url);
       setName(response.title || '');
       setDescription(response.description || '');
       setStep('confirm');
@@ -62,14 +55,12 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
     setError(null);
 
     try {
-      console.log('Creating source with allowSslBypass:', allowSslBypass);
       await rssApi.create({
         name: name.trim(),
         url: url.trim(),
         category,
         description: description.trim() || undefined,
         website_url: homepage.trim() || undefined,
-        allow_ssl_bypass: allowSslBypass,
       });
       onSuccess();
       handleClose();
@@ -87,7 +78,6 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
     setDescription('');
     setHomepage('');
     setCategory('blog');
-    setAllowSslBypass(true);
     setError(null);
     onClose();
   };
@@ -223,8 +213,8 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                       : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:ring-spira-200'
                   }`}
                 >
-                  {CATEGORIES.map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  {CATEGORY_OPTIONS.map(cat => (
+                    <option key={cat} value={cat}>{t(`categories.${cat}`)}</option>
                   ))}
                 </select>
               </div>
