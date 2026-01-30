@@ -10,7 +10,7 @@ interface ExportModalProps {
   darkMode: boolean;
 }
 
-type ExportTab = "share" | "zotero" | "copy";
+type ExportTab = "share" | "zotero" | "copy" | "download";
 
 export function ExportModal({
   isOpen,
@@ -120,10 +120,104 @@ export function ExportModal({
     }
   };
 
+  const handleDownloadMarkdown = () => {
+    // Generate markdown content from AI summaries
+    const markdownContent = articles
+      .map((a) => {
+        const entry = a._entry;
+        const lines: string[] = [];
+
+        lines.push(`# ${a.title}`);
+        lines.push("");
+
+        if (entry?.rss_source_name) {
+          lines.push(`**Source:** ${entry.rss_source_name}`);
+        }
+        if (a.author) {
+          lines.push(`**Author:** ${a.author}`);
+        }
+        if (entry?.published_at) {
+          lines.push(`**Published:** ${new Date(entry.published_at).toLocaleDateString()}`);
+        }
+        if (entry?.link) {
+          lines.push(`**Link:** ${entry.link}`);
+        }
+        lines.push("");
+
+        // AI Summary / Brief Summary
+        if (entry?.ai_summary) {
+          lines.push("## AI Summary");
+          lines.push("");
+          lines.push(entry.ai_summary);
+          lines.push("");
+        } else if (entry?.brief_summary) {
+          lines.push("## Summary");
+          lines.push("");
+          lines.push(entry.brief_summary);
+          lines.push("");
+        }
+
+        // Translated Abstract (for ArXiv)
+        if (entry?.translated_abstract) {
+          lines.push("## Translated Abstract");
+          lines.push("");
+          lines.push(entry.translated_abstract);
+          lines.push("");
+        }
+
+        lines.push("---");
+        lines.push("");
+
+        return lines.join("\n");
+      })
+      .join("\n");
+
+    // Create and download file
+    const blob = new Blob([markdownContent], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+
+    // Generate filename with ArXiv ID and timestamp
+    const timestamp = new Date().toISOString().slice(0, 16).replace(/[T:]/g, "-");
+    let filename: string;
+
+    if (articles.length === 1) {
+      const article = articles[0];
+      const entry = article._entry;
+      // Extract ArXiv ID from link (e.g., https://arxiv.org/abs/2401.12345)
+      const arxivMatch = entry?.link?.match(/arxiv\.org\/abs\/(\d+\.\d+)/);
+      const arxivId = arxivMatch ? arxivMatch[1] : null;
+
+      if (arxivId) {
+        // ArXiv article: arxiv-2401.12345-Title-2024-01-31-14-30.md
+        const shortTitle = article.title.slice(0, 30).replace(/[/\\?%*:|"<>]/g, "-").trim();
+        filename = `arxiv-${arxivId}-${shortTitle}-${timestamp}.md`;
+      } else {
+        // Regular article: Title-SourceName-2024-01-31-14-30.md
+        const shortTitle = article.title.slice(0, 40).replace(/[/\\?%*:|"<>]/g, "-").trim();
+        const sourceName = entry?.rss_source_name?.slice(0, 15).replace(/[/\\?%*:|"<>]/g, "-") || "focus";
+        filename = `${shortTitle}-${sourceName}-${timestamp}.md`;
+      }
+    } else {
+      // Multiple articles: focus-export-5篇-2024-01-31-14-30.md
+      filename = `focus-export-${articles.length}篇-${timestamp}.md`;
+    }
+
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setMessage({ type: "success", text: "Markdown file downloaded!" });
+  };
+
   const tabs: { id: ExportTab; label: string; icon: ReactNode }[] = [
     { id: "share", label: "Share", icon: <Icons.Link /> },
     { id: "zotero", label: "Zotero", icon: <Icons.Download /> },
     { id: "copy", label: "Copy", icon: <Icons.Share /> },
+    { id: "download", label: "Download", icon: <Icons.Download /> },
   ];
 
   return (
@@ -348,6 +442,67 @@ export function ExportModal({
                 }`}
               >
                 Copy to Clipboard
+              </button>
+            </div>
+          )}
+
+          {activeTab === "download" && (
+            <div className="space-y-4">
+              <div
+                className={`p-3 rounded-lg ${
+                  darkMode ? "bg-theme-muted" : "bg-theme-muted"
+                }`}
+              >
+                <p
+                  className={`text-body-sm ${
+                    darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
+                  }`}
+                >
+                  Download AI summaries as a Markdown file, including article metadata, AI analysis, and translations.
+                </p>
+              </div>
+
+              <div
+                className={`p-3 rounded-lg max-h-32 overflow-y-auto ${
+                  darkMode ? "bg-theme-muted" : "bg-theme-muted"
+                }`}
+              >
+                {articles.map((a, i) => {
+                  const hasAiContent = a._entry?.ai_summary || a._entry?.brief_summary || a._entry?.translated_abstract;
+                  return (
+                    <div
+                      key={a.id}
+                      className={`text-body-sm py-1 flex items-center gap-2 ${
+                        i > 0
+                          ? "border-t " +
+                            (darkMode ? "border-theme-border" : "border-theme-border")
+                          : ""
+                      }`}
+                    >
+                      <span className={hasAiContent ? "text-theme-success" : "text-theme-text-muted"}>
+                        {hasAiContent ? "✓" : "○"}
+                      </span>
+                      <span
+                        className={`font-medium truncate flex-1 ${
+                          darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
+                        }`}
+                      >
+                        {a.title}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={handleDownloadMarkdown}
+                className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
+                  darkMode
+                    ? "bg-theme-accent hover:bg-theme-accent-hover text-white"
+                    : "bg-theme-accent hover:bg-theme-accent-hover text-white"
+                }`}
+              >
+                Download Markdown
               </button>
             </div>
           )}
