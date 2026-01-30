@@ -213,15 +213,15 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
   });
 
   return (
-    <div className="animate-fade-in space-y-6 pb-20">
-      <header className="flex flex-col gap-4 sticky top-0 z-10 pt-2 backdrop-blur-md">
+    <div className="animate-fade-in space-y-6 pb-20 pt-4 md:pt-6">
+      <header className="flex flex-col gap-4 sticky top-0 z-10 backdrop-blur-md">
         <div className="flex justify-end items-center">
           <div className="flex items-center gap-3">
             {tab === 'my' ? (
               <button
                 onClick={handleRefreshAll}
                 disabled={refreshing || feeds.length === 0}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl transition-colors ${
                   refreshing || feeds.length === 0
                     ? (darkMode ? 'bg-teal-600/50 text-white/50 cursor-not-allowed' : 'bg-spira-600/50 text-white/50 cursor-not-allowed')
                     : (darkMode ? 'bg-teal-600 hover:bg-teal-500 text-white' : 'bg-spira-600 hover:bg-spira-500 text-white')
@@ -235,7 +235,7 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
             ) : (
               <button
                 onClick={() => setAddModalOpen(true)}
-                className={`p-2 rounded-lg transition-colors ${darkMode ? 'bg-teal-600 hover:bg-teal-500 text-white' : 'bg-spira-600 hover:bg-spira-500 text-white'}`}
+                className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl transition-colors ${darkMode ? 'bg-teal-600 hover:bg-teal-500 text-white' : 'bg-spira-600 hover:bg-spira-500 text-white'}`}
               >
                 <Icons.Plus />
               </button>
@@ -243,13 +243,13 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
             <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-stone-800' : 'bg-zinc-100'}`}>
             <button
               onClick={() => setTab('my')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === 'my' ? (darkMode ? 'bg-stone-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
+              className={`min-h-touch px-4 text-ui-sm font-medium rounded-lg transition-all ${tab === 'my' ? (darkMode ? 'bg-stone-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
             >
               {t('sources.mySubs')}
             </button>
             <button
               onClick={() => setTab('market')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${tab === 'market' ? (darkMode ? 'bg-stone-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
+              className={`min-h-touch px-4 text-ui-sm font-medium rounded-lg transition-all ${tab === 'market' ? (darkMode ? 'bg-stone-700 text-white shadow' : 'bg-white text-zinc-900 shadow') : 'text-zinc-500 hover:text-zinc-700'}`}
             >
               {t('sources.discovery')}
             </button>
@@ -259,7 +259,7 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
 
         {/* Refresh Message */}
         {refreshMessage && (
-          <div className={`px-4 py-2 rounded-lg text-sm text-center transition-all ${
+          <div className={`px-4 py-3 rounded-xl text-body-sm text-center transition-all ${
             refreshMessage.type === 'success'
               ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-600')
               : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-50 text-red-600')
@@ -274,7 +274,7 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
+              className={`whitespace-nowrap min-h-touch px-4 rounded-full text-caption font-bold uppercase tracking-wider transition-colors ${
                 selectedCategory === cat
                   ? (darkMode ? 'bg-teal-600 text-white' : 'bg-spira-600 text-white')
                   : (darkMode ? 'bg-stone-800 text-zinc-400 hover:bg-stone-700' : 'bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50')
@@ -293,7 +293,7 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredFeeds.length === 0 ? (
-            <div className="col-span-full text-center py-10 opacity-50 italic">
+            <div className="col-span-full text-center py-10 opacity-50 italic text-body-sm">
               {t('sources.noSourcesInCategory')}
             </div>
           ) : (
@@ -301,20 +301,20 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
               <div
                 key={feed.id}
                 onClick={() => setEditingFeed(feed)}
-                className={`flex items-center justify-between p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-white border-zinc-200'}`}
+                className={`flex items-center justify-between p-4 md:p-5 rounded-2xl border transition-all hover:shadow-md cursor-pointer ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-white border-zinc-200'}`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-serif font-bold ${darkMode ? 'bg-stone-700 text-teal-300' : 'bg-spira-100 text-spira-700'}`}>
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-lg font-serif font-bold ${darkMode ? 'bg-stone-700 text-teal-300' : 'bg-spira-100 text-spira-700'}`}>
                     {feed.name[0]}
                   </div>
                   <div>
-                    <h3 className={`font-medium ${darkMode ? 'text-stone-200' : 'text-zinc-900'}`}>{feed.name}</h3>
-                    <p className="text-xs text-zinc-500">{t(`categories.${feed.category}`)}</p>
+                    <h3 className={`text-body-sm font-medium ${darkMode ? 'text-stone-200' : 'text-zinc-900'}`}>{feed.name}</h3>
+                    <p className="text-caption text-zinc-500">{t(`categories.${feed.category}`)}</p>
                   </div>
                 </div>
                 <button
                   onClick={(e) => toggleFeed(feed.id, e)}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors min-w-[90px] ${
+                  className={`min-h-touch px-4 rounded-xl text-caption font-bold uppercase tracking-wider transition-colors min-w-[90px] ${
                     feed.subscribed
                       ? (darkMode ? 'bg-stone-700 text-stone-300 hover:bg-red-900/30 hover:text-red-400' : 'bg-zinc-100 text-zinc-600 hover:bg-red-50 hover:text-red-500')
                       : (darkMode ? 'bg-teal-600 text-white hover:bg-teal-500' : 'bg-zinc-900 text-white hover:bg-zinc-700')

@@ -326,14 +326,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
   const letters = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
 
   return (
-    <div className="animate-fade-in space-y-4 pb-32 relative">
-      {/* Header */}
-      <header className="flex justify-end items-center">
-        <span className={`text-sm ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>
-          {filteredAndSorted.length} {t('library.articles')}
-        </span>
-      </header>
-
+    <div className="animate-fade-in space-y-4 pb-32 pt-4 md:pt-6 relative">
       {/* Search + Filter + Sort Row */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
@@ -342,23 +335,23 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
             placeholder={t('library.searchArticles')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2.5 rounded-xl border outline-none focus:ring-2 transition-all ${darkMode ? 'bg-stone-800 border-stone-700 focus:ring-teal-500 text-white placeholder-stone-500' : 'bg-white border-zinc-200 focus:ring-spira-200 text-zinc-900 placeholder-zinc-400'}`}
+            className={`w-full min-h-touch pl-10 pr-4 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${darkMode ? 'bg-stone-800 border-stone-700 focus:ring-teal-500 text-white placeholder-stone-500' : 'bg-white border-zinc-200 focus:ring-spira-200 text-zinc-900 placeholder-zinc-400'}`}
           />
-          <div className="absolute left-3 top-2.5 text-zinc-400">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
             <Icons.Search />
           </div>
         </div>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-micro cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
+          className={`flex items-center gap-2 min-h-touch px-4 rounded-xl border transition-micro cursor-pointer active:scale-[0.98] ${
             showFilters || hasActiveFilters
               ? (darkMode ? 'bg-teal-600 border-teal-500 text-white' : 'bg-spira-600 border-spira-500 text-white')
               : (darkMode ? 'bg-stone-800 border-stone-700 text-stone-300 hover:border-stone-600' : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300')
           }`}
         >
           <Icons.Filter />
-          <span className="text-sm font-medium">{t('library.filter')}</span>
+          <span className="text-ui-sm font-medium">{t('library.filter')}</span>
           {hasActiveFilters && (
             <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${darkMode ? 'bg-teal-500' : 'bg-spira-500'}`}>
               {statusFilters.size + (categoryFilter !== 'all' ? 1 : 0) + (yearFilter !== 'all' ? 1 : 0) + (letterFilter !== 'all' ? 1 : 0)}
@@ -369,7 +362,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
         {hasActiveFilters && (
           <button
             onClick={clearAllFilters}
-            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border transition-micro cursor-pointer hover:scale-[1.02] active:scale-[0.98] text-sm font-medium ${
+            className={`flex items-center gap-1.5 min-h-touch px-3 rounded-xl border transition-micro cursor-pointer active:scale-[0.98] text-ui-sm font-medium ${
               darkMode ? 'border-stone-700 text-stone-400 hover:text-stone-200 hover:border-stone-600' : 'border-zinc-200 text-zinc-500 hover:text-zinc-700 hover:border-zinc-300'
             }`}
           >
@@ -381,10 +374,10 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
         <div className={`flex rounded-xl border overflow-hidden ${darkMode ? 'border-stone-700' : 'border-zinc-200'}`}>
           <button
             onClick={() => toggleSort('date')}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-micro cursor-pointer ${
+            className={`flex items-center gap-1.5 min-h-touch px-3 text-ui-sm font-medium transition-micro cursor-pointer ${
               sortField === 'date'
                 ? (darkMode ? 'bg-stone-700 text-white' : 'bg-zinc-100 text-zinc-900')
-                : (darkMode ? 'bg-stone-800 text-stone-400 hover:text-stone-200 hover:bg-stone-750' : 'bg-white text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50')
+                : (darkMode ? 'bg-stone-800 text-stone-400 hover:text-stone-200 hover:bg-stone-700' : 'bg-white text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50')
             }`}
           >
             {sortField === 'date' && sortOrder === 'desc' ? <Icons.SortDesc /> : <Icons.SortAsc />}
@@ -392,10 +385,10 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
           </button>
           <button
             onClick={() => toggleSort('title')}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-l transition-micro cursor-pointer ${
+            className={`flex items-center gap-1.5 min-h-touch px-3 text-ui-sm font-medium border-l transition-micro cursor-pointer ${
               sortField === 'title'
                 ? (darkMode ? 'bg-stone-700 text-white border-stone-600' : 'bg-zinc-100 text-zinc-900 border-zinc-200')
-                : (darkMode ? 'bg-stone-800 text-stone-400 hover:text-stone-200 hover:bg-stone-750 border-stone-700' : 'bg-white text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 border-zinc-200')
+                : (darkMode ? 'bg-stone-800 text-stone-400 hover:text-stone-200 hover:bg-stone-700 border-stone-700' : 'bg-white text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 border-zinc-200')
             }`}
           >
             {sortField === 'title' && sortOrder === 'desc' ? <Icons.SortDesc /> : <Icons.SortAsc />}
@@ -655,14 +648,18 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
+        <div className="flex items-center justify-center gap-3 pt-4">
+          <span className={`text-caption ${darkMode ? 'text-stone-500' : 'text-zinc-400'}`}>
+            {filteredAndSorted.length} {t('library.articles')}
+          </span>
+          <div className="flex items-center gap-1">
           <button
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className={`p-2 rounded-lg transition-micro ${
+            className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl transition-micro ${
               currentPage === 1
                 ? (darkMode ? 'text-stone-600 cursor-not-allowed' : 'text-zinc-300 cursor-not-allowed')
-                : (darkMode ? 'text-stone-400 hover:bg-stone-800 cursor-pointer hover:scale-110 active:scale-95' : 'text-zinc-500 hover:bg-zinc-100 cursor-pointer hover:scale-110 active:scale-95')
+                : (darkMode ? 'text-stone-400 hover:bg-stone-800 cursor-pointer active:scale-95' : 'text-zinc-500 hover:bg-zinc-100 cursor-pointer active:scale-95')
             }`}
           >
             <Icons.ChevronLeft />
@@ -684,7 +681,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-micro cursor-pointer hover:scale-110 active:scale-95 ${
+                  className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl text-ui-sm font-medium transition-micro cursor-pointer active:scale-95 ${
                     currentPage === page
                       ? (darkMode ? 'bg-teal-600 text-white' : 'bg-spira-600 text-white')
                       : (darkMode ? 'text-stone-400 hover:bg-stone-800' : 'text-zinc-500 hover:bg-zinc-100')
@@ -699,14 +696,15 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className={`p-2 rounded-lg transition-micro ${
+            className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl transition-micro ${
               currentPage === totalPages
                 ? (darkMode ? 'text-stone-600 cursor-not-allowed' : 'text-zinc-300 cursor-not-allowed')
-                : (darkMode ? 'text-stone-400 hover:bg-stone-800 cursor-pointer hover:scale-110 active:scale-95' : 'text-zinc-500 hover:bg-zinc-100 cursor-pointer hover:scale-110 active:scale-95')
+                : (darkMode ? 'text-stone-400 hover:bg-stone-800 cursor-pointer active:scale-95' : 'text-zinc-500 hover:bg-zinc-100 cursor-pointer active:scale-95')
             }`}
           >
             <Icons.ChevronRight />
           </button>
+          </div>
         </div>
       )}
 
@@ -719,7 +717,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
           <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-0.5 md:gap-1 p-1.5 md:p-2 rounded-full shadow-2xl transition-micro-slow max-w-[95vw] backdrop-blur-sm ${selectedIds.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'} ${darkMode ? 'bg-stone-800/95 border border-stone-700 shadow-stone-900/50' : 'bg-white/95 border border-zinc-200 shadow-zinc-300/50'}`}>
             <button
               onClick={() => setSelectedIds(new Set())}
-              className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-3 py-2 rounded-full font-medium text-sm transition-micro cursor-pointer hover:scale-105 active:scale-95 ${darkMode ? 'hover:bg-stone-700 text-stone-400' : 'hover:bg-zinc-100 text-zinc-500'}`}
+              className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'hover:bg-stone-700 text-stone-400' : 'hover:bg-zinc-100 text-zinc-500'}`}
               title="Clear selection"
             >
               <Icons.X /> <span className="text-xs">{selectedIds.size}</span>
@@ -729,7 +727,7 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
               // Only show Save button for trashed articles
               <button
                 onClick={handleBulkSave}
-                className={`flex items-center gap-1.5 md:gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-full font-medium text-sm transition-micro cursor-pointer hover:scale-105 active:scale-95 ${darkMode ? 'bg-teal-600 hover:bg-teal-500 text-white' : 'bg-spira-600 hover:bg-spira-500 text-white'}`}
+                className={`flex items-center justify-center gap-1.5 md:gap-2 min-h-touch px-4 md:px-5 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'bg-teal-600 hover:bg-teal-500 text-white' : 'bg-spira-600 hover:bg-spira-500 text-white'}`}
               >
                 <Icons.Check /> <span>{t('library.restore')}</span>
               </button>
@@ -738,27 +736,27 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
               <>
                 <button
                   onClick={handleBulkDiscard}
-                  className="flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-2 rounded-full hover:bg-red-50 text-red-500 font-medium text-sm transition-micro cursor-pointer hover:scale-105 active:scale-95"
+                  className="flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full hover:bg-red-50 text-red-500 font-medium text-ui-sm transition-micro cursor-pointer active:scale-95"
                 >
                   <Icons.Trash /> <span className="hidden md:inline">{t('library.discard')}</span>
                 </button>
                 <div className={`w-px h-5 md:h-6 ${darkMode ? 'bg-stone-700' : 'bg-zinc-200'}`}></div>
                 <button
                   onClick={handleBulkSave}
-                  className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-2 rounded-full font-medium text-sm transition-micro cursor-pointer hover:scale-105 active:scale-95 ${darkMode ? 'hover:bg-stone-700 text-stone-200' : 'hover:bg-zinc-50 text-zinc-700'}`}
+                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'hover:bg-stone-700 text-stone-200' : 'hover:bg-zinc-50 text-zinc-700'}`}
                 >
                   <Icons.Check /> <span className="hidden md:inline">{t('common.save')}</span>
                 </button>
                 <button
                   onClick={handleBulkFavorite}
-                  className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-2 rounded-full font-medium text-sm transition-micro cursor-pointer hover:scale-105 active:scale-95 ${darkMode ? 'hover:bg-stone-700 text-stone-200' : 'hover:bg-zinc-50 text-zinc-700'}`}
+                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'hover:bg-stone-700 text-stone-200' : 'hover:bg-zinc-50 text-zinc-700'}`}
                 >
                   <Icons.Star /> <span className="hidden md:inline">{t('library.favorite')}</span>
                 </button>
                 <div className={`w-px h-5 md:h-6 ${darkMode ? 'bg-stone-700' : 'bg-zinc-200'}`}></div>
                 <button
                   onClick={() => setExportModalOpen(true)}
-                  className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-2 rounded-full font-medium text-sm transition-micro cursor-pointer hover:scale-105 active:scale-95 ${darkMode ? 'hover:bg-stone-700 text-stone-200' : 'hover:bg-zinc-50 text-zinc-700'}`}
+                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'hover:bg-stone-700 text-stone-200' : 'hover:bg-zinc-50 text-zinc-700'}`}
                 >
                   <Icons.Share /> <span className="hidden md:inline">{t('library.export')}</span>
                 </button>

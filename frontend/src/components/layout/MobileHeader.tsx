@@ -33,18 +33,19 @@ export function MobileHeader({ darkMode, themeMode, setThemeMode, mobileMenuOpen
         <span className="font-serif font-bold text-lg tracking-tight">Focus</span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1">
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={cycleTheme}
-          className={`p-2 rounded-full transition-colors ${darkMode ? 'text-stone-300 hover:bg-stone-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
+          className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${darkMode ? 'text-stone-300 hover:bg-stone-800 active:bg-stone-700' : 'text-zinc-600 hover:bg-zinc-100 active:bg-zinc-200'}`}
+          aria-label="Toggle theme"
         >
           {getThemeIcon()}
         </button>
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className={`p-2 -mr-2 rounded-full transition-colors ${darkMode ? 'text-zinc-300 hover:bg-stone-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
+          className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${darkMode ? 'text-zinc-300 hover:bg-stone-800 active:bg-stone-700' : 'text-zinc-600 hover:bg-zinc-100 active:bg-zinc-200'}`}
           aria-label="Menu"
         >
           {mobileMenuOpen ? <Icons.X /> : <Icons.Menu />}

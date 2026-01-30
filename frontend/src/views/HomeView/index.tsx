@@ -206,9 +206,9 @@ export function HomeView({ darkMode }: HomeViewProps) {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-6 pb-24 px-2 md:px-3 lg:px-8 animate-pulse">
+      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-6 pb-24 px-4 md:px-6 lg:px-8 animate-pulse">
         {/* Skeleton: Header */}
-        <div className="flex justify-between items-center mb-6 px-2">
+        <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <div className={`h-5 w-16 rounded ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
             <div className={`h-5 w-20 rounded ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
@@ -216,13 +216,13 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <div className={`h-4 w-24 rounded ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
         </div>
         {/* Skeleton: Title */}
-        <div className={`h-8 md:h-10 rounded w-3/4 mb-4 ml-2 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+        <div className={`h-8 md:h-10 rounded w-3/4 mb-4 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
         {/* Skeleton: Author */}
-        <div className={`h-4 w-48 rounded mb-8 ml-6 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
+        <div className={`h-4 w-48 rounded mb-8 ml-4 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
         {/* Skeleton: Divider */}
-        <div className={`h-px w-full mb-8 mx-2 ${darkMode ? 'bg-stone-700' : 'bg-zinc-200'}`} />
+        <div className={`h-px w-full mb-8 ${darkMode ? 'bg-stone-700' : 'bg-zinc-200'}`} />
         {/* Skeleton: Content */}
-        <div className="space-y-4 px-2">
+        <div className="space-y-4">
           <div className={`h-4 rounded w-full ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
           <div className={`h-4 rounded w-5/6 ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
           <div className={`h-4 rounded w-full ${darkMode ? 'bg-stone-800' : 'bg-zinc-200'}`} />
@@ -305,10 +305,10 @@ export function HomeView({ darkMode }: HomeViewProps) {
       {/* Article Content - Claude AI inspired layout */}
       <article
         ref={contentRef}
-        className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-6 pb-24 px-2 md:px-3 lg:px-8"
+        className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-6 pb-24 px-4 md:px-6 lg:px-8"
       >
         {/* Document Header: Tag + Date */}
-        <div className="flex justify-between items-center text-sm mb-6 px-2">
+        <div className="flex justify-between items-center text-sm mb-6">
           <span className="flex items-center gap-2">
             <span
               className={`px-2 py-0.5 rounded text-xs font-medium ${
@@ -365,7 +365,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
               window.open(current.url, "_blank", "noopener,noreferrer");
             }
           }}
-          className={`text-2xl md:text-3xl font-serif font-bold mb-4 leading-tight cursor-pointer hover:underline decoration-2 underline-offset-4 pl-2 pr-8 ${
+          className={`text-2xl md:text-3xl font-serif font-bold mb-4 leading-tight cursor-pointer hover:underline decoration-2 underline-offset-4 ${
             darkMode
               ? "text-stone-100 hover:text-teal-300"
               : "text-zinc-900 hover:text-spira-600"
@@ -377,7 +377,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
         {/* Author - Blockquote Style */}
         {current.author && (
           <blockquote
-            className={`border-l-4 pl-4 mb-8 ml-2 pr-8 ${
+            className={`border-l-4 pl-4 mb-8 ${
               darkMode
                 ? "border-stone-700 text-stone-400"
                 : "border-zinc-200 text-zinc-600"
@@ -388,14 +388,14 @@ export function HomeView({ darkMode }: HomeViewProps) {
         )}
 
         <hr
-          className={`mb-8 mx-2 ${darkMode ? "border-stone-700" : "border-zinc-200"}`}
+          className={`mb-8 ${darkMode ? "border-stone-700" : "border-zinc-200"}`}
         />
 
         {isArxiv ? (
           <>
             {/* 要点总结 + 翻译摘要：无标题，简洁展示 */}
             {(briefSummary || translatedAbstract) && (
-              <section className="mb-8 pl-2 pr-8">
+              <section className="mb-8">
                 {briefSummary && (
                   <p
                     className={`text-base leading-relaxed mb-4 ${
@@ -415,7 +415,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
             )}
 
             {/* 原文摘要 - 折叠 */}
-            <details className="mb-8 group pl-2 pr-8">
+            <details className="mb-8 group">
               <summary
                 className={`cursor-pointer text-sm ${
                   darkMode
@@ -471,14 +471,14 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <button
             onClick={goPrev}
             disabled={currentIndex === 0}
-            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-micro text-sm ${
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
               currentIndex === 0
                 ? darkMode
                   ? "text-stone-600 cursor-not-allowed"
                   : "text-zinc-300 cursor-not-allowed"
                 : darkMode
-                  ? "text-stone-300 hover:bg-stone-700 cursor-pointer hover:scale-105 active:scale-95"
-                  : "text-zinc-600 hover:bg-zinc-100 cursor-pointer hover:scale-105 active:scale-95"
+                  ? "text-stone-300 hover:bg-stone-700 cursor-pointer active:scale-95"
+                  : "text-zinc-600 hover:bg-zinc-100 cursor-pointer active:scale-95"
             }`}
             title={t("home.prevArticle")}
           >
@@ -506,12 +506,12 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <button
             onClick={handleDiscard}
             disabled={isAnimating}
-            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-micro text-sm ${
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
               isAnimating
                 ? "opacity-50 cursor-not-allowed"
                 : darkMode
-                  ? "text-stone-400 hover:bg-stone-700 hover:text-red-400 cursor-pointer hover:scale-105 active:scale-95"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-red-500 cursor-pointer hover:scale-105 active:scale-95"
+                  ? "text-stone-400 hover:bg-stone-700 hover:text-red-400 cursor-pointer active:scale-95"
+                  : "text-zinc-500 hover:bg-zinc-100 hover:text-red-500 cursor-pointer active:scale-95"
             }`}
             title={t("home.discard")}
           >
@@ -536,23 +536,23 @@ export function HomeView({ darkMode }: HomeViewProps) {
           </select>
 
           {/* Article Counter */}
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0 whitespace-nowrap">
             <input
               type="text"
               value={jumpInput}
               onChange={(e) => setJumpInput(e.target.value)}
               onKeyDown={handleJumpToArticle}
               placeholder={String(currentIndex + 1)}
-              className={`w-6 text-center text-xs bg-transparent border-0 outline-none ${
+              className={`w-8 text-center text-caption bg-transparent border-0 outline-none ${
                 darkMode
                   ? "text-stone-400 placeholder-stone-500"
                   : "text-zinc-500 placeholder-zinc-400"
               }`}
             />
             <span
-              className={`text-xs ${darkMode ? "text-stone-500" : "text-zinc-400"}`}
+              className={`text-caption ${darkMode ? "text-stone-500" : "text-zinc-400"}`}
             >
-              / {articles.length}
+              /{articles.length}
             </span>
           </div>
 
@@ -560,12 +560,12 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <button
             onClick={handleShuffle}
             disabled={isShuffling || isAnimating}
-            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-micro text-sm ${
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
               isShuffling || isAnimating
                 ? "opacity-50 cursor-not-allowed"
                 : darkMode
-                  ? "text-stone-400 hover:bg-stone-700 hover:text-stone-200 cursor-pointer hover:scale-105 active:scale-95"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 cursor-pointer hover:scale-105 active:scale-95"
+                  ? "text-stone-400 hover:bg-stone-700 hover:text-stone-200 cursor-pointer active:scale-95"
+                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 cursor-pointer active:scale-95"
             }`}
             title={t("home.shuffle")}
           >
@@ -582,12 +582,12 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <button
             onClick={handleSave}
             disabled={isAnimating}
-            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-micro text-sm ${
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
               isAnimating
                 ? "opacity-50 cursor-not-allowed"
                 : darkMode
-                  ? "text-teal-400 hover:bg-stone-700 cursor-pointer hover:scale-105 active:scale-95"
-                  : "text-spira-600 hover:bg-zinc-100 cursor-pointer hover:scale-105 active:scale-95"
+                  ? "text-teal-400 hover:bg-stone-700 cursor-pointer active:scale-95"
+                  : "text-spira-600 hover:bg-zinc-100 cursor-pointer active:scale-95"
             }`}
             title={t("home.save")}
           >
@@ -599,14 +599,14 @@ export function HomeView({ darkMode }: HomeViewProps) {
           <button
             onClick={goNext}
             disabled={currentIndex === articles.length - 1}
-            className={`flex items-center gap-1 p-2 md:px-3 md:py-1.5 rounded-full transition-micro text-sm ${
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
               currentIndex === articles.length - 1
                 ? darkMode
                   ? "text-stone-600 cursor-not-allowed"
                   : "text-zinc-300 cursor-not-allowed"
                 : darkMode
-                  ? "text-stone-300 hover:bg-stone-700 cursor-pointer hover:scale-105 active:scale-95"
-                  : "text-zinc-600 hover:bg-zinc-100 cursor-pointer hover:scale-105 active:scale-95"
+                  ? "text-stone-300 hover:bg-stone-700 cursor-pointer active:scale-95"
+                  : "text-zinc-600 hover:bg-zinc-100 cursor-pointer active:scale-95"
             }`}
             title={t("home.nextArticle")}
           >

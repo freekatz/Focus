@@ -128,7 +128,7 @@ function App() {
   if (isSharePage()) {
     const shareCode = getShareCode();
     if (shareCode) {
-      return <ShareView code={shareCode} darkMode={darkMode} />;
+      return <ShareView code={shareCode} darkMode={darkMode} fontClass={fontClass} />;
     }
     // No code provided, redirect to home
     window.location.href = '/';
@@ -205,32 +205,37 @@ function App() {
           onScroll={(e) => { scrollPositionRef.current = e.currentTarget.scrollTop; }}
           className={`flex-1 overflow-y-auto overflow-x-hidden ${darkMode ? 'scrollbar-styled-dark' : 'scrollbar-styled'}`}
         >
-          <div className="relative w-full min-h-full">
-            <div className="mx-auto flex size-full max-w-5xl flex-col px-4 md:px-8">
-              {activeTab === 'home' && (
-                <HomeView darkMode={darkMode} />
-              )}
-              {activeTab === 'sources' && (
-                <SourcesView darkMode={darkMode} />
-              )}
-              {activeTab === 'library' && (
-                <LibraryView
-                  key={libraryRefreshKey}
-                  darkMode={darkMode}
-                  onOpenArticle={handleOpenArticle}
-                />
-              )}
-              {activeTab === 'settings' && (
-                <SettingsView
-                  darkMode={darkMode}
-                  themeMode={themeMode}
-                  setThemeMode={setThemeMode}
-                  fontTheme={fontTheme}
-                  setFontTheme={setFontTheme}
-                />
-              )}
+          {/* HomeView manages its own layout like ShareView */}
+          {activeTab === 'home' && (
+            <HomeView darkMode={darkMode} />
+          )}
+
+          {/* Other views use shared container */}
+          {activeTab !== 'home' && (
+            <div className="relative w-full min-h-full">
+              <div className="mx-auto flex size-full max-w-5xl flex-col px-4 md:px-6 lg:px-8">
+                {activeTab === 'sources' && (
+                  <SourcesView darkMode={darkMode} />
+                )}
+                {activeTab === 'library' && (
+                  <LibraryView
+                    key={libraryRefreshKey}
+                    darkMode={darkMode}
+                    onOpenArticle={handleOpenArticle}
+                  />
+                )}
+                {activeTab === 'settings' && (
+                  <SettingsView
+                    darkMode={darkMode}
+                    themeMode={themeMode}
+                    setThemeMode={setThemeMode}
+                    fontTheme={fontTheme}
+                    setFontTheme={setFontTheme}
+                  />
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
 

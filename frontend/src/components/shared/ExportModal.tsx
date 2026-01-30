@@ -147,7 +147,7 @@ export function ExportModal({
           }`}
         >
           <h3
-            className={`text-lg font-bold ${
+            className={`text-h3 font-bold ${
               darkMode ? "text-white" : "text-zinc-900"
             }`}
           >
@@ -155,7 +155,7 @@ export function ExportModal({
           </h3>
           <button
             onClick={onClose}
-            className={`p-2 rounded-full transition-colors ${
+            className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${
               darkMode
                 ? "hover:bg-stone-700 text-stone-400"
                 : "hover:bg-zinc-100 text-zinc-500"
@@ -179,7 +179,7 @@ export function ExportModal({
                 setMessage(null);
                 setShareUrl(null);
               }}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 min-h-touch px-3 rounded-md text-ui-sm font-medium transition-all ${
                 activeTab === tab.id
                   ? darkMode
                     ? "bg-stone-700 text-white shadow"
@@ -201,7 +201,7 @@ export function ExportModal({
             <div className="space-y-4">
               <div>
                 <label
-                  className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
+                  className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
                     darkMode ? "text-stone-500" : "text-zinc-400"
                   }`}
                 >
@@ -210,7 +210,7 @@ export function ExportModal({
                 <select
                   value={expiresInDays}
                   onChange={(e) => setExpiresInDays(parseInt(e.target.value))}
-                  className={`w-full p-2 rounded-lg border text-sm ${
+                  className={`w-full min-h-touch p-2 rounded-lg border text-body-sm ${
                     darkMode
                       ? "bg-stone-900 border-stone-600 text-white"
                       : "bg-zinc-50 border-zinc-200"
@@ -234,13 +234,13 @@ export function ExportModal({
                       type="text"
                       readOnly
                       value={shareUrl}
-                      className={`flex-1 bg-transparent text-sm outline-none ${
+                      className={`flex-1 bg-transparent text-body-sm outline-none ${
                         darkMode ? "text-stone-300" : "text-zinc-700"
                       }`}
                     />
                     <button
                       onClick={copyShareUrl}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`min-h-touch min-w-touch flex items-center justify-center rounded-lg transition-colors ${
                         darkMode
                           ? "hover:bg-stone-700 text-teal-400"
                           : "hover:bg-zinc-200 text-spira-600"
@@ -254,7 +254,7 @@ export function ExportModal({
                 <button
                   onClick={handleShare}
                   disabled={loading || entryIds.length === 0}
-                  className={`w-full py-3 rounded-xl font-medium transition-all ${
+                  className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
                     darkMode
                       ? "bg-teal-600 hover:bg-teal-500 text-white"
                       : "bg-spira-600 hover:bg-spira-500 text-white"
@@ -270,7 +270,7 @@ export function ExportModal({
             <div className="space-y-4">
               <div>
                 <label
-                  className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
+                  className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
                     darkMode ? "text-stone-500" : "text-zinc-400"
                   }`}
                 >
@@ -281,7 +281,7 @@ export function ExportModal({
                   placeholder="Focus"
                   value={zoteroCollection}
                   onChange={(e) => setZoteroCollection(e.target.value)}
-                  className={`w-full p-2 rounded-lg border text-sm ${
+                  className={`w-full min-h-touch p-2 rounded-lg border text-body-sm ${
                     darkMode
                       ? "bg-stone-900 border-stone-600 text-white"
                       : "bg-zinc-50 border-zinc-200"
@@ -291,7 +291,7 @@ export function ExportModal({
               <button
                 onClick={handleZoteroExport}
                 disabled={loading || entryIds.length === 0}
-                className={`w-full py-3 rounded-xl font-medium transition-all ${
+                className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
                   darkMode
                     ? "bg-teal-600 hover:bg-teal-500 text-white"
                     : "bg-spira-600 hover:bg-spira-500 text-white"
@@ -312,7 +312,7 @@ export function ExportModal({
                 {articles.map((a, i) => (
                   <div
                     key={a.id}
-                    className={`text-sm py-1 ${
+                    className={`text-body-sm py-1 ${
                       i > 0
                         ? "border-t " +
                           (darkMode ? "border-stone-700" : "border-zinc-200")
@@ -328,7 +328,7 @@ export function ExportModal({
                     </div>
                     {a._entry?.link && (
                       <div
-                        className={`text-xs truncate ${
+                        className={`text-caption truncate ${
                           darkMode ? "text-stone-500" : "text-zinc-400"
                         }`}
                       >
@@ -341,7 +341,7 @@ export function ExportModal({
 
               <button
                 onClick={handleCopy}
-                className={`w-full py-3 rounded-xl font-medium transition-all ${
+                className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
                   darkMode
                     ? "bg-teal-600 hover:bg-teal-500 text-white"
                     : "bg-spira-600 hover:bg-spira-500 text-white"
@@ -355,7 +355,7 @@ export function ExportModal({
           {/* Message */}
           {message && (
             <div
-              className={`mt-4 p-3 rounded-lg text-sm text-center ${
+              className={`mt-4 p-3 rounded-lg text-body-sm text-center ${
                 message.type === "success"
                   ? darkMode
                     ? "bg-green-900/30 text-green-400"

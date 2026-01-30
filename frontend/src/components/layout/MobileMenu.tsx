@@ -15,14 +15,14 @@ interface MobileMenuItemProps {
 const MobileMenuItem = ({ active, onClick, icon, label, darkMode }: MobileMenuItemProps) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
+    className={`w-full flex items-center space-x-3 px-4 min-h-[48px] py-3 rounded-xl transition-all active:scale-[0.98] ${
       active
         ? (darkMode ? 'bg-stone-800 text-teal-300' : 'bg-spira-50 text-spira-800')
-        : (darkMode ? 'text-stone-400' : 'text-zinc-500')
+        : (darkMode ? 'text-stone-400 hover:bg-stone-800/50' : 'text-zinc-500 hover:bg-zinc-100')
     }`}
   >
     <div className={active ? (darkMode ? 'text-teal-400' : 'text-spira-600') : ''}>{icon}</div>
-    <span className="font-medium">{label}</span>
+    <span className="font-medium text-ui">{label}</span>
   </button>
 );
 

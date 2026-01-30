@@ -12,6 +12,46 @@ export default {
         // JetBrains Mono: Modern, readable monospace for code
         mono: ['"JetBrains Mono"', '"SF Mono"', 'Monaco', 'Consolas', 'monospace'],
       },
+      // ===== Typography System =====
+      // Semantic font sizes with line-height and weight
+      fontSize: {
+        'display': ['2.5rem', { lineHeight: '1.15', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'h1': ['1.75rem', { lineHeight: '1.25', letterSpacing: '-0.01em', fontWeight: '700' }],
+        'h2': ['1.5rem', { lineHeight: '1.3', fontWeight: '600' }],
+        'h3': ['1.25rem', { lineHeight: '1.35', fontWeight: '600' }],
+        'h4': ['1.125rem', { lineHeight: '1.4', fontWeight: '600' }],
+        'body': ['1rem', { lineHeight: '1.75' }],
+        'body-sm': ['0.9375rem', { lineHeight: '1.65' }],
+        'ui': ['0.9375rem', { lineHeight: '1.5' }],
+        'ui-sm': ['0.875rem', { lineHeight: '1.5' }],
+        'caption': ['0.8125rem', { lineHeight: '1.5' }],
+      },
+      // ===== Spacing System =====
+      spacing: {
+        'touch': '44px',      // Minimum touch target size (WCAG)
+        'touch-lg': '52px',   // Large touch target
+        '13': '3.25rem',      // Additional spacing value
+        '15': '3.75rem',      // Additional spacing value
+        '18': '4.5rem',       // Additional spacing value
+      },
+      // ===== Touch Target Sizes =====
+      minHeight: {
+        'touch': '44px',      // Minimum touch target height
+        'touch-lg': '52px',   // Large touch target height
+      },
+      minWidth: {
+        'touch': '44px',      // Minimum touch target width
+        'touch-lg': '52px',   // Large touch target width
+      },
+      // ===== Breakpoints =====
+      screens: {
+        'xs': '375px',        // Small mobile (iPhone SE)
+        // sm: 640px (Tailwind default)
+        // md: 768px (Tailwind default)
+        // lg: 1024px (Tailwind default)
+        // xl: 1280px (Tailwind default)
+        '2xl': '1440px',      // Large desktop
+      },
       colors: {
         // Focus brand colors (teal/cyan palette)
         spira: {

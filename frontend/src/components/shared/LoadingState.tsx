@@ -13,7 +13,7 @@ export function LoadingState({ darkMode = false }: LoadingStateProps) {
             <path d="M12 2v20M2 12h20" transform="rotate(45 12 12)"/>
           </svg>
         </div>
-        <span className={`text-sm ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>Loading...</span>
+        <span className={`text-body-sm ${darkMode ? 'text-stone-400' : 'text-zinc-500'}`}>Loading...</span>
       </div>
     </div>
   );

@@ -80,30 +80,30 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Responsive base font sizing */
+/* ===== Responsive Base Font Sizing ===== */
+/* Mobile-first: 16px minimum for readability (WCAG compliance) */
 html {
-  /* Mobile-first: smaller base for mobile devices */
-  font-size: 14px;
+  font-size: 16px;
 }
 
 /* Tablet and small desktop */
 @media (min-width: 768px) {
   html {
-    font-size: 15px;
+    font-size: 16px;
   }
 }
 
 /* Desktop and larger screens */
 @media (min-width: 1024px) {
   html {
-    font-size: 16px;
+    font-size: 17px;
   }
 }
 
 /* Large desktop screens */
 @media (min-width: 1440px) {
   html {
-    font-size: 17px;
+    font-size: 18px;
   }
 }
 
@@ -697,4 +697,211 @@ body.dark {
   .article-content-dark .katex-display {
     font-size: 0.9em;
   }
+}
+
+/* ===== Component Utility Classes ===== */
+/* These classes provide consistent styling across the app */
+
+/* ----- Button Components ----- */
+/* Base button styles */
+.btn-base {
+  @apply inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200;
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply active:scale-[0.98];
+}
+
+/* Button sizes */
+.btn-sm {
+  @apply btn-base h-9 px-3 text-ui-sm;
+}
+
+.btn-md {
+  @apply btn-base min-h-touch h-11 px-4 text-ui;
+}
+
+.btn-lg {
+  @apply btn-base min-h-touch-lg h-[52px] px-6 text-ui;
+}
+
+/* Button variants - Light mode */
+.btn-primary {
+  @apply bg-spira-600 text-white hover:bg-spira-700 focus-visible:ring-spira-500;
+}
+
+.btn-secondary {
+  @apply bg-zinc-100 text-zinc-700 hover:bg-zinc-200 focus-visible:ring-zinc-400;
+}
+
+.btn-ghost {
+  @apply bg-transparent text-zinc-600 hover:bg-zinc-100 focus-visible:ring-zinc-400;
+}
+
+.btn-danger {
+  @apply bg-red-500 text-white hover:bg-red-600 focus-visible:ring-red-400;
+}
+
+/* Button variants - Dark mode */
+.dark .btn-primary {
+  @apply bg-teal-600 hover:bg-teal-500 focus-visible:ring-teal-400;
+}
+
+.dark .btn-secondary {
+  @apply bg-stone-700 text-stone-200 hover:bg-stone-600 focus-visible:ring-stone-500;
+}
+
+.dark .btn-ghost {
+  @apply text-stone-300 hover:bg-stone-800 focus-visible:ring-stone-500;
+}
+
+.dark .btn-danger {
+  @apply bg-red-600 hover:bg-red-500 focus-visible:ring-red-400;
+}
+
+/* Icon button (square touch target) */
+.btn-icon {
+  @apply btn-base min-h-touch min-w-touch h-11 w-11 p-0;
+}
+
+.btn-icon-sm {
+  @apply btn-base h-9 w-9 p-0;
+}
+
+/* ----- Form Input Components ----- */
+.input {
+  @apply w-full min-h-touch px-4 py-3 rounded-xl border transition-colors duration-200;
+  @apply text-body-sm placeholder:text-zinc-400;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-0;
+  @apply bg-white border-zinc-200 text-zinc-900;
+  @apply focus:border-spira-500 focus:ring-spira-500/20;
+}
+
+.dark .input {
+  @apply bg-stone-800 border-stone-600 text-stone-100 placeholder:text-stone-500;
+  @apply focus:border-teal-500 focus:ring-teal-500/20;
+}
+
+.input-error {
+  @apply border-red-500 focus:border-red-500 focus:ring-red-500/20;
+}
+
+/* Form label */
+.form-label {
+  @apply block text-ui-sm font-medium mb-2 text-zinc-700;
+}
+
+.dark .form-label {
+  @apply text-stone-300;
+}
+
+/* ----- Card Components ----- */
+.card {
+  @apply rounded-2xl p-4 md:p-6;
+  @apply bg-white shadow-sm;
+}
+
+.dark .card {
+  @apply bg-stone-800 shadow-none;
+}
+
+.card-hover {
+  @apply card cursor-pointer transition-all duration-200;
+  @apply hover:shadow-md hover:-translate-y-0.5;
+}
+
+.dark .card-hover {
+  @apply hover:bg-stone-700 hover:shadow-lg hover:shadow-black/20;
+}
+
+/* ----- Modal Components ----- */
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  @apply bg-black/50 backdrop-blur-sm;
+}
+
+.modal-content {
+  @apply relative w-full max-w-lg max-h-[90vh] overflow-hidden;
+  @apply rounded-2xl shadow-xl;
+  @apply bg-white;
+}
+
+.dark .modal-content {
+  @apply bg-stone-800;
+}
+
+.modal-header {
+  @apply flex items-center justify-between px-5 py-4 md:px-6 md:py-5 border-b;
+  @apply border-zinc-200;
+}
+
+.dark .modal-header {
+  @apply border-stone-700;
+}
+
+.modal-body {
+  @apply px-5 py-4 md:px-6 overflow-y-auto;
+}
+
+.modal-footer {
+  @apply flex items-center justify-end gap-3 px-5 py-4 md:px-6 md:py-5 border-t;
+  @apply border-zinc-200;
+}
+
+.dark .modal-footer {
+  @apply border-stone-700;
+}
+
+/* ----- Navigation Components ----- */
+.nav-item {
+  @apply flex items-center gap-3 min-h-touch px-4 py-3 rounded-xl;
+  @apply text-ui font-medium transition-colors duration-200;
+  @apply text-zinc-600 hover:bg-zinc-100;
+}
+
+.nav-item-active {
+  @apply bg-spira-50 text-spira-700;
+}
+
+.dark .nav-item {
+  @apply text-stone-400 hover:bg-stone-800;
+}
+
+.dark .nav-item-active {
+  @apply bg-stone-800 text-teal-400;
+}
+
+/* ----- Badge/Tag Components ----- */
+.badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded text-caption font-medium;
+  @apply bg-zinc-100 text-zinc-700;
+}
+
+.dark .badge {
+  @apply bg-stone-700 text-stone-300;
+}
+
+.badge-primary {
+  @apply bg-spira-100 text-spira-700;
+}
+
+.dark .badge-primary {
+  @apply bg-teal-900/30 text-teal-400;
+}
+
+.badge-success {
+  @apply bg-green-100 text-green-700;
+}
+
+.dark .badge-success {
+  @apply bg-green-900/30 text-green-400;
+}
+
+/* ----- Responsive Container ----- */
+.container-responsive {
+  @apply w-full max-w-4xl mx-auto px-4 md:px-6 lg:px-8;
+}
+
+/* ----- Touch-friendly spacing ----- */
+.touch-spacing {
+  @apply gap-2 md:gap-3;
 }
