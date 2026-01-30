@@ -118,7 +118,7 @@ def extract_arxiv_id(url: str) -> Optional[str]:
 
 
 class ArxivTranslator:
-    """ArXiv 摘要翻译器 - 使用 OpenAI SDK 完全参考 refer/arxiv_reader.py"""
+    """ArXiv 摘要翻译器 - 一次 LLM 调用完成翻译和总结"""
 
     def __init__(self, config: UserConfig):
         """
@@ -135,84 +135,9 @@ class ArxivTranslator:
         )
         self.model = config.ai_model
 
-    async def translate_abstract(self, abstract: str) -> str:
-        """
-        翻译 ArXiv 摘要到中文
-
-        Args:
-            abstract: 英文摘要
-
-        Returns:
-            中文翻译
-        """
-        if not abstract or not abstract.strip():
-            return ""
-
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "你是一位专业的学术翻译专家。请将以下英文摘要翻译成中文，保持学术专业性和准确性。直接输出翻译结果，不要添加任何解释或前缀。"
-                    },
-                    {
-                        "role": "user",
-                        "content": abstract
-                    }
-                ],
-                max_tokens=2000,
-                temperature=0.3,
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            logger.error(f"[ArXiv Translator] Translation failed: {e}")
-            raise
-
-    async def generate_brief_summary(self, abstract: str, title: str) -> str:
-        """
-        生成简要总结，帮助读者快速抓住要点
-
-        Args:
-            abstract: 英文摘要
-            title: 论文标题
-
-        Returns:
-            简要总结（2-3句话）
-        """
-        if not abstract or not abstract.strip():
-            return ""
-
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": """你是一位学术论文阅读助手。请根据论文标题和摘要，用中文生成一个简短的要点总结，帮助读者快速判断这篇论文是否值得深入阅读。
-
-要求：
-1. 总结限制在 2-3 句话以内（约 80-120 字）
-2. 突出论文的核心贡献和创新点
-3. 使用简洁易懂的语言
-4. 直接输出总结内容，不要添加任何前缀或标题"""
-                    },
-                    {
-                        "role": "user",
-                        "content": f"标题: {title}\n\n摘要: {abstract}"
-                    }
-                ],
-                max_tokens=300,
-                temperature=0.3,
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            logger.error(f"[ArXiv Translator] Brief summary generation failed: {e}")
-            raise
-
     async def translate_and_summarize(self, abstract: str, title: str) -> tuple[str, str]:
         """
-        同时进行翻译和生成简要总结
+        一次 LLM 调用同时完成翻译和总结
 
         Args:
             abstract: 英文摘要
@@ -224,26 +149,45 @@ class ArxivTranslator:
         if not abstract or not abstract.strip():
             return "", ""
 
-        # 并发执行翻译和总结
-        translation_task = self.translate_abstract(abstract)
-        summary_task = self.generate_brief_summary(abstract, title)
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": """你是一位专业的学术论文阅读助手。请完成以下两个任务：
 
-        translation, summary = await asyncio.gather(
-            translation_task,
-            summary_task,
-            return_exceptions=True
-        )
+1. 要点总结（约80-120字）：简明概括论文的核心贡献和创新点，帮助读者快速判断是否值得深入阅读
+2. 摘要翻译：将摘要准确翻译成中文，保持学术专业性
 
-        # 处理可能的异常
-        if isinstance(translation, Exception):
-            logger.error(f"[ArXiv Translator] Translation failed: {translation}")
-            raise translation
-        if isinstance(summary, Exception):
-            logger.error(f"[ArXiv Translator] Summary failed: {summary}")
-            # 总结失败不影响翻译结果
-            summary = ""
+按以下格式输出（使用XML标签）：
+<summary>要点总结内容</summary>
+<translation>翻译内容</translation>"""
+                    },
+                    {
+                        "role": "user",
+                        "content": f"标题: {title}\n\n摘要: {abstract}"
+                    }
+                ],
+                max_tokens=2500,
+                temperature=0.3,
+            )
 
-        return translation, summary
+            content = response.choices[0].message.content
+            summary = self._extract_tag(content, "summary")
+            translation = self._extract_tag(content, "translation")
+
+            return translation, summary
+
+        except Exception as e:
+            logger.error(f"[ArXiv Translator] Translation failed: {e}")
+            raise
+
+    def _extract_tag(self, text: str, tag: str) -> str:
+        """从文本中提取 XML 标签内容"""
+        pattern = f"<{tag}>(.*?)</{tag}>"
+        match = re.search(pattern, text, re.DOTALL)
+        return match.group(1).strip() if match else ""
 
 
 class ArxivInterpreter:
@@ -336,6 +280,8 @@ class ArxivInterpreter:
             return None
 
         html_url = f"https://arxiv.org/html/{arxiv_id}"
+        # 保存 base_url 用于构建完整的图片链接
+        self._base_url = html_url
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
@@ -496,14 +442,20 @@ class ArxivInterpreter:
             md_table = self._extract_table(table_fig)
             table_fig.replace_with(f"\n{md_table}\n")
 
-        # 4. 处理图片引用
+        # 4. 处理图片引用 - 将相对 URL 转为绝对 URL
         for figure in element.find_all("figure", class_="ltx_figure"):
             caption = figure.find("figcaption")
             caption_text = caption.get_text(strip=True) if caption else "Figure"
             img = figure.find("img")
             img_url = img.get("src", "") if img else ""
             if img_url:
-                figure.replace_with(f"\n[Image: {caption_text}]({img_url})\n")
+                # 将相对 URL 转为绝对 URL
+                if not img_url.startswith(("http://", "https://")):
+                    base_url = getattr(self, '_base_url', '')
+                    if base_url:
+                        # 从 base_url 获取目录部分
+                        img_url = f"{base_url}/{img_url}"
+                figure.replace_with(f"\n![{caption_text}]({img_url})\n")
             else:
                 figure.replace_with(f"\n[Image: {caption_text}]\n")
 

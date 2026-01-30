@@ -5,7 +5,8 @@ import asyncio
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, or_, and_
+from sqlalchemy.orm import selectinload
 
 from app.database import async_session_maker
 from app.models.rss import RssSource
@@ -189,30 +190,29 @@ async def batch_translate_abstracts(entries: list, config):
 
 async def translate_abstract(entry_id: int, config=None):
     """
-    翻译单篇 ArXiv 文章的摘要
+    翻译单篇 ArXiv 文章的摘要（一次调用同时生成翻译和总结）
 
     Args:
         entry_id: 文章 ID
         config: 用户配置（可选，如果不传则从数据库获取）
     """
     from app.services.arxiv_service import ArxivTranslator
+    from app.models.entry import TranslationStatus
 
     async with async_session_maker() as db:
-        # 获取文章
-        result = await db.execute(
-            select(Entry).where(Entry.id == entry_id)
-        )
+        result = await db.execute(select(Entry).where(Entry.id == entry_id))
         entry = result.scalar_one_or_none()
 
         if not entry:
             logger.warning(f"Entry {entry_id} not found for translation")
             return
 
-        # 跳过已翻译的文章
-        if entry.translated_abstract:
+        # 跳过已完成的文章
+        has_translation = entry.translated_abstract and entry.translated_abstract.strip()
+        has_summary = entry.brief_summary and entry.brief_summary.strip()
+        if has_translation and has_summary:
             return
 
-        # 如果没有传入配置，从数据库获取
         if not config:
             user_result = await db.execute(select(User).limit(1))
             user = user_result.scalar_one_or_none()
@@ -221,28 +221,22 @@ async def translate_abstract(entry_id: int, config=None):
                 return
             config = user.config
 
-        # 检查是否配置了 AI
         if not config.ai_api_key:
             logger.warning("No AI API key configured, skipping translation")
             return
 
         try:
-            from app.models.entry import TranslationStatus
-
-            # 设置翻译中状态
             entry.translation_status = TranslationStatus.TRANSLATING.value
             await db.commit()
 
             logger.info(f"Translating abstract for entry {entry_id}: '{entry.title[:50]}...'")
 
-            # 执行翻译和生成简要总结
             translator = ArxivTranslator(config)
             translated, brief_summary = await translator.translate_and_summarize(
                 entry.content or "",
                 entry.title
             )
 
-            # 保存翻译结果和简要总结
             entry.translated_abstract = translated
             entry.brief_summary = brief_summary
             entry.translation_status = TranslationStatus.COMPLETED.value
@@ -251,7 +245,6 @@ async def translate_abstract(entry_id: int, config=None):
             logger.info(f"Completed translation for entry {entry_id}")
 
         except Exception as e:
-            from app.models.entry import TranslationStatus
             logger.error(f"Failed to translate entry {entry_id}: {e}")
             entry.translation_status = TranslationStatus.FAILED.value
             await db.commit()
@@ -263,9 +256,9 @@ async def scan_pending_arxiv_tasks():
 
     扫描并处理：
     1. 未翻译的 ArXiv 文章（translation_status 为 pending/failed/translating）
-    2. 已保存但未解读的 ArXiv 文章（status=interested 且 ai_content_type 为空或 interpreting）
+    2. 已翻译但缺少简要总结的 ArXiv 文章
+    3. 已保存但未解读的 ArXiv 文章（status=interested 且 ai_content_type 为空或 interpreting）
     """
-    from sqlalchemy import or_
     from app.models.entry import EntryStatus, TranslationStatus
     from app.services.arxiv_service import is_arxiv_entry, validate_ai_api_key
 
@@ -299,20 +292,41 @@ async def scan_pending_arxiv_tasks():
             return
         logger.info(f"AI API Key validated successfully, model: {validation['model']}")
 
-        # 1. 扫描未翻译的 ArXiv 文章
+        # 1. 扫描未翻译或翻译不完整的 ArXiv 文章
+        # 注意：需要同时检查 NULL 和空字符串，因为某些情况下会存储空字符串
+        # 使用 selectinload 预加载 rss_source 关系，避免延迟加载导致的 greenlet 错误
         translation_result = await db.execute(
-            select(Entry).where(
-                Entry.translated_abstract.is_(None),
+            select(Entry)
+            .options(selectinload(Entry.rss_source))
+            .where(
                 or_(
                     Entry.translation_status.is_(None),
                     Entry.translation_status == TranslationStatus.PENDING.value,
                     Entry.translation_status == TranslationStatus.FAILED.value,
                     Entry.translation_status == TranslationStatus.TRANSLATING.value,  # 可能因重启而中断
+                    Entry.translation_status == TranslationStatus.COMPLETED.value,  # 已完成但可能内容为空
                 )
             )
         )
         all_entries = list(translation_result.scalars().all())
-        untranslated = [e for e in all_entries if is_arxiv_entry(e)]
+
+        # 筛选需要处理的 ArXiv 文章：
+        # 1. 翻译为空（NULL 或空字符串）
+        # 2. 翻译存在但总结为空
+        def needs_translation(entry: Entry) -> bool:
+            if not is_arxiv_entry(entry):
+                return False
+            trans = entry.translated_abstract
+            summary = entry.brief_summary
+            # 翻译为空或空字符串
+            if not trans or trans.strip() == "":
+                return True
+            # 翻译存在但总结为空或空字符串
+            if not summary or summary.strip() == "":
+                return True
+            return False
+
+        untranslated = [e for e in all_entries if needs_translation(e)]
 
         if untranslated:
             logger.info(f"Found {len(untranslated)} untranslated ArXiv entries, starting translation...")
@@ -325,7 +339,9 @@ async def scan_pending_arxiv_tasks():
 
         # 2. 扫描已保存但未解读的 ArXiv 文章（包括解读失败需要重试的）
         interpretation_result = await db.execute(
-            select(Entry).where(
+            select(Entry)
+            .options(selectinload(Entry.rss_source))
+            .where(
                 Entry.status == EntryStatus.INTERESTED,
                 or_(
                     # 未解读：ai_content_type 为空

@@ -18,7 +18,19 @@ function detectContentType(content: string): ContentType {
 
   const trimmed = content.trim();
 
-  // Check for HTML: look for common HTML tags
+  // Markdown 特征检测：检测到任意一个就认定为 Markdown
+  // 这些特征在 HTML 中不会出现
+  if (
+    /^#{1,6}\s+.+$/m.test(trimmed) ||     // Headers: # Title, ## Title
+    /\*\*[^*]+\*\*/.test(trimmed) ||      // Bold: **text**
+    /^\|.+\|$/m.test(trimmed) ||          // Tables: |...|
+    /\$\$[\s\S]+?\$\$/.test(trimmed) ||   // Block math: $$...$$
+    /\$[^$\n]+\$/.test(trimmed)           // Inline math: $...$
+  ) {
+    return 'markdown';
+  }
+
+  // Check for HTML tags
   const htmlPatterns = [
     /<\/?(?:p|div|span|a|img|h[1-6]|ul|ol|li|table|tr|td|th|br|hr|blockquote|pre|code|em|strong|b|i|u|s|sub|sup|article|section|header|footer|nav|aside|figure|figcaption)[^>]*>/i,
     /<\/?(?:html|head|body|meta|link|script|style)[^>]*>/i,
@@ -29,45 +41,6 @@ function detectContentType(content: string): ContentType {
     if (pattern.test(trimmed)) {
       return 'html';
     }
-  }
-
-  // Check for Markdown patterns
-  const markdownPatterns = [
-    /^#{1,6}\s+.+$/m,                    // Headers: # Title
-    /^\s*[-*+]\s+.+$/m,                  // Unordered lists
-    /^\s*\d+\.\s+.+$/m,                  // Ordered lists
-    /\[.+?\]\(.+?\)/,                    // Links: [text](url)
-    /!\[.*?\]\(.+?\)/,                   // Images: ![alt](url)
-    /`{1,3}[^`]+`{1,3}/,                 // Inline code or code blocks
-    /^\s*>\s+.+$/m,                      // Blockquotes
-    /\*\*[^*]+\*\*/,                     // Bold: **text**
-    /\*[^*]+\*/,                         // Italic: *text*
-    /__[^_]+__/,                         // Bold: __text__
-    /_[^_]+_/,                           // Italic: _text_
-    /~~[^~]+~~/,                         // Strikethrough: ~~text~~
-    /^\s*[-*_]{3,}\s*$/m,                // Horizontal rule
-    /^\|.+\|$/m,                         // Tables
-    /\$\$[\s\S]+?\$\$/,                  // Block math: $$...$$
-    /\$[^$\n]+\$/,                       // Inline math: $...$
-    /\\\[[\s\S]+?\\\]/,                  // Block math: \[...\]
-    /\\\([\s\S]+?\\\)/,                  // Inline math: \(...\)
-  ];
-
-  let markdownMatches = 0;
-  for (const pattern of markdownPatterns) {
-    if (pattern.test(trimmed)) {
-      markdownMatches++;
-    }
-  }
-
-  // If multiple markdown patterns match, it's likely markdown
-  if (markdownMatches >= 2) {
-    return 'markdown';
-  }
-
-  // Also check for math formulas specifically - if found, treat as markdown
-  if (/\$\$[\s\S]+?\$\$|\$[^$\n]+\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)/.test(trimmed)) {
-    return 'markdown';
   }
 
   return 'plain';

@@ -240,9 +240,6 @@
     "allCaughtUpDesc": "You've processed all incoming items. Enjoy your focus time or check your Library.",
     "insight": "Insight",
     "originalAbstract": "Original Abstract",
-    "translatedAbstract": "Translated Abstract",
-    "briefSummary": "Key Points",
-    "aiInterpretation": "AI Interpretation",
     "interpreted": "Interpreted",
     "interpreting": "Interpreting...",
     "interpretingArticle": "Interpreting article...",
@@ -257,7 +254,10 @@
     "shuffle": "Shuffle",
     "prevArticle": "Previous",
     "nextArticle": "Next",
-    "goToArticle": "Go to"
+    "goToArticle": "Go to",
+    "source": "Source",
+    "noArticlesInSource": "No unread articles in this source",
+    "trySelectingAnotherSource": "Try selecting another source, or choose \"All\" to see all unread content."
   },
   "errors": {
     "networkError": "Network error. Please check your connection.",

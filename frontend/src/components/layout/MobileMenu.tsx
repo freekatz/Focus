@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../icons/Icons';
 
 type TabType = 'home' | 'sources' | 'library' | 'settings';
@@ -32,13 +33,15 @@ export interface MobileMenuProps {
 }
 
 export function MobileMenu({ activeTab, onTabChange, darkMode }: MobileMenuProps) {
+  const { t } = useTranslation();
+
   return (
     <div className={`md:hidden absolute top-[57px] left-0 right-0 bottom-0 z-20 backdrop-blur-xl animate-fade-in ${darkMode ? 'bg-slate-900/95' : 'bg-white/95'}`}>
       <nav className="p-4 space-y-2">
-        <MobileMenuItem active={activeTab === 'home'} onClick={() => onTabChange('home')} icon={<Icons.Home />} label="Focus" darkMode={darkMode} />
-        <MobileMenuItem active={activeTab === 'sources'} onClick={() => onTabChange('sources')} icon={<Icons.Sources />} label="Sources" darkMode={darkMode} />
-        <MobileMenuItem active={activeTab === 'library'} onClick={() => onTabChange('library')} icon={<Icons.Library />} label="Library" darkMode={darkMode} />
-        <MobileMenuItem active={activeTab === 'settings'} onClick={() => onTabChange('settings')} icon={<Icons.Settings />} label="Settings" darkMode={darkMode} />
+        <MobileMenuItem active={activeTab === 'home'} onClick={() => onTabChange('home')} icon={<Icons.Home />} label={t('nav.home')} darkMode={darkMode} />
+        <MobileMenuItem active={activeTab === 'sources'} onClick={() => onTabChange('sources')} icon={<Icons.Sources />} label={t('nav.sources')} darkMode={darkMode} />
+        <MobileMenuItem active={activeTab === 'library'} onClick={() => onTabChange('library')} icon={<Icons.Library />} label={t('nav.library')} darkMode={darkMode} />
+        <MobileMenuItem active={activeTab === 'settings'} onClick={() => onTabChange('settings')} icon={<Icons.Settings />} label={t('nav.settings')} darkMode={darkMode} />
       </nav>
     </div>
   );

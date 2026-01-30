@@ -146,7 +146,7 @@ async def get_rss_source_by_url_hash(db: AsyncSession, url_hash: str) -> Optiona
 
 async def create_rss_source(db: AsyncSession, data: RssSourceCreate) -> RssSource:
     """创建 RSS 源"""
-    logger.info(f"Creating RSS source: {data.name}, url={data.url}, allow_ssl_bypass={data.allow_ssl_bypass}")
+    logger.info(f"Creating RSS source: {data.name}, url={data.url}")
     url_hash = generate_hash(data.url)
 
     # 检查是否已存在
@@ -160,8 +160,6 @@ async def create_rss_source(db: AsyncSession, data: RssSourceCreate) -> RssSourc
         website_url=data.website_url,
         description=data.description,
         category=data.category,
-        fetch_interval=data.fetch_interval,
-        allow_ssl_bypass=data.allow_ssl_bypass,
         url_hash=url_hash,
     )
     db.add(rss_source)

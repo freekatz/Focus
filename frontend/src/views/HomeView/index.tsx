@@ -214,25 +214,57 @@ export function HomeView({ darkMode }: HomeViewProps) {
 
   if (articles.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4 animate-fade-in">
-        <div
-          className={`p-4 rounded-full ${
-            darkMode ? "bg-stone-800" : "bg-spira-100"
-          }`}
-        >
-          <div className={`${darkMode ? "text-teal-400" : "text-spira-600"}`}>
-            <Icons.Check />
+      <>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4 animate-fade-in">
+          <div
+            className={`p-4 rounded-full ${
+              darkMode ? "bg-stone-800" : "bg-spira-100"
+            }`}
+          >
+            <div className={`${darkMode ? "text-teal-400" : "text-spira-600"}`}>
+              <Icons.Check />
+            </div>
           </div>
+          <h2 className="text-2xl font-serif font-medium">
+            {selectedSourceId ? t("home.noArticlesInSource") : t("home.allCaughtUp")}
+          </h2>
+          <p
+            className={`max-w-md ${darkMode ? "text-stone-400" : "text-zinc-500"}`}
+          >
+            {selectedSourceId ? t("home.trySelectingAnotherSource") : t("home.allCaughtUpDesc")}
+          </p>
         </div>
-        <h2 className="text-2xl font-serif font-medium">
-          {t("home.allCaughtUp")}
-        </h2>
-        <p
-          className={`max-w-md ${darkMode ? "text-stone-400" : "text-zinc-500"}`}
-        >
-          {t("home.allCaughtUpDesc")}
-        </p>
-      </div>
+
+        {/* Floating Action Bar - Always show source selector */}
+        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
+          <div
+            className={`flex items-center gap-2 px-3 py-2 rounded-full shadow-lg backdrop-blur-sm ${
+              darkMode
+                ? "bg-stone-800/95 border border-stone-700"
+                : "bg-white/95 border border-zinc-200"
+            }`}
+          >
+            {/* Source Filter */}
+            <span className={`text-xs ${darkMode ? "text-stone-500" : "text-zinc-400"}`}>
+              {t("home.source")}:
+            </span>
+            <select
+              value={selectedSourceId || ""}
+              onChange={handleSourceChange}
+              className={`px-2 py-1 rounded text-sm border-0 bg-transparent cursor-pointer ${
+                darkMode ? "text-stone-300" : "text-zinc-600"
+              }`}
+            >
+              <option value="">{t("common.all")}</option>
+              {subscriptions.map((sub) => (
+                <option key={sub.id} value={sub.rss_source_id}>
+                  {sub.rss_source_name || `#${sub.rss_source_id}`}
+                </option>
+              ))}
+            </select>
+          </div>
+        </nav>
+      </>
     );
   }
 
@@ -339,45 +371,37 @@ export function HomeView({ darkMode }: HomeViewProps) {
 
         {isArxiv ? (
           <>
-            {/* Brief Summary - Key Points (if available) */}
-            {briefSummary && (
-              <section className="mb-8">
-                <div
-                  className={`rounded-lg p-4 mx-2 ${
-                    darkMode
-                      ? "bg-teal-900/20 border border-teal-800/30"
-                      : "bg-spira-50 border border-spira-200"
-                  }`}
-                >
-                  <h2
-                    className={`text-base font-semibold mb-2 flex items-center gap-2 ${
-                      darkMode ? "text-teal-300" : "text-spira-700"
-                    }`}
-                  >
-                    <Icons.Sparkles />
-                    {t("home.briefSummary")}
-                  </h2>
+            {/* 要点总结 + 翻译摘要：无标题，简洁展示 */}
+            {(briefSummary || translatedAbstract) && (
+              <section className="mb-8 pl-2 pr-8">
+                {briefSummary && (
                   <p
-                    className={`text-sm leading-relaxed ${
-                      darkMode ? "text-stone-300" : "text-zinc-700"
+                    className={`text-base leading-relaxed mb-4 ${
+                      darkMode ? "text-stone-200" : "text-zinc-800"
                     }`}
                   >
                     {briefSummary}
                   </p>
-                </div>
+                )}
+                {translatedAbstract && (
+                  <ArticleContent
+                    content={translatedAbstract}
+                    darkMode={darkMode}
+                  />
+                )}
               </section>
             )}
 
-            {/* Original Abstract - Collapsible with native details (above translated) */}
+            {/* 原文摘要 - 折叠 */}
             <details className="mb-8 group pl-2 pr-8">
               <summary
-                className={`cursor-pointer flex items-center gap-2 text-sm font-medium ${
+                className={`cursor-pointer text-sm ${
                   darkMode
-                    ? "text-stone-400 hover:text-stone-200"
-                    : "text-zinc-500 hover:text-zinc-700"
+                    ? "text-stone-500 hover:text-stone-300"
+                    : "text-zinc-400 hover:text-zinc-600"
                 }`}
               >
-                <span className="transform transition-transform group-open:rotate-90">
+                <span className="transform transition-transform group-open:rotate-90 inline-block mr-2">
                   ▶
                 </span>
                 {t("home.originalAbstract")}
@@ -387,43 +411,9 @@ export function HomeView({ darkMode }: HomeViewProps) {
               </div>
             </details>
 
-            {/* Translated Abstract - H2 Section */}
-            {translatedAbstract && (
-              <section className="mb-8">
-                <h2
-                  className={`text-xl font-semibold mb-4 flex items-center gap-2 pl-2 pr-8 ${
-                    darkMode ? "text-stone-200" : "text-zinc-800"
-                  }`}
-                >
-                  <span
-                    className={darkMode ? "text-teal-400" : "text-spira-600"}
-                  >
-                    <Icons.Language />
-                  </span>
-                  {t("home.translatedAbstract")}
-                </h2>
-                <ArticleContent
-                  content={translatedAbstract}
-                  darkMode={darkMode}
-                />
-              </section>
-            )}
-
-            {/* AI Interpretation - H2 Section */}
+            {/* AI 深度解读 - 保留标题（内容长需要导航） */}
             {hasInterpretation ? (
               <section>
-                <h2
-                  className={`text-xl font-semibold mb-4 flex items-center gap-2 pl-2 pr-8 ${
-                    darkMode ? "text-stone-200" : "text-zinc-800"
-                  }`}
-                >
-                  <span
-                    className={darkMode ? "text-teal-400" : "text-spira-600"}
-                  >
-                    <Icons.Sparkles />
-                  </span>
-                  {t("home.aiInterpretation")}
-                </h2>
                 <ArticleContent
                   content={current._entry!.ai_summary!}
                   darkMode={darkMode}

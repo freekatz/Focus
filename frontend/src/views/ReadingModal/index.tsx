@@ -93,16 +93,6 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
 
           {/* AI Interpretation */}
           <section>
-            <h2
-              className={`text-lg font-semibold mb-4 flex items-center gap-2 ${
-                darkMode ? "text-slate-200" : "text-zinc-800"
-              }`}
-            >
-              <span className={darkMode ? "text-teal-400" : "text-spira-600"}>
-                <Icons.Sparkles />
-              </span>
-              {t("home.aiInterpretation")}
-            </h2>
             <ArticleContent content={article._entry!.ai_summary!} darkMode={darkMode} />
           </section>
         </>
@@ -113,66 +103,38 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
       // Translation completed but not interpreted: show like HomeView
       return (
         <>
-          {/* Brief Summary - Key Points */}
-          {briefSummary && (
+          {/* 要点总结 + 翻译摘要：无标题 */}
+          {(briefSummary || translatedAbstract) && (
             <section className="mb-6">
-              <div
-                className={`rounded-lg p-4 ${
-                  darkMode
-                    ? "bg-teal-900/20 border border-teal-800/30"
-                    : "bg-spira-50 border border-spira-200"
-                }`}
-              >
-                <h2
-                  className={`text-base font-semibold mb-2 flex items-center gap-2 ${
-                    darkMode ? "text-teal-300" : "text-spira-700"
-                  }`}
-                >
-                  <Icons.Sparkles />
-                  {t("home.briefSummary")}
-                </h2>
+              {briefSummary && (
                 <p
-                  className={`text-sm leading-relaxed ${
-                    darkMode ? "text-slate-300" : "text-zinc-700"
+                  className={`text-base leading-relaxed mb-4 ${
+                    darkMode ? "text-slate-200" : "text-zinc-800"
                   }`}
                 >
                   {briefSummary}
                 </p>
-              </div>
+              )}
+              {translatedAbstract && (
+                <ArticleContent content={translatedAbstract} darkMode={darkMode} />
+              )}
             </section>
           )}
 
           {/* Original Abstract - Collapsible */}
           <details className="mb-6 group">
             <summary
-              className={`cursor-pointer flex items-center gap-2 text-sm font-medium ${
-                darkMode ? "text-slate-400 hover:text-slate-200" : "text-zinc-500 hover:text-zinc-700"
+              className={`cursor-pointer text-sm ${
+                darkMode ? "text-slate-500 hover:text-slate-300" : "text-zinc-400 hover:text-zinc-600"
               }`}
             >
-              <span className="transform transition-transform group-open:rotate-90">▶</span>
+              <span className="transform transition-transform group-open:rotate-90 inline-block mr-2">▶</span>
               {t("home.originalAbstract")}
             </summary>
             <div className="mt-4 pl-6">
               <ArticleContent content={article.content} darkMode={darkMode} />
             </div>
           </details>
-
-          {/* Translated Abstract */}
-          {translatedAbstract && (
-            <section className="mb-6">
-              <h2
-                className={`text-lg font-semibold mb-4 flex items-center gap-2 ${
-                  darkMode ? "text-slate-200" : "text-zinc-800"
-                }`}
-              >
-                <span className={darkMode ? "text-teal-400" : "text-spira-600"}>
-                  <Icons.Language />
-                </span>
-                {t("home.translatedAbstract")}
-              </h2>
-              <ArticleContent content={translatedAbstract} darkMode={darkMode} />
-            </section>
-          )}
 
           {/* Interpretation status */}
           {isInterpreting && (

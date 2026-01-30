@@ -126,32 +126,6 @@ export function AddSourceModal({ isOpen, onClose, onSuccess, darkMode }: AddSour
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className={`block text-xs font-medium uppercase tracking-wider ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
-                    {t('sources.allowSslBypass')}
-                  </label>
-                  <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-600' : 'text-zinc-400'}`}>
-                    {t('sources.allowSslBypassDesc')}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAllowSslBypass(!allowSslBypass)}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${
-                    allowSslBypass
-                      ? (darkMode ? 'bg-indigo-600' : 'bg-spira-600')
-                      : (darkMode ? 'bg-slate-700' : 'bg-zinc-200')
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-transform ${
-                      darkMode ? 'bg-slate-300' : 'bg-white'
-                    } ${allowSslBypass ? 'translate-x-5' : 'translate-x-0'}`}
-                  />
-                </button>
-              </div>
-
               <button
                 onClick={handleParse}
                 disabled={loading || !url.trim()}

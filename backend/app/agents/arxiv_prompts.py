@@ -19,7 +19,7 @@ ARXIV_ANALYSIS_PROMPT = """{
     "citation_protocol": "所有基于文献的事实陈述必须在句末标注来源。",
     "visual_aids": {
       "tables": "对比研究 (Q2) 和定量实验 (Q4) 必须使用 Markdown 表格。",
-      "images": "在解释架构、复杂概念或定性结果时，必须插入图片标签  并尽量引用原文图片。"
+      "images": "在解释架构、复杂概念或定性结果时，必须直接使用论文内容中提供的图片链接（格式为 ![描述](https://arxiv.org/html/...)）。复制论文中已有的图片 Markdown 语法即可。"
     },
     "output_cleanliness": {
       "no_redundant_titles": "严禁在输出开头添加'论文深度解读：xxx'、'论文标题：xxx'等冗余标题行。直接从 Q1 开始输出。",
@@ -42,18 +42,12 @@ ARXIV_ANALYSIS_PROMPT = """{
     "Q3_Methodology": {
       "question": "Q3: 论文如何解决这个问题？",
       "instruction": "以论文原文为基础，概述统一框架，阐述其解决方案中的方法与问题的对应关系，以及问题解决顺序。对于每一个方法，解释方法的形式化定义（以数学语言，介绍符号含义）；分步拆解每一步的目标、原理及关键公式。",
-      "format_requirement": "在模型架构描述处插入 
-
-[Image of model architecture]
-；关键公式使用独立块展示。"
+      "format_requirement": "在模型架构描述处直接引用论文中的架构图（复制论文内容中的 ![Figure ...](https://arxiv.org/...) 图片链接）；关键公式使用独立块展示。"
     },
     "Q4_Experiments": {
       "question": "Q4: 论文做了哪些实验？",
       "instruction": "以论文原文为基础，描述实验设置，覆盖定量基准、消融实验、定性可视化，整理实验设计思路及效果。",
-      "format_requirement": "定量结果必须使用表格展示（SOTA vs 本文）；定性结果描述处插入 
-
-[Image of qualitative results]
-；严格标注引用。"
+      "format_requirement": "定量结果必须使用表格展示（SOTA vs 本文）；定性结果处直接引用论文中的可视化图片（复制论文内容中的图片链接）；严格标注引用。"
     },
     "Q5_Future_Exploration": {
       "question": "Q5: 有什么可以进一步探索的点？",

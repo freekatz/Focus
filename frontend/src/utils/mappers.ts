@@ -8,12 +8,22 @@ export function mapEntryToArticle(entry: Entry): Article {
   const content = entry.content || '';
   const plainContent = stripHtml(content);
 
+  // 优先使用简要总结作为摘要，其次是翻译摘要，最后是原始内容
+  let snippet = '';
+  if (entry.brief_summary) {
+    snippet = entry.brief_summary;
+  } else if (entry.translated_abstract) {
+    snippet = truncateText(entry.translated_abstract, 200);
+  } else {
+    snippet = truncateText(plainContent, 200);
+  }
+
   return {
     id: String(entry.id),
     title: entry.title,
     source: entry.rss_source_name || 'Unknown Source',
     author: formatAuthors(entry.author),
-    snippet: truncateText(plainContent, 200),
+    snippet,
     content: content,
     timestamp: formatRelativeTime(entry.published_at || entry.fetched_at),
     status: mapBackendStatusToFrontend(entry.status),

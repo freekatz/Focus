@@ -52,6 +52,7 @@ def entry_to_response(entry) -> EntryResponse:
         fetched_at=entry.fetched_at,
         created_at=entry.created_at,
         translated_abstract=getattr(entry, 'translated_abstract', None),
+        brief_summary=getattr(entry, 'brief_summary', None),
         translation_status=getattr(entry, 'translation_status', None),
         rss_source_name=source_name,
     )

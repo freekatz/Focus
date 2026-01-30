@@ -26,7 +26,7 @@
   },
   "nav": {
     "home": "首页",
-    "sources": "订阅源",
+    "sources": "订阅",
     "library": "文库",
     "settings": "设置",
     "logout": "退出登录"
@@ -99,7 +99,7 @@
     "passwordChangeFailed": "修改密码失败"
   },
   "sources": {
-    "title": "订阅源",
+    "title": "订阅",
     "mySubs": "我的订阅",
     "discovery": "发现",
     "addSource": "添加订阅源",
@@ -240,9 +240,6 @@
     "allCaughtUpDesc": "您已处理完所有待阅内容。享受专注时光，或前往文库查看。",
     "insight": "智能洞察",
     "originalAbstract": "原文摘要",
-    "translatedAbstract": "翻译摘要",
-    "briefSummary": "要点总结",
-    "aiInterpretation": "AI 解读",
     "interpreted": "已解读",
     "interpreting": "解读中...",
     "interpretingArticle": "正在解读论文...",
@@ -257,7 +254,10 @@
     "shuffle": "随机",
     "prevArticle": "上一篇",
     "nextArticle": "下一篇",
-    "goToArticle": "跳转"
+    "goToArticle": "跳转",
+    "source": "订阅源",
+    "noArticlesInSource": "该订阅源暂无未读文章",
+    "trySelectingAnotherSource": "试试切换到其他订阅源，或选择「全部」查看所有未读内容。"
   },
   "errors": {
     "networkError": "网络错误，请检查您的网络连接。",
