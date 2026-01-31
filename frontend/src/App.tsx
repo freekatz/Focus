@@ -198,6 +198,9 @@ function App() {
           />
         )}
 
+        {/* Portal target for floating action bar - positioned relative to main content area */}
+        <div id="floating-action-portal" className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center pb-6 px-3" />
+
         {/* View Container - scrollbar at edge */}
         <div
           ref={scrollContainerRef}
