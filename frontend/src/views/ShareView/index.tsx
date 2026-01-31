@@ -1,19 +1,121 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../../components/icons/Icons';
 import { ArticleContent } from '../../components/shared/ArticleContent';
 import { shareApi, type ShareDetailResponse } from '../../api/share';
 import type { Entry } from '../../types';
 
+// Check if article is from ArXiv
+function isArxivEntry(entry: Entry): boolean {
+  const link = entry.link || "";
+  if (link.includes("arxiv.org")) return true;
+  const sourceName = (entry.rss_source_name || "").toLowerCase();
+  return sourceName.includes("arxiv");
+}
+
+// Format date for display
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 interface ShareViewProps {
   code: string;
   darkMode: boolean;
+  fontClass?: string;
 }
 
-export function ShareView({ code, darkMode }: ShareViewProps) {
+export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareViewProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shareData, setShareData] = useState<ShareDetailResponse | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Render entry content based on ArXiv status
+  const renderEntryContent = (entry: Entry) => {
+    const isArxiv = isArxivEntry(entry);
+    const hasInterpretation = entry.ai_summary && entry.ai_content_type === 'arxiv_interpretation';
+    const translatedAbstract = entry.translated_abstract;
+    const briefSummary = entry.brief_summary;
+    const isTranslationCompleted = entry.translation_status === 'completed';
+
+    if (!isArxiv) {
+      return <ArticleContent content={entry.content || ''} darkMode={darkMode} />;
+    }
+
+    // ArXiv article with interpretation
+    if (hasInterpretation) {
+      return (
+        <>
+          {/* Original Abstract - Collapsible */}
+          <details className="mb-8 group">
+            <summary
+              className={`cursor-pointer text-sm ${
+                darkMode ? "text-theme-text-tertiary hover:text-theme-text" : "text-theme-text-tertiary hover:text-theme-text-secondary"
+              }`}
+            >
+              <span className="transform transition-transform group-open:rotate-90 inline-block mr-2">▶</span>
+              {t("home.originalAbstract")}
+            </summary>
+            <div className="mt-4 pl-6">
+              <ArticleContent content={entry.content || ''} darkMode={darkMode} />
+            </div>
+          </details>
+
+          {/* AI Interpretation */}
+          <section>
+            <ArticleContent content={entry.ai_summary!} darkMode={darkMode} />
+          </section>
+        </>
+      );
+    }
+
+    // ArXiv article with translation but no interpretation
+    if (isTranslationCompleted || translatedAbstract) {
+      return (
+        <>
+          {/* Brief summary + translated abstract */}
+          {(briefSummary || translatedAbstract) && (
+            <section className="mb-8">
+              {briefSummary && (
+                <p className={`text-base leading-relaxed mb-4 ${darkMode ? "text-theme-text" : "text-theme-text"}`}>
+                  {briefSummary}
+                </p>
+              )}
+              {translatedAbstract && (
+                <ArticleContent content={translatedAbstract} darkMode={darkMode} />
+              )}
+            </section>
+          )}
+
+          {/* Original Abstract - Collapsible */}
+          <details className="mb-8 group">
+            <summary
+              className={`cursor-pointer text-sm ${
+                darkMode ? "text-theme-text-tertiary hover:text-theme-text" : "text-theme-text-tertiary hover:text-theme-text-secondary"
+              }`}
+            >
+              <span className="transform transition-transform group-open:rotate-90 inline-block mr-2">▶</span>
+              {t("home.originalAbstract")}
+            </summary>
+            <div className="mt-4 pl-6">
+              <ArticleContent content={entry.content || ''} darkMode={darkMode} />
+            </div>
+          </details>
+        </>
+      );
+    }
+
+    // ArXiv article not translated yet: show original content
+    return <ArticleContent content={entry.content || ''} darkMode={darkMode} />;
+  };
 
   useEffect(() => {
     const fetchShare = async () => {
@@ -22,10 +124,6 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
         setError(null);
         const data = await shareApi.getShare(code);
         setShareData(data);
-        // Auto-expand if only one article
-        if (data.entries && data.entries.length === 1) {
-          setExpandedId(data.entries[0].id);
-        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load share');
       } finally {
@@ -38,34 +136,45 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
     }
   }, [code]);
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+  // Reset scroll position on article change
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+    // Also scroll window to top for mobile
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentIndex]);
+
+  const goPrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const goNext = () => {
+    if (shareData?.entries && currentIndex < shareData.entries.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
   };
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-spira-50'}`}>
-        <div className="animate-spin h-8 w-8 border-2 border-spira-500 border-t-transparent rounded-full" />
+      <div className={`min-h-screen flex items-center justify-center ${fontClass} ${darkMode ? 'bg-theme-base' : 'bg-theme-base'}`}>
+        <div className={`animate-spin h-8 w-8 border-2 border-t-transparent rounded-full ${darkMode ? 'border-theme-accent' : 'border-theme-accent'}`} />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-spira-50 text-zinc-900'}`}>
-        <div className={`p-4 rounded-full mb-4 ${darkMode ? 'bg-slate-800 text-red-400' : 'bg-red-50 text-red-500'}`}>
+      <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${fontClass} ${darkMode ? 'bg-theme-base text-theme-text' : 'bg-theme-base text-theme-text'}`}>
+        <div className={`p-4 rounded-full mb-4 ${darkMode ? 'bg-theme-muted text-theme-error' : 'bg-red-50 text-red-500'}`}>
           <Icons.X />
         </div>
-        <h1 className="text-2xl font-serif font-medium mb-2">
+        <h1 className="text-h2 font-serif font-medium mb-2">
           {error === 'Share not found' ? 'Not Found' : error === 'Share has expired' ? 'Expired' : 'Error'}
         </h1>
-        <p className={`text-center max-w-md ${darkMode ? 'text-slate-400' : 'text-zinc-500'}`}>
+        <p className={`text-center max-w-md text-body-sm ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>
           {error === 'Share not found'
             ? 'This share link does not exist or has been removed.'
             : error === 'Share has expired'
@@ -80,173 +189,227 @@ export function ShareView({ code, darkMode }: ShareViewProps) {
 
   const { entries, text_content, description, created_at, expires_at, share_type } = shareData;
 
-  return (
-    <div className={`min-h-screen ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-spira-50 text-zinc-900'}`}>
-      {/* Header */}
-      <header className={`sticky top-0 z-10 border-b backdrop-blur-sm ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-spira-50/90 border-zinc-200'}`}>
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-indigo-600' : 'bg-spira-600'}`}>
-              <span className="w-5 h-5 text-white"><Icons.Focus /></span>
+  // Text share - simple display
+  if (share_type === 'text' && text_content) {
+    return (
+      <div className={`min-h-screen ${fontClass} ${darkMode ? 'bg-theme-base text-theme-text' : 'bg-theme-base text-theme-text'}`}>
+        {/* Header */}
+        <header className={`sticky top-0 z-10 border-b backdrop-blur-sm ${darkMode ? 'bg-theme-base/90 border-theme-border' : 'bg-theme-base/90 border-theme-border'}`}>
+          <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-theme-accent' : 'bg-theme-accent'}`}>
+                <span className="w-5 h-5 text-white"><Icons.Focus /></span>
+              </div>
+              <span className="font-semibold text-body">Focus</span>
             </div>
-            <span className="font-semibold text-lg">Focus</span>
+            <div className={`text-caption ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>
+              Shared {formatDate(created_at)}
+            </div>
           </div>
-          <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-zinc-500'}`}>
-            Shared {formatDate(created_at)}
-            {expires_at && (
-              <span className="ml-2">
-                · Expires {formatDate(expires_at)}
+        </header>
+
+        <main className="max-w-4xl mx-auto px-4 py-8">
+          {description && (
+            <div className={`mb-8 p-4 rounded-xl ${darkMode ? 'bg-theme-surface' : 'bg-theme-surface'} shadow-sm`}>
+              <p className={`text-body-sm ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>{description}</p>
+            </div>
+          )}
+          <div className={`p-6 rounded-2xl ${darkMode ? 'bg-theme-surface' : 'bg-theme-surface'} shadow-sm`}>
+            <div className={`prose max-w-none ${darkMode ? 'prose-sepia' : ''}`}>
+              <pre className="whitespace-pre-wrap font-sans text-body-sm">{text_content}</pre>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Entry share - card browser design
+  if (share_type === 'entries' && entries && entries.length > 0) {
+    const current = entries[currentIndex];
+    const isArxiv = isArxivEntry(current);
+    const hasInterpretation = current.ai_summary && current.ai_content_type === 'arxiv_interpretation';
+
+    return (
+      <div className={`min-h-screen flex flex-col ${fontClass} ${darkMode ? 'bg-theme-base text-theme-text' : 'bg-theme-base text-theme-text'}`}>
+        {/* Header */}
+        <header className={`sticky top-0 z-10 border-b backdrop-blur-sm ${darkMode ? 'bg-theme-base/90 border-theme-border' : 'bg-theme-base/90 border-theme-border'}`}>
+          <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${darkMode ? 'bg-theme-accent' : 'bg-theme-accent'}`}>
+                <span className="w-4 h-4 text-white"><Icons.Focus /></span>
+              </div>
+              <span className="font-semibold text-body-sm">Focus</span>
+            </div>
+            <div className={`text-caption ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>
+              {formatDate(created_at)}
+              {expires_at && <span className="hidden md:inline"> · Expires {formatDate(expires_at)}</span>}
+            </div>
+          </div>
+        </header>
+
+        {/* Article Content - HomeView inspired layout */}
+        <article
+          ref={contentRef}
+          className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-6 pb-24 px-4 md:px-6 lg:px-8"
+        >
+          {/* Document Header: Tag + Date */}
+          <div className="flex justify-between items-center text-sm mb-6">
+            <span className="flex items-center gap-2 flex-wrap">
+              {current.rss_source_name && (
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  darkMode ? "bg-theme-muted text-theme-text-secondary" : "bg-theme-muted text-theme-text-secondary"
+                }`}>
+                  {current.rss_source_name}
+                </span>
+              )}
+              {isArxiv && (
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  hasInterpretation
+                    ? "bg-green-100 text-green-700"
+                    : current.translation_status === 'completed'
+                      ? "bg-teal-100 text-teal-700"
+                      : "bg-purple-100 text-purple-700"
+                }`}>
+                  {hasInterpretation
+                    ? t("home.interpreted")
+                    : current.translation_status === 'completed'
+                      ? t("library.translated")
+                      : "ArXiv"}
+                </span>
+              )}
+            </span>
+            <time className={`flex-shrink-0 ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}>
+              {formatDate(current.published_at)}
+            </time>
+          </div>
+
+          {/* Title - Markdown H1 Style (matches HomeView) */}
+          <h1
+            onClick={() => {
+              if (current.link) {
+                window.open(current.link, "_blank", "noopener,noreferrer");
+              }
+            }}
+            className={`text-2xl md:text-3xl font-serif font-bold mb-4 leading-tight cursor-pointer hover:underline decoration-2 underline-offset-4 ${
+              darkMode
+                ? "text-theme-text hover:text-theme-accent"
+                : "text-theme-text hover:text-theme-accent"
+            }`}
+          >
+            {current.title}
+          </h1>
+
+          {/* Author - Blockquote Style */}
+          {current.author && (
+            <blockquote className={`border-l-4 pl-4 mb-8 ${
+              darkMode ? "border-theme-border text-theme-text-secondary" : "border-theme-border text-theme-text-secondary"
+            }`}>
+              {current.author}
+            </blockquote>
+          )}
+
+          <hr className={`mb-8 ${darkMode ? "border-theme-border" : "border-theme-border"}`} />
+
+          {/* Content */}
+          {renderEntryContent(current)}
+        </article>
+
+        {/* Floating Navigation Bar */}
+        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
+          <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-full shadow-xl backdrop-blur-sm ${
+            darkMode
+              ? "bg-theme-surface/95 border border-theme-border shadow-theme-border/50"
+              : "bg-theme-surface/95 border border-theme-border shadow-theme-border/50"
+          }`}>
+            {/* Previous */}
+            <button
+              onClick={goPrev}
+              disabled={currentIndex === 0}
+              className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+                currentIndex === 0
+                  ? darkMode ? "text-theme-text-muted cursor-not-allowed" : "text-theme-text-muted cursor-not-allowed"
+                  : darkMode ? "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95" : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+              }`}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span className="hidden md:inline">{t("home.prevArticle")}</span>
+            </button>
+
+            {/* Divider */}
+            <div className={`w-px h-4 ${darkMode ? "bg-theme-border" : "bg-theme-border"}`} />
+
+            {/* Article Counter */}
+            <div className="flex items-center flex-shrink-0 whitespace-nowrap px-2">
+              <span className={`text-caption font-medium ${darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"}`}>
+                {currentIndex + 1}
               </span>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Description if exists */}
-        {description && (
-          <div className={`mb-8 p-4 rounded-xl ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-sm`}>
-            <p className={darkMode ? 'text-slate-300' : 'text-zinc-700'}>{description}</p>
-          </div>
-        )}
-
-        {/* Text Share */}
-        {share_type === 'text' && text_content && (
-          <div className={`p-6 rounded-2xl ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-sm`}>
-            <div className={`prose max-w-none ${darkMode ? 'prose-invert' : ''}`}>
-              <pre className="whitespace-pre-wrap font-sans">{text_content}</pre>
-            </div>
-          </div>
-        )}
-
-        {/* Entry Share */}
-        {share_type === 'entries' && entries && entries.length > 0 && (
-          <div className="space-y-4">
-            {/* Stats */}
-            <div className={`text-sm mb-6 ${darkMode ? 'text-slate-400' : 'text-zinc-500'}`}>
-              {entries.length} {entries.length === 1 ? 'article' : 'articles'} shared
+              <span className={`text-caption ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}>
+                /{entries.length}
+              </span>
             </div>
 
-            {entries.map((entry: Entry) => (
-              <article
-                key={entry.id}
-                className={`rounded-2xl overflow-hidden transition-all ${
-                  darkMode ? 'bg-slate-800' : 'bg-white'
-                } shadow-sm hover:shadow-md`}
-              >
-                {/* Entry Header - always visible */}
-                <div
-                  className={`p-5 cursor-pointer ${expandedId === entry.id ? 'border-b' : ''} ${
-                    darkMode ? 'border-slate-700' : 'border-zinc-100'
-                  }`}
-                  onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      {/* Source tag */}
-                      {entry.rss_source_name && (
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-2 ${
-                          darkMode ? 'bg-slate-700 text-slate-300' : 'bg-spira-100 text-spira-700'
-                        }`}>
-                          {entry.rss_source_name}
-                        </span>
-                      )}
+            {/* Divider */}
+            <div className={`w-px h-4 ${darkMode ? "bg-theme-border" : "bg-theme-border"}`} />
 
-                      {/* Title - clickable to open original */}
-                      <h2 className="mb-2 line-clamp-2">
-                        <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (entry.link) {
-                              window.open(entry.link, '_blank', 'noopener,noreferrer');
-                            }
-                          }}
-                          className={`text-lg font-serif font-semibold leading-snug cursor-pointer hover:underline ${
-                            darkMode ? 'text-slate-100 hover:text-indigo-300' : 'text-zinc-900 hover:text-spira-600'
-                          }`}
-                        >
-                          {entry.title}
-                        </span>
-                      </h2>
+            {/* Open Original */}
+            <button
+              onClick={() => {
+                if (current.link) {
+                  window.open(current.link, "_blank", "noopener,noreferrer");
+                }
+              }}
+              className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+                darkMode
+                  ? "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
+                  : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
+              }`}
+            >
+              <Icons.ExternalLink />
+              <span className="hidden md:inline">{t("entry.visitOriginal")}</span>
+            </button>
 
-                      {/* Meta - same style as HomeView */}
-                      <div className={`text-sm flex items-center gap-2 ${
-                        darkMode ? 'text-slate-400' : 'text-zinc-500'
-                      }`}>
-                        {entry.author && <span className="font-medium">{entry.author}</span>}
-                        {entry.author && entry.published_at && <span>•</span>}
-                        {entry.published_at && <span>{formatDate(entry.published_at)}</span>}
-                      </div>
+            {/* Divider */}
+            <div className={`w-px h-4 ${darkMode ? "bg-theme-border" : "bg-theme-border"}`} />
 
-                      {/* AI Summary preview when collapsed */}
-                      {expandedId !== entry.id && entry.ai_summary && (
-                        <p className={`mt-3 text-sm line-clamp-2 ${
-                          darkMode ? 'text-slate-300' : 'text-zinc-600'
-                        }`}>
-                          {entry.ai_summary}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Expand/Collapse icon */}
-                    <div className={`flex-shrink-0 p-2 rounded-full transition-transform ${
-                      expandedId === entry.id ? 'rotate-180' : ''
-                    } ${darkMode ? 'text-slate-400' : 'text-zinc-400'}`}>
-                      <Icons.ChevronDown />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expanded Content */}
-                {expandedId === entry.id && (
-                  <div className="p-5 pt-4">
-                    {/* AI Summary */}
-                    {entry.ai_summary && (
-                      <div className={`mb-6 p-4 rounded-xl ${
-                        darkMode ? 'bg-slate-700/50' : 'bg-spira-50'
-                      }`}>
-                        <div className={`flex items-center gap-2 mb-2 text-sm font-medium ${
-                          darkMode ? 'text-indigo-400' : 'text-spira-600'
-                        }`}>
-                          <span className="w-4 h-4"><Icons.Sparkles /></span>
-                          AI Summary
-                        </div>
-                        <p className={darkMode ? 'text-slate-200' : 'text-zinc-700'}>
-                          {entry.ai_summary}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Full Content */}
-                    {entry.content && (
-                      <ArticleContent content={entry.content} darkMode={darkMode} />
-                    )}
-                  </div>
-                )}
-              </article>
-            ))}
+            {/* Next */}
+            <button
+              onClick={goNext}
+              disabled={currentIndex === entries.length - 1}
+              className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+                currentIndex === entries.length - 1
+                  ? darkMode ? "text-theme-text-muted cursor-not-allowed" : "text-theme-text-muted cursor-not-allowed"
+                  : darkMode ? "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95" : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+              }`}
+            >
+              <span className="hidden md:inline">{t("home.nextArticle")}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
           </div>
-        )}
+        </nav>
 
-        {/* Empty state */}
-        {share_type === 'entries' && (!entries || entries.length === 0) && (
-          <div className="text-center py-12">
-            <p className={darkMode ? 'text-slate-400' : 'text-zinc-500'}>
-              No articles in this share.
+        {/* Footer */}
+        <footer className={`border-t py-4 ${darkMode ? 'border-theme-border' : 'border-theme-border'}`}>
+          <div className="max-w-5xl mx-auto px-4 text-center">
+            <p className={`text-caption ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
+              Shared via Focus
             </p>
           </div>
-        )}
-      </main>
+        </footer>
+      </div>
+    );
+  }
 
-      {/* Footer */}
-      <footer className={`border-t mt-12 py-6 ${darkMode ? 'border-slate-800' : 'border-zinc-200'}`}>
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className={`text-sm ${darkMode ? 'text-slate-500' : 'text-zinc-400'}`}>
-            Shared via Focus
-          </p>
-        </div>
-      </footer>
+  // Empty state
+  return (
+    <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${fontClass} ${darkMode ? 'bg-theme-base text-theme-text' : 'bg-theme-base text-theme-text'}`}>
+      <p className={`text-body-sm ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>
+        No articles in this share.
+      </p>
     </div>
   );
 }

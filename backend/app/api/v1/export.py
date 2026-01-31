@@ -61,7 +61,7 @@ async def get_zotero_config(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User config not found")
 
     return {
-        "default_collection": config.zotero_collection or "",
+        "default_collection": config.zotero_collection or "Focus",
         "configured": bool(config.zotero_api_key and config.zotero_library_id)
     }
 
@@ -100,8 +100,8 @@ async def batch_export_to_zotero(
     if not entries:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No valid entries found")
 
-    # 使用传入的 collection，如果没传则使用配置的默认值
-    final_collection = data.collection if data.collection is not None else config.zotero_collection
+    # 使用传入的 collection，如果没传则使用配置的默认值，最后 fallback 到 "Focus"
+    final_collection = data.collection or config.zotero_collection or "Focus"
     results = client.batch_create_items(entries, final_collection)
     return results
 
@@ -127,8 +127,8 @@ async def export_to_zotero(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User config not found")
 
     client = get_zotero_client(config)
-    # 使用传入的 collection，如果没传则使用配置的默认值
-    final_collection = collection if collection is not None else config.zotero_collection
+    # 使用传入的 collection，如果没传则使用配置的默认值，最后 fallback 到 "Focus"
+    final_collection = collection or config.zotero_collection or "Focus"
     item_key = client.create_web_item(entry, final_collection)
 
     if item_key:

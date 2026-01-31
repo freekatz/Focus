@@ -65,7 +65,8 @@ async def validate_rss_url(
     current_user: CurrentUser,
 ):
     """验证 RSS URL 是否有效"""
-    result = await rss_service.validate_rss_url(data.url, data.allow_ssl_bypass)
+    # 默认允许绕过 SSL 验证（用户不再需要配置此选项）
+    result = await rss_service.validate_rss_url(data.url, allow_ssl_bypass=True)
     return result
 
 
@@ -121,12 +122,20 @@ async def fetch_rss_source(
     db: DbSession,
     current_user: CurrentUser,
 ):
-    """手动触发采集指定 RSS 源"""
+    """手动触发采集指定 RSS 源
+
+    采集完成后，如果有新的 ArXiv 文章，会自动触发摘要翻译。
+    """
     rss_source = await rss_service.get_rss_source_by_id(db, rss_id)
     if not rss_source:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="RSS source not found")
 
     fetched_count, new_count = await rss_service.fetch_rss_entries(db, rss_source)
+
+    # 如果有新文章，触发 ArXiv 摘要翻译
+    if new_count > 0:
+        from app.tasks.fetch_rss import trigger_arxiv_translation
+        await trigger_arxiv_translation(db, rss_id)
 
     return RssFetchResponse(
         success=rss_source.last_fetch_status == "success",

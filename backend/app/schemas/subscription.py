@@ -13,13 +13,13 @@ class SubscriptionCreate(BaseModel):
     """创建订阅请求"""
     rss_source_id: int
     is_active: bool = True
-    custom_fetch_interval: Optional[int] = Field(None, ge=5, le=1440)
+    custom_refresh_time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")  # 每日刷新时间，如 "08:00"
 
 
 class SubscriptionUpdate(BaseModel):
     """更新订阅请求"""
     is_active: Optional[bool] = None
-    custom_fetch_interval: Optional[int] = Field(None, ge=5, le=1440)
+    custom_refresh_time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")  # 每日刷新时间
 
 
 class SubscriptionResponse(BaseModel):
@@ -27,7 +27,7 @@ class SubscriptionResponse(BaseModel):
     id: int
     rss_source_id: int
     is_active: bool
-    custom_fetch_interval: Optional[int]
+    custom_refresh_time: Optional[str]  # 每日刷新时间
     created_at: datetime
 
     # 关联的 RSS 源信息
@@ -71,7 +71,6 @@ class RssMarketItemResponse(BaseModel):
     category: RssCategory
     icon_url: Optional[str]
     entry_count: int
-    allow_ssl_bypass: bool
     # 用户是否已订阅
     is_subscribed: bool
 

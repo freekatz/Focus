@@ -26,8 +26,8 @@ export function ToastContainer({ darkMode }: ToastContainerProps) {
           : 'bg-yellow-50 text-yellow-800 border-yellow-200';
       default:
         return darkMode
-          ? 'bg-slate-800/95 text-slate-100 border-slate-600'
-          : 'bg-white text-zinc-800 border-zinc-200';
+          ? 'bg-theme-surface/95 text-theme-text border-theme-border'
+          : 'bg-theme-surface text-theme-text border-theme-border';
     }
   };
 
@@ -54,10 +54,10 @@ export function ToastContainer({ darkMode }: ToastContainerProps) {
           <span className="flex-shrink-0 opacity-80">
             {getIcon(toast.type)}
           </span>
-          <span className="flex-1 text-sm font-medium">{toast.message}</span>
+          <span className="flex-1 text-body-sm font-medium">{toast.message}</span>
           <button
             onClick={() => removeToast(toast.id)}
-            className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+            className="flex-shrink-0 min-h-touch min-w-touch flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"
           >
             <Icons.X />
           </button>

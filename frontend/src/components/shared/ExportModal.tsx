@@ -1,4 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
+import JSZip from "jszip";
 import { Icons } from "../icons/Icons";
 import { exportApi } from "../../api";
 import type { Article } from "../../types";
@@ -7,16 +8,14 @@ interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   articles: Article[];
-  darkMode: boolean;
 }
 
-type ExportTab = "share" | "zotero" | "copy";
+type ExportTab = "share" | "zotero" | "copy" | "download";
 
 export function ExportModal({
   isOpen,
   onClose,
   articles,
-  darkMode,
 }: ExportModalProps) {
   const [activeTab, setActiveTab] = useState<ExportTab>("share");
   const [loading, setLoading] = useState(false);
@@ -120,10 +119,113 @@ export function ExportModal({
     }
   };
 
+  // Generate markdown content for a single article
+  const generateMarkdownForArticle = (article: Article): string => {
+    const entry = article._entry;
+    const lines: string[] = [];
+
+    lines.push(`# ${article.title}`);
+    lines.push("");
+
+    if (entry?.rss_source_name) {
+      lines.push(`**Source:** ${entry.rss_source_name}`);
+    }
+    if (article.author) {
+      lines.push(`**Author:** ${article.author}`);
+    }
+    if (entry?.published_at) {
+      lines.push(`**Published:** ${new Date(entry.published_at).toLocaleDateString()}`);
+    }
+    if (entry?.link) {
+      lines.push(`**Link:** ${entry.link}`);
+    }
+    lines.push("");
+
+    // AI Summary / Brief Summary
+    if (entry?.ai_summary) {
+      lines.push("## AI Summary");
+      lines.push("");
+      lines.push(entry.ai_summary);
+      lines.push("");
+    } else if (entry?.brief_summary) {
+      lines.push("## Summary");
+      lines.push("");
+      lines.push(entry.brief_summary);
+      lines.push("");
+    }
+
+    // Translated Abstract (for ArXiv)
+    if (entry?.translated_abstract) {
+      lines.push("## Translated Abstract");
+      lines.push("");
+      lines.push(entry.translated_abstract);
+      lines.push("");
+    }
+
+    return lines.join("\n");
+  };
+
+  // Generate filename for a single article
+  const generateFilename = (article: Article): string => {
+    const entry = article._entry;
+    const arxivMatch = entry?.link?.match(/arxiv\.org\/abs\/(\d+\.\d+)/);
+    const arxivId = arxivMatch ? arxivMatch[1] : null;
+
+    if (arxivId) {
+      const shortTitle = article.title.slice(0, 30).replace(/[/\\?%*:|"<>]/g, "-").trim();
+      return `arxiv-${arxivId}-${shortTitle}.md`;
+    } else {
+      const shortTitle = article.title.slice(0, 40).replace(/[/\\?%*:|"<>]/g, "-").trim();
+      const sourceName = entry?.rss_source_name?.slice(0, 15).replace(/[/\\?%*:|"<>]/g, "-") || "focus";
+      return `${shortTitle}-${sourceName}.md`;
+    }
+  };
+
+  const handleDownloadMarkdown = async () => {
+    const timestamp = new Date().toISOString().slice(0, 16).replace(/[T:]/g, "-");
+
+    if (articles.length === 1) {
+      // Single article: download as markdown file
+      const article = articles[0];
+      const content = generateMarkdownForArticle(article);
+      const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = generateFilename(article).replace(".md", `-${timestamp}.md`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setMessage({ type: "success", text: "Markdown file downloaded!" });
+    } else {
+      // Multiple articles: download as zip file
+      const zip = new JSZip();
+
+      articles.forEach((article) => {
+        const content = generateMarkdownForArticle(article);
+        const filename = generateFilename(article);
+        zip.file(filename, content);
+      });
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `focus-export-${articles.length}-${timestamp}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setMessage({ type: "success", text: `${articles.length} files downloaded as zip!` });
+    }
+  };
+
   const tabs: { id: ExportTab; label: string; icon: ReactNode }[] = [
     { id: "share", label: "Share", icon: <Icons.Link /> },
     { id: "zotero", label: "Zotero", icon: <Icons.Download /> },
     { id: "copy", label: "Copy", icon: <Icons.Share /> },
+    { id: "download", label: "Download", icon: <Icons.Download /> },
   ];
 
   return (
@@ -135,42 +237,22 @@ export function ExportModal({
       />
 
       {/* Modal - Centered */}
-      <div
-        className={`relative w-full max-w-md rounded-2xl shadow-xl ${
-          darkMode ? "bg-slate-800" : "bg-white"
-        }`}
-      >
+      <div className="relative w-full max-w-md rounded-2xl shadow-xl bg-theme-surface">
         {/* Header */}
-        <div
-          className={`flex items-center justify-between p-4 border-b ${
-            darkMode ? "border-slate-700" : "border-zinc-200"
-          }`}
-        >
-          <h3
-            className={`text-lg font-bold ${
-              darkMode ? "text-white" : "text-zinc-900"
-            }`}
-          >
+        <div className="flex items-center justify-between p-4 border-b border-theme-border">
+          <h3 className="text-h3 font-bold text-theme-text">
             Export {articles.length} item{articles.length > 1 ? "s" : ""}
           </h3>
           <button
             onClick={onClose}
-            className={`p-2 rounded-full transition-colors ${
-              darkMode
-                ? "hover:bg-slate-700 text-slate-400"
-                : "hover:bg-zinc-100 text-zinc-500"
-            }`}
+            className="min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors hover:bg-theme-muted text-theme-text-secondary"
           >
             <Icons.X />
           </button>
         </div>
 
         {/* Tabs */}
-        <div
-          className={`flex p-2 mx-4 mt-4 rounded-lg ${
-            darkMode ? "bg-slate-900" : "bg-zinc-100"
-          }`}
-        >
+        <div className="flex p-2 mx-4 mt-4 rounded-lg bg-theme-muted">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -179,14 +261,10 @@ export function ExportModal({
                 setMessage(null);
                 setShareUrl(null);
               }}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 min-h-touch px-3 rounded-md text-ui-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? darkMode
-                    ? "bg-slate-700 text-white shadow"
-                    : "bg-white text-zinc-900 shadow"
-                  : darkMode
-                  ? "text-slate-400 hover:text-slate-300"
-                  : "text-zinc-500 hover:text-zinc-700"
+                  ? "bg-theme-surface text-theme-text shadow"
+                  : "text-theme-text-secondary hover:text-theme-text"
               }`}
             >
               <span className="scale-75">{tab.icon}</span>
@@ -200,21 +278,13 @@ export function ExportModal({
           {activeTab === "share" && (
             <div className="space-y-4">
               <div>
-                <label
-                  className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
-                    darkMode ? "text-slate-500" : "text-zinc-400"
-                  }`}
-                >
+                <label className="block text-caption font-medium uppercase tracking-wider mb-2 text-theme-text-tertiary">
                   Expires in
                 </label>
                 <select
                   value={expiresInDays}
                   onChange={(e) => setExpiresInDays(parseInt(e.target.value))}
-                  className={`w-full p-2 rounded-lg border text-sm ${
-                    darkMode
-                      ? "bg-slate-900 border-slate-600 text-white"
-                      : "bg-zinc-50 border-zinc-200"
-                  }`}
+                  className="w-full min-h-touch p-2 rounded-lg border text-body-sm bg-theme-muted border-theme-border text-theme-text"
                 >
                   <option value={1}>1 day</option>
                   <option value={7}>7 days</option>
@@ -225,26 +295,16 @@ export function ExportModal({
 
               {shareUrl ? (
                 <div className="space-y-2">
-                  <div
-                    className={`flex items-center gap-2 p-3 rounded-lg ${
-                      darkMode ? "bg-slate-900" : "bg-zinc-50"
-                    }`}
-                  >
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-theme-muted">
                     <input
                       type="text"
                       readOnly
                       value={shareUrl}
-                      className={`flex-1 bg-transparent text-sm outline-none ${
-                        darkMode ? "text-slate-300" : "text-zinc-700"
-                      }`}
+                      className="flex-1 bg-transparent text-body-sm outline-none text-theme-text-secondary"
                     />
                     <button
                       onClick={copyShareUrl}
-                      className={`p-2 rounded-lg transition-colors ${
-                        darkMode
-                          ? "hover:bg-slate-700 text-indigo-400"
-                          : "hover:bg-zinc-200 text-spira-600"
-                      }`}
+                      className="min-h-touch min-w-touch flex items-center justify-center rounded-lg transition-colors hover:bg-theme-border text-theme-accent"
                     >
                       <Icons.Share />
                     </button>
@@ -254,11 +314,7 @@ export function ExportModal({
                 <button
                   onClick={handleShare}
                   disabled={loading || entryIds.length === 0}
-                  className={`w-full py-3 rounded-xl font-medium transition-all ${
-                    darkMode
-                      ? "bg-indigo-600 hover:bg-indigo-500 text-white"
-                      : "bg-spira-600 hover:bg-spira-500 text-white"
-                  } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all bg-theme-accent hover:bg-theme-accent-hover text-white ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {loading ? "Creating..." : "Create Share Link"}
                 </button>
@@ -269,11 +325,7 @@ export function ExportModal({
           {activeTab === "zotero" && (
             <div className="space-y-4">
               <div>
-                <label
-                  className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
-                    darkMode ? "text-slate-500" : "text-zinc-400"
-                  }`}
-                >
+                <label className="block text-caption font-medium uppercase tracking-wider mb-2 text-theme-text-tertiary">
                   Collection
                 </label>
                 <input
@@ -281,21 +333,13 @@ export function ExportModal({
                   placeholder="Focus"
                   value={zoteroCollection}
                   onChange={(e) => setZoteroCollection(e.target.value)}
-                  className={`w-full p-2 rounded-lg border text-sm ${
-                    darkMode
-                      ? "bg-slate-900 border-slate-600 text-white"
-                      : "bg-zinc-50 border-zinc-200"
-                  }`}
+                  className="w-full min-h-touch p-2 rounded-lg border text-body-sm bg-theme-muted border-theme-border text-theme-text"
                 />
               </div>
               <button
                 onClick={handleZoteroExport}
                 disabled={loading || entryIds.length === 0}
-                className={`w-full py-3 rounded-xl font-medium transition-all ${
-                  darkMode
-                    ? "bg-indigo-600 hover:bg-indigo-500 text-white"
-                    : "bg-spira-600 hover:bg-spira-500 text-white"
-                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all bg-theme-accent hover:bg-theme-accent-hover text-white ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 {loading ? "Exporting..." : "Export to Zotero"}
               </button>
@@ -304,34 +348,17 @@ export function ExportModal({
 
           {activeTab === "copy" && (
             <div className="space-y-4">
-              <div
-                className={`p-3 rounded-lg max-h-32 overflow-y-auto ${
-                  darkMode ? "bg-slate-900" : "bg-zinc-50"
-                }`}
-              >
+              <div className="p-3 rounded-lg max-h-32 overflow-y-auto bg-theme-muted">
                 {articles.map((a, i) => (
                   <div
                     key={a.id}
-                    className={`text-sm py-1 ${
-                      i > 0
-                        ? "border-t " +
-                          (darkMode ? "border-slate-700" : "border-zinc-200")
-                        : ""
-                    }`}
+                    className={`text-body-sm py-1 ${i > 0 ? "border-t border-theme-border" : ""}`}
                   >
-                    <div
-                      className={`font-medium truncate ${
-                        darkMode ? "text-slate-300" : "text-zinc-700"
-                      }`}
-                    >
+                    <div className="font-medium truncate text-theme-text-secondary">
                       {a.title}
                     </div>
                     {a._entry?.link && (
-                      <div
-                        className={`text-xs truncate ${
-                          darkMode ? "text-slate-500" : "text-zinc-400"
-                        }`}
-                      >
+                      <div className="text-caption truncate text-theme-text-tertiary">
                         {a._entry.link}
                       </div>
                     )}
@@ -341,13 +368,45 @@ export function ExportModal({
 
               <button
                 onClick={handleCopy}
-                className={`w-full py-3 rounded-xl font-medium transition-all ${
-                  darkMode
-                    ? "bg-indigo-600 hover:bg-indigo-500 text-white"
-                    : "bg-spira-600 hover:bg-spira-500 text-white"
-                }`}
+                className="w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all bg-theme-accent hover:bg-theme-accent-hover text-white"
               >
                 Copy to Clipboard
+              </button>
+            </div>
+          )}
+
+          {activeTab === "download" && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-theme-muted">
+                <p className="text-body-sm text-theme-text-secondary">
+                  Download AI summaries as a Markdown file, including article metadata, AI analysis, and translations.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg max-h-32 overflow-y-auto bg-theme-muted">
+                {articles.map((a, i) => {
+                  const hasAiContent = a._entry?.ai_summary || a._entry?.brief_summary || a._entry?.translated_abstract;
+                  return (
+                    <div
+                      key={a.id}
+                      className={`text-body-sm py-1 flex items-center gap-2 ${i > 0 ? "border-t border-theme-border" : ""}`}
+                    >
+                      <span className={hasAiContent ? "text-theme-success" : "text-theme-text-muted"}>
+                        {hasAiContent ? "✓" : "○"}
+                      </span>
+                      <span className="font-medium truncate flex-1 text-theme-text-secondary">
+                        {a.title}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={handleDownloadMarkdown}
+                className="w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all bg-theme-accent hover:bg-theme-accent-hover text-white"
+              >
+                Download Markdown
               </button>
             </div>
           )}
@@ -355,14 +414,10 @@ export function ExportModal({
           {/* Message */}
           {message && (
             <div
-              className={`mt-4 p-3 rounded-lg text-sm text-center ${
+              className={`mt-4 p-3 rounded-lg text-body-sm text-center ${
                 message.type === "success"
-                  ? darkMode
-                    ? "bg-green-900/30 text-green-400"
-                    : "bg-green-50 text-green-600"
-                  : darkMode
-                  ? "bg-red-900/30 text-red-400"
-                  : "bg-red-50 text-red-600"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
               }`}
             >
               {message.text}

@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Icons } from "../../components/icons/Icons";
-import { AIBottomSheet } from "../../components/shared/AIBottomSheet";
 import { ArticleContent } from "../../components/shared/ArticleContent";
 import { entriesApi, subscriptionsApi } from "../../api";
 import {
@@ -9,55 +8,82 @@ import {
   mapActionToBackendStatus,
 } from "../../utils/mappers";
 import type { Article } from "../../types";
+import type { Subscription } from "../../types/subscription";
 
 interface HomeViewProps {
   darkMode: boolean;
 }
 
-type SwipeDirection = "left" | "right" | null;
+// Check if article is from ArXiv
+function isArxivArticle(article: Article): boolean {
+  const link = article._entry?.link || article.url || "";
+  if (link.includes("arxiv.org")) return true;
+  const sourceName = (article.source || "").toLowerCase();
+  return sourceName.includes("arxiv");
+}
+
+// Format date for display
+function formatDate(dateString: string | null): string {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
 
 export function HomeView({ darkMode }: HomeViewProps) {
   const { t } = useTranslation();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [offset, setOffset] = useState(0);
-  const [sheetOpen, setSheetOpen] = useState(false);
-
-  // Animation states
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [exitDirection, setExitDirection] = useState<SwipeDirection>(null);
-  const [enterDirection, setEnterDirection] = useState<SwipeDirection>(null);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [selectedSourceId, setSelectedSourceId] = useState<number | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [jumpInput, setJumpInput] = useState("");
 
-  // Swipe Constants - increased threshold to prevent accidental triggers
-  const minSwipeDistance = 180;
-
-  // Ref for content scroll area
   const contentRef = useRef<HTMLDivElement>(null);
+  const hasLoaded = useRef(false);
 
-  // Fetch unread entries from subscribed sources only
-  const fetchEntries = useCallback(async () => {
+  // Fetch subscriptions
+  const fetchSubscriptions = useCallback(async () => {
     try {
-      // Get user's subscriptions to filter entries
+      const response = await subscriptionsApi.getMySubscriptions();
+      setSubscriptions(response.items);
+    } catch (error) {
+      console.error("Failed to fetch subscriptions:", error);
+    }
+  }, []);
+
+  // Fetch unread entries
+  const fetchEntries = useCallback(async (sourceId?: number | null) => {
+    try {
+      setLoading(true);
       const [entriesResponse, subscriptionsResponse] = await Promise.all([
-        entriesApi.getUnread(1, 50),
+        entriesApi.getUnread(1, 100),
         subscriptionsApi.getMySubscriptions(),
       ]);
 
-      // Get set of subscribed source IDs
       const subscribedSourceIds = new Set(
-        subscriptionsResponse.items.map((sub) => sub.rss_source_id)
+        subscriptionsResponse.items.map((sub) => sub.rss_source_id),
       );
 
-      // Filter entries to only include those from subscribed sources
-      const filteredEntries = entriesResponse.items.filter((entry) =>
-        subscribedSourceIds.has(entry.rss_source_id)
+      let filteredEntries = entriesResponse.items.filter((entry) =>
+        subscribedSourceIds.has(entry.rss_source_id),
       );
+
+      // Filter by selected source if specified
+      if (sourceId) {
+        filteredEntries = filteredEntries.filter(
+          (entry) => entry.rss_source_id === sourceId,
+        );
+      }
 
       const mappedArticles = filteredEntries.map(mapEntryToArticle);
       setArticles(mappedArticles);
+      setCurrentIndex(0);
     } catch (error) {
       console.error("Failed to fetch entries:", error);
     } finally {
@@ -65,81 +91,88 @@ export function HomeView({ darkMode }: HomeViewProps) {
     }
   }, []);
 
+  // Initial load - only fetch once, then when source changes
   useEffect(() => {
-    fetchEntries();
-  }, [fetchEntries]);
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      fetchSubscriptions();
+      fetchEntries(selectedSourceId);
+    }
+  }, [fetchSubscriptions, fetchEntries, selectedSourceId]);
 
+  // Refetch when source filter changes (after initial load)
   useEffect(() => {
-    // Reset sheet and scroll position on article change
-    setSheetOpen(false);
+    if (hasLoaded.current && selectedSourceId !== null) {
+      fetchEntries(selectedSourceId);
+    }
+  }, [selectedSourceId, fetchEntries]);
+
+  // Reset scroll position on article change
+  useEffect(() => {
     if (contentRef.current) {
       contentRef.current.scrollTop = 0;
     }
-  }, [articles.length > 0 ? articles[0]?.id : null]);
+  }, [currentIndex]);
 
-  // Animated action with direction tracking
-  const performAction = async (
-    id: string,
-    action: "save" | "discard",
-    direction: SwipeDirection
-  ) => {
-    if (isAnimating) return;
-
-    const article = articles.find((a) => a.id === id);
+  // Handle save action
+  const handleSave = async () => {
+    if (isAnimating || articles.length === 0) return;
+    const article = articles[currentIndex];
     if (!article?._entry) return;
 
     setIsAnimating(true);
-    setExitDirection(direction);
-
-    // Wait for exit animation
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
     try {
       await entriesApi.updateStatus(
         article._entry.id,
-        mapActionToBackendStatus(action)
+        mapActionToBackendStatus("save"),
       );
-
-      // Set enter direction (opposite of exit for visual continuity)
-      // If we swipe left (save), next card enters from right
-      // If we swipe right (discard), next card enters from left
-      setEnterDirection(direction === "left" ? "right" : "left");
-
-      setArticles((prev) => prev.filter((a) => a.id !== id));
+      setArticles((prev) => prev.filter((_, i) => i !== currentIndex));
+      if (currentIndex >= articles.length - 1) {
+        setCurrentIndex(Math.max(0, articles.length - 2));
+      }
     } catch (error) {
-      console.error(`Failed to ${action} article:`, error);
+      console.error("Failed to save article:", error);
     } finally {
-      setExitDirection(null);
-      setOffset(0);
-
-      // Reset enter direction after animation
-      setTimeout(() => {
-        setEnterDirection(null);
-        setIsAnimating(false);
-      }, 300);
+      setIsAnimating(false);
     }
   };
 
-  const handleSave = (id: string) => {
-    performAction(id, "save", "left");
+  // Handle discard action
+  const handleDiscard = async () => {
+    if (isAnimating || articles.length === 0) return;
+    const article = articles[currentIndex];
+    if (!article?._entry) return;
+
+    setIsAnimating(true);
+    try {
+      await entriesApi.updateStatus(
+        article._entry.id,
+        mapActionToBackendStatus("discard"),
+      );
+      setArticles((prev) => prev.filter((_, i) => i !== currentIndex));
+      if (currentIndex >= articles.length - 1) {
+        setCurrentIndex(Math.max(0, articles.length - 2));
+      }
+    } catch (error) {
+      console.error("Failed to discard article:", error);
+    } finally {
+      setIsAnimating(false);
+    }
   };
 
-  const handleDiscard = (id: string) => {
-    performAction(id, "discard", "right");
-  };
-
-  const updateSummary = (id: string, summary: string) => {
-    setArticles((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, summary } : a))
-    );
-  };
-
+  // Handle shuffle
   const handleShuffle = async () => {
-    if (isShuffling || isAnimating) return;
+    if (isShuffling || isAnimating || articles.length <= 1) return;
     setIsShuffling(true);
     try {
+      const shuffled = [...articles];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      setArticles(shuffled);
+      setCurrentIndex(0);
       await entriesApi.shuffleUnread();
-      await fetchEntries();
     } catch (error) {
       console.error("Failed to shuffle:", error);
     } finally {
@@ -147,372 +180,386 @@ export function HomeView({ darkMode }: HomeViewProps) {
     }
   };
 
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const [isHorizontalSwipe, setIsHorizontalSwipe] = useState<boolean | null>(
-    null
-  );
+  // Navigate to previous article
+  const goPrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
 
-  // Refs for touch state (needed for native event listeners)
-  const touchStateRef = useRef({
-    startX: null as number | null,
-    startY: null as number | null,
-    isHorizontal: null as boolean | null,
-  });
+  // Navigate to next article
+  const goNext = () => {
+    if (currentIndex < articles.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
 
-  // Native touch event handlers for content area (with passive: false)
-  useEffect(() => {
-    const element = contentRef.current;
-    if (!element) return;
+  // Handle source filter change
+  const handleSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setSelectedSourceId(value ? Number(value) : null);
+    setCurrentIndex(0);
+  };
 
-    const handleTouchMove = (e: TouchEvent) => {
-      const state = touchStateRef.current;
-      if (state.startX === null || state.startY === null) return;
-
-      const currentX = e.touches[0].clientX;
-      const currentY = e.touches[0].clientY;
-      const diffX = Math.abs(currentX - state.startX);
-      const diffY = Math.abs(currentY - state.startY);
-
-      // Determine swipe direction (only once)
-      if (state.isHorizontal === null && (diffX > 10 || diffY > 10)) {
-        state.isHorizontal = diffX > diffY;
-        setIsHorizontalSwipe(state.isHorizontal);
+  // Handle jump to article by index
+  const handleJumpToArticle = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const targetIndex = parseInt(jumpInput, 10) - 1;
+      if (
+        !isNaN(targetIndex) &&
+        targetIndex >= 0 &&
+        targetIndex < articles.length
+      ) {
+        setCurrentIndex(targetIndex);
       }
-
-      // Prevent scroll and update offset for horizontal swipe
-      if (state.isHorizontal) {
-        e.preventDefault();
-        setTouchEnd(currentX);
-        setOffset(currentX - state.startX);
-      }
-    };
-
-    element.addEventListener('touchmove', handleTouchMove, { passive: false });
-    return () => {
-      element.removeEventListener('touchmove', handleTouchMove);
-    };
-  }, []);
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    const startX = e.targetTouches[0].clientX;
-    const startY = e.targetTouches[0].clientY;
-    setTouchStart(startX);
-    setTouchStartY(startY);
-    setIsHorizontalSwipe(null);
-    touchStateRef.current = { startX, startY, isHorizontal: null };
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    // Only handle for card container (not content area which uses native listener)
-    if (e.currentTarget === contentRef.current) return;
-
-    if (!touchStart || touchStartY === null) return;
-
-    const currentX = e.targetTouches[0].clientX;
-    const currentY = e.targetTouches[0].clientY;
-    const diffX = Math.abs(currentX - touchStart);
-    const diffY = Math.abs(currentY - touchStartY);
-
-    // Determine swipe direction (only once)
-    if (isHorizontalSwipe === null && (diffX > 10 || diffY > 10)) {
-      const horizontal = diffX > diffY;
-      setIsHorizontalSwipe(horizontal);
-    }
-
-    // Only update offset for horizontal swipe
-    if (isHorizontalSwipe) {
-      setTouchEnd(currentX);
-      setOffset(currentX - touchStart);
+      setJumpInput("");
     }
   };
-
-  const onTouchEnd = () => {
-    touchStateRef.current = { startX: null, startY: null, isHorizontal: null };
-
-    if (!touchStart || !touchEnd || !isHorizontalSwipe) {
-      setOffset(0);
-      setTouchStart(null);
-      setTouchEnd(null);
-      setTouchStartY(null);
-      setIsHorizontalSwipe(null);
-      return;
-    }
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe && articles.length > 0) {
-      performAction(articles[0].id, "save", "left");
-    } else if (isRightSwipe && articles.length > 0) {
-      performAction(articles[0].id, "discard", "right");
-    } else {
-      setOffset(0);
-    }
-    // Reset touch state
-    setTouchStart(null);
-    setTouchEnd(null);
-    setTouchStartY(null);
-    setIsHorizontalSwipe(null);
-  };
-
-  // Calculate card styles based on animation state
-  const getCardStyle = () => {
-    // Exit animation
-    if (exitDirection === "left") {
-      return {
-        transform: "translateX(-120%) rotate(-15deg)",
-        opacity: 0,
-        transition: "all 0.3s ease-out",
-      };
-    }
-    if (exitDirection === "right") {
-      return {
-        transform: "translateX(120%) rotate(15deg)",
-        opacity: 0,
-        transition: "all 0.3s ease-out",
-      };
-    }
-
-    // Enter animation
-    if (enterDirection === "right") {
-      return {
-        transform: "translateX(0) rotate(0deg)",
-        opacity: 1,
-        transition: "all 0.3s ease-out",
-        animation: "slide-in-right 0.3s ease-out",
-      };
-    }
-    if (enterDirection === "left") {
-      return {
-        transform: "translateX(0) rotate(0deg)",
-        opacity: 1,
-        transition: "all 0.3s ease-out",
-        animation: "slide-in-left 0.3s ease-out",
-      };
-    }
-
-    // Normal drag state
-    const rotate = offset / 25; // Reduced rotation for smoother feel
-    const opacity = 1 - Math.abs(offset) / 600;
-    return {
-      transform: `translateX(${offset}px) rotate(${rotate}deg)`,
-      opacity: opacity,
-      transition: touchStart ? "none" : "all 0.3s ease-out",
-    };
-  };
-
-  const cardStyle = getCardStyle();
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin h-8 w-8 border-2 border-spira-500 border-t-transparent rounded-full" />
+      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-6 pb-24 px-4 md:px-6 lg:px-8 animate-pulse">
+        {/* Skeleton: Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-16 rounded bg-theme-muted" />
+            <div className="h-5 w-20 rounded bg-theme-muted" />
+          </div>
+          <div className="h-4 w-24 rounded bg-theme-muted" />
+        </div>
+        {/* Skeleton: Title */}
+        <div className="h-8 md:h-10 rounded w-3/4 mb-4 bg-theme-muted" />
+        {/* Skeleton: Author */}
+        <div className="h-4 w-48 rounded mb-8 ml-4 bg-theme-muted" />
+        {/* Skeleton: Divider */}
+        <div className="h-px w-full mb-8 bg-theme-border" />
+        {/* Skeleton: Content */}
+        <div className="space-y-4">
+          <div className="h-4 rounded w-full bg-theme-muted" />
+          <div className="h-4 rounded w-5/6 bg-theme-muted" />
+          <div className="h-4 rounded w-full bg-theme-muted" />
+          <div className="h-4 rounded w-4/5 bg-theme-muted" />
+          <div className="h-4 rounded w-full bg-theme-muted" />
+          <div className="h-4 rounded w-3/4 bg-theme-muted" />
+        </div>
       </div>
     );
   }
 
   if (articles.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center space-y-4 animate-fade-in pt-20 md:pt-0">
-        <div
-          className={`p-4 rounded-full ${
-            darkMode ? "bg-slate-800" : "bg-spira-100"
-          }`}
-        >
-          <div className={`${darkMode ? "text-indigo-400" : "text-spira-600"}`}>
+      <>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4 animate-fade-in">
+          <div className="mb-4 p-4 rounded-full bg-theme-muted text-theme-text-tertiary">
             <Icons.Check />
           </div>
+          <p className="text-lg font-medium text-theme-text-secondary mb-1">
+            {selectedSourceId ? t("home.noArticlesInSource") : t("home.allCaughtUp")}
+          </p>
+          <p className="text-sm text-theme-text-tertiary max-w-md">
+            {selectedSourceId ? t("home.trySelectingAnotherSource") : t("home.allCaughtUpDesc")}
+          </p>
         </div>
-        <h2 className="text-2xl font-serif font-medium">{t('home.allCaughtUp')}</h2>
-        <p className="text-zinc-500 max-w-md">
-          {t('home.allCaughtUpDesc')}
-        </p>
-      </div>
+
+        {/* Floating Action Bar - Always show source selector */}
+        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-full shadow-lg backdrop-blur-sm bg-theme-surface/95 border border-theme-border">
+            {/* Source Filter */}
+            <span className="text-xs text-theme-text-tertiary">
+              {t("home.source")}:
+            </span>
+            <select
+              value={selectedSourceId || ""}
+              onChange={handleSourceChange}
+              className="px-2 py-1 rounded text-sm border-0 bg-transparent cursor-pointer text-theme-text-secondary"
+            >
+              <option value="">{t("common.all")}</option>
+              {subscriptions.map((sub) => (
+                <option key={sub.id} value={sub.rss_source_id}>
+                  {sub.rss_source_name || `#${sub.rss_source_id}`}
+                </option>
+              ))}
+            </select>
+          </div>
+        </nav>
+      </>
     );
   }
 
-  const current = articles[0];
+  const current = articles[currentIndex];
+  const isArxiv = isArxivArticle(current);
+  const hasInterpretation =
+    current._entry?.ai_summary &&
+    current._entry?.ai_content_type === "arxiv_interpretation";
+  const isInterpreting = current._entry?.ai_content_type === "interpreting";
+  const isInterpretFailed = current._entry?.ai_content_type === "error";
+  const isNoHtml = current._entry?.ai_content_type === "no_html";
+  const translatedAbstract = current._entry?.translated_abstract;
+  const briefSummary = current._entry?.brief_summary;
 
   return (
-    <div className="h-full flex flex-col items-center justify-between md:justify-center max-w-5xl mx-auto animate-fade-in pb-4 md:pb-8 px-1 md:px-6">
-      <div className="relative w-full flex-1 flex flex-col justify-center perspective-1000 min-h-0 pt-2 md:pt-0">
-        <div
-          style={cardStyle}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-          className={`relative w-full h-full md:h-[80vh] flex flex-col rounded-2xl md:rounded-3xl shadow-xl border overflow-hidden select-none ${
-            darkMode
-              ? "bg-slate-800 border-slate-700 shadow-slate-900/50"
-              : "bg-white border-zinc-100 shadow-zinc-200"
-          }`}
-        >
-          {/* Sticky Header */}
-          <div
-            className={`flex-shrink-0 px-3 md:px-8 py-3 md:py-5 border-b ${
-              darkMode
-                ? "bg-slate-800 border-slate-700"
-                : "bg-white border-zinc-100"
-            }`}
-          >
-            {/* Top Row: Source & Counter */}
-            <div className="flex justify-between items-center mb-3">
+    <>
+      {/* Article Content - Claude AI inspired layout */}
+      <article
+        ref={contentRef}
+        className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-6 pb-24 px-4 md:px-6 lg:px-8"
+      >
+        {/* Document Header: Tag + Date */}
+        <div className="flex justify-between items-center text-sm mb-6">
+          <span className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-xs font-medium bg-theme-muted text-theme-text-secondary">
+              {current.source}
+            </span>
+            {isArxiv && (
               <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase ${
-                  darkMode
-                    ? "bg-slate-700 text-indigo-300"
-                    : "bg-spira-100 text-spira-700"
+                className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  hasInterpretation
+                    ? "bg-theme-success/15 text-theme-success"
+                    : isNoHtml
+                      ? "bg-theme-muted text-theme-text-secondary"
+                      : isInterpretFailed
+                        ? "bg-theme-error/15 text-theme-error"
+                        : isInterpreting
+                          ? "bg-theme-warning/15 text-theme-warning"
+                          : "bg-theme-accent/15 text-theme-accent"
                 }`}
               >
-                {current.source}
+                {hasInterpretation
+                  ? t("home.interpreted")
+                  : isNoHtml
+                    ? t("home.noHtml")
+                    : isInterpretFailed
+                      ? t("home.interpretFailed")
+                      : isInterpreting
+                        ? t("home.interpreting")
+                        : "ArXiv"}
               </span>
-              <span
-                className={`text-xs font-bold px-2 py-1 rounded-md ${
-                  darkMode
-                    ? "text-slate-400 bg-slate-700/50"
-                    : "text-zinc-400 bg-zinc-100"
-                }`}
-              >
-                {articles.length} {t('common.left')}
-              </span>
-            </div>
-
-            {/* Title */}
-            <h1 className="mb-2 line-clamp-2">
-              <span
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (current.url) {
-                    window.open(current.url, "_blank", "noopener,noreferrer");
-                  }
-                }}
-                className={`text-xl md:text-2xl font-serif font-bold leading-snug cursor-pointer hover:underline ${
-                  darkMode
-                    ? "text-slate-100 hover:text-indigo-300"
-                    : "text-zinc-900 hover:text-spira-600"
-                }`}
-              >
-                {current.title}
-              </span>
-            </h1>
-
-            {/* Metadata - same style as ReadingModal */}
-            <div
-              className={`text-sm flex items-center gap-2 ${
-                darkMode ? "text-slate-400" : "text-zinc-500"
-              }`}
-            >
-              <span className="font-medium">{current.author}</span>
-              <span>•</span>
-              <span>{current.timestamp}</span>
-            </div>
-          </div>
-
-          {/* Scrollable Content */}
-          <div
-            ref={contentRef}
-            onTouchStart={onTouchStart}
-            onTouchEnd={onTouchEnd}
-            className={`flex-1 overflow-y-auto px-3 md:px-8 py-4 pb-28 md:pb-36 ${
-              darkMode
-                ? "scrollbar-styled scrollbar-styled-dark"
-                : "scrollbar-styled"
-            }`}
-          >
-            <ArticleContent content={current.content} darkMode={darkMode} />
-          </div>
-
-          {/* Floating Trigger Button */}
-          <div
-            className="absolute bottom-6 right-6 z-10"
-            onTouchStart={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setSheetOpen(true)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-full shadow-xl transition-transform active:scale-95 ${
-                darkMode
-                  ? "bg-indigo-600 text-white"
-                  : "bg-spira-600 text-white"
-              }`}
-            >
-              <Icons.Sparkles />
-              <span className="text-sm font-bold">{t('home.insight')}</span>
-            </button>
-          </div>
-
-          {/* TikTok-style Drawer Overlay */}
-          <AIBottomSheet
-            isOpen={sheetOpen}
-            onClose={() => setSheetOpen(false)}
-            article={current}
-            onUpdateSummary={updateSummary}
-            darkMode={darkMode}
-          />
+            )}
+          </span>
+          <time className="text-theme-text-tertiary">
+            {formatDate(
+              current._entry?.published_at ||
+                current._entry?.created_at ||
+                null,
+            )}
+          </time>
         </div>
 
-        {offset > 80 && (
-          <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-red-500/30 to-transparent rounded-l-2xl md:rounded-l-3xl pointer-events-none flex items-center justify-start px-4">
-            <div
-              className={`bg-red-500 text-white p-2 rounded-full transition-transform ${
-                offset > minSwipeDistance ? "scale-110" : "scale-100"
-              }`}
-            >
-              <Icons.X />
-            </div>
-          </div>
-        )}
-        {offset < -80 && (
-          <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-green-500/30 to-transparent rounded-r-2xl md:rounded-r-3xl pointer-events-none flex items-center justify-end px-4">
-            <div
-              className={`bg-green-500 text-white p-2 rounded-full transition-transform ${
-                offset < -minSwipeDistance ? "scale-110" : "scale-100"
-              }`}
-            >
-              <Icons.Check />
-            </div>
-          </div>
-        )}
-      </div>
+        {/* Title - Markdown H1 Style */}
+        <h1
+          onClick={() => {
+            if (current.url) {
+              window.open(current.url, "_blank", "noopener,noreferrer");
+            }
+          }}
+          className="text-2xl md:text-3xl font-serif font-bold mb-4 leading-tight cursor-pointer hover:underline decoration-2 underline-offset-4 text-theme-text hover:text-theme-accent"
+        >
+          {current.title}
+        </h1>
 
-      <div className="w-full flex justify-between items-center md:justify-center md:gap-6 mt-3 md:mt-10 px-2 md:px-0">
-        <button
-          onClick={() => handleDiscard(current.id)}
-          className={`flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full border-2 transition-all duration-200 active:scale-95 md:hover:scale-110 ${
-            darkMode
-              ? "border-red-900/50 text-red-400 bg-slate-900/80 backdrop-blur"
-              : "border-red-100 text-red-400 bg-white/80 backdrop-blur shadow-sm"
-          }`}
-          aria-label="Discard"
-        >
-          <Icons.X />
-        </button>
-        <button
-          onClick={handleShuffle}
-          disabled={isShuffling}
-          className={`flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full border-2 transition-all duration-200 active:scale-95 md:hover:scale-110 ${
-            isShuffling ? "opacity-50 cursor-not-allowed" : ""
-          } ${
-            darkMode
-              ? "border-slate-700 text-slate-400 bg-slate-900/80 backdrop-blur hover:text-slate-200 hover:border-slate-500"
-              : "border-zinc-200 text-zinc-500 bg-white/80 backdrop-blur shadow-sm hover:text-zinc-700 hover:border-zinc-300"
-          }`}
-          aria-label="Shuffle"
-        >
-          <Icons.Shuffle />
-        </button>
-        <button
-          onClick={() => handleSave(current.id)}
-          className={`flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full transition-all duration-200 active:scale-95 md:hover:scale-110 shadow-lg ${
-            darkMode
-              ? "bg-indigo-600 text-white shadow-indigo-900/50"
-              : "bg-spira-600 text-white shadow-spira-200"
-          }`}
-          aria-label="Keep"
-        >
-          <Icons.Check />
-        </button>
-      </div>
-    </div>
+        {/* Author - Blockquote Style */}
+        {current.author && (
+          <blockquote className="border-l-4 pl-4 mb-8 border-theme-border text-theme-text-secondary">
+            {current.author}
+          </blockquote>
+        )}
+
+        <hr className="mb-8 border-theme-border" />
+
+        {isArxiv ? (
+          <>
+            {/* 要点总结 + 翻译摘要：无标题，简洁展示 */}
+            {(briefSummary || translatedAbstract) && (
+              <section className="mb-8">
+                {briefSummary && (
+                  <p className="text-base leading-relaxed mb-4 text-theme-text">
+                    {briefSummary}
+                  </p>
+                )}
+                {translatedAbstract && (
+                  <ArticleContent
+                    content={translatedAbstract}
+                    darkMode={darkMode}
+                  />
+                )}
+              </section>
+            )}
+
+            {/* 原文摘要 - 折叠 */}
+            <details className="mb-8 group">
+              <summary className="cursor-pointer text-sm text-theme-text-tertiary hover:text-theme-text-secondary">
+                <span className="transform transition-transform group-open:rotate-90 inline-block mr-2">
+                  ▶
+                </span>
+                {t("home.originalAbstract")}
+              </summary>
+              <div className="mt-4 pl-6">
+                <ArticleContent content={current.content} darkMode={darkMode} />
+              </div>
+            </details>
+
+            {/* AI 深度解读 - 保留标题（内容长需要导航） */}
+            {hasInterpretation ? (
+              <section>
+                <ArticleContent
+                  content={current._entry!.ai_summary!}
+                  darkMode={darkMode}
+                />
+              </section>
+            ) : isNoHtml ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-theme-text-secondary">
+                <Icons.Info />
+                <span>{t("home.noHtmlAvailable")}</span>
+              </div>
+            ) : isInterpreting ? (
+              <div className="flex items-center gap-3 py-8 justify-center text-theme-text-secondary">
+                <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
+                <span>{t("home.interpretingArticle")}</span>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          /* Non-ArXiv: show original content directly */
+          <ArticleContent content={current.content} darkMode={darkMode} />
+        )}
+      </article>
+
+      {/* Unified Floating Action Bar - PC shows text labels, mobile icons only */}
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
+        <div className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-full shadow-xl backdrop-blur-sm transition-micro bg-theme-surface/95 border border-theme-border">
+          {/* Previous */}
+          <button
+            onClick={goPrev}
+            disabled={currentIndex === 0}
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+              currentIndex === 0
+                ? "text-theme-text-muted cursor-not-allowed"
+                : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+            }`}
+            title={t("home.prevArticle")}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            <span className="hidden md:inline">{t("home.prevArticle")}</span>
+          </button>
+
+          {/* Divider */}
+          <div className="w-px h-4 bg-theme-border" />
+
+          {/* Discard */}
+          <button
+            onClick={handleDiscard}
+            disabled={isAnimating}
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+              isAnimating
+                ? "opacity-50 cursor-not-allowed"
+                : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-error cursor-pointer active:scale-95"
+            }`}
+            title={t("home.discard")}
+          >
+            <Icons.X />
+            <span className="hidden md:inline">{t("home.discard")}</span>
+          </button>
+
+          {/* Source Filter */}
+          <select
+            value={selectedSourceId || ""}
+            onChange={handleSourceChange}
+            className="px-1 py-1 rounded text-xs border-0 bg-transparent cursor-pointer max-w-[60px] md:max-w-[100px] text-theme-text-secondary"
+          >
+            <option value="">{t("common.all")}</option>
+            {subscriptions.map((sub) => (
+              <option key={sub.id} value={sub.rss_source_id}>
+                {sub.rss_source_name || `#${sub.rss_source_id}`}
+              </option>
+            ))}
+          </select>
+
+          {/* Article Counter */}
+          <div className="flex items-center flex-shrink-0 whitespace-nowrap">
+            <input
+              type="text"
+              value={jumpInput}
+              onChange={(e) => setJumpInput(e.target.value)}
+              onKeyDown={handleJumpToArticle}
+              placeholder={String(currentIndex + 1)}
+              className="w-8 text-center text-caption bg-transparent border-0 outline-none text-theme-text-secondary placeholder-theme-text-tertiary"
+            />
+            <span className="text-caption text-theme-text-tertiary">
+              /{articles.length}
+            </span>
+          </div>
+
+          {/* Shuffle */}
+          <button
+            onClick={handleShuffle}
+            disabled={isShuffling || isAnimating}
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+              isShuffling || isAnimating
+                ? "opacity-50 cursor-not-allowed"
+                : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
+            }`}
+            title={t("home.shuffle")}
+          >
+            <Icons.Shuffle />
+            <span className="hidden md:inline">{t("home.shuffle")}</span>
+          </button>
+
+          {/* Divider */}
+          <div className="w-px h-4 bg-theme-border" />
+
+          {/* Save */}
+          <button
+            onClick={handleSave}
+            disabled={isAnimating}
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+              isAnimating
+                ? "opacity-50 cursor-not-allowed"
+                : "text-theme-accent hover:bg-theme-muted cursor-pointer active:scale-95"
+            }`}
+            title={t("home.save")}
+          >
+            <Icons.Check />
+            <span className="hidden md:inline">{t("home.save")}</span>
+          </button>
+
+          {/* Next */}
+          <button
+            onClick={goNext}
+            disabled={currentIndex === articles.length - 1}
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+              currentIndex === articles.length - 1
+                ? "text-theme-text-muted cursor-not-allowed"
+                : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+            }`}
+            title={t("home.nextArticle")}
+          >
+            <span className="hidden md:inline">{t("home.nextArticle")}</span>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </div>
+      </nav>
+    </>
   );
 }

@@ -61,7 +61,7 @@ async def get_user_subscriptions(
             id=sub.id,
             rss_source_id=sub.rss_source_id,
             is_active=sub.is_active,
-            custom_fetch_interval=sub.custom_fetch_interval,
+            custom_refresh_time=sub.custom_refresh_time,
             created_at=sub.created_at,
             rss_source_name=source.name,
             rss_source_url=source.url,
@@ -117,7 +117,7 @@ async def create_subscription(
         user_id=user_id,
         rss_source_id=data.rss_source_id,
         is_active=data.is_active,
-        custom_fetch_interval=data.custom_fetch_interval,
+        custom_refresh_time=data.custom_refresh_time,
     )
     db.add(subscription)
     await db.commit()
@@ -234,7 +234,6 @@ async def get_rss_market(
             category=source.category,
             icon_url=source.icon_url,
             entry_count=source.entry_count,
-            allow_ssl_bypass=source.allow_ssl_bypass,
             is_subscribed=source.id in subscribed_ids,
         )
         for source in sources

@@ -1,4 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface ArticleContentProps {
   content: string;
@@ -7,13 +12,81 @@ interface ArticleContentProps {
 
 type ContentType = 'html' | 'markdown' | 'plain';
 
+// Image Lightbox Component
+function ImageLightbox({
+  src,
+  alt,
+  onClose
+}: {
+  src: string;
+  alt: string;
+  onClose: () => void;
+}) {
+  // ESC key to close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  // Prevent body scroll when lightbox is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-zoom-out"
+      onClick={onClose}
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl bg-white p-2"
+        style={{ backgroundColor: '#f8f8f8' }}
+        onClick={(e) => e.stopPropagation()}
+      />
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+        aria-label="Close"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 // Detect content type based on patterns
 function detectContentType(content: string): ContentType {
   if (!content) return 'plain';
 
   const trimmed = content.trim();
 
-  // Check for HTML: look for common HTML tags
+  // Markdown 特征检测：检测到任意一个就认定为 Markdown
+  // 这些特征在 HTML 中不会出现
+  if (
+    /^#{1,6}\s+.+$/m.test(trimmed) ||     // Headers: # Title, ## Title
+    /\*\*[^*]+\*\*/.test(trimmed) ||      // Bold: **text**
+    /^\|.+\|$/m.test(trimmed) ||          // Tables: |...|
+    /\$\$[\s\S]+?\$\$/.test(trimmed) ||   // Block math: $$...$$
+    /\$[^$\n]+\$/.test(trimmed)           // Inline math: $...$
+  ) {
+    return 'markdown';
+  }
+
+  // Check for HTML tags
   const htmlPatterns = [
     /<\/?(?:p|div|span|a|img|h[1-6]|ul|ol|li|table|tr|td|th|br|hr|blockquote|pre|code|em|strong|b|i|u|s|sub|sup|article|section|header|footer|nav|aside|figure|figcaption)[^>]*>/i,
     /<\/?(?:html|head|body|meta|link|script|style)[^>]*>/i,
@@ -24,36 +97,6 @@ function detectContentType(content: string): ContentType {
     if (pattern.test(trimmed)) {
       return 'html';
     }
-  }
-
-  // Check for Markdown patterns
-  const markdownPatterns = [
-    /^#{1,6}\s+.+$/m,                    // Headers: # Title
-    /^\s*[-*+]\s+.+$/m,                  // Unordered lists
-    /^\s*\d+\.\s+.+$/m,                  // Ordered lists
-    /\[.+?\]\(.+?\)/,                    // Links: [text](url)
-    /!\[.*?\]\(.+?\)/,                   // Images: ![alt](url)
-    /`{1,3}[^`]+`{1,3}/,                 // Inline code or code blocks
-    /^\s*>\s+.+$/m,                      // Blockquotes
-    /\*\*[^*]+\*\*/,                     // Bold: **text**
-    /\*[^*]+\*/,                         // Italic: *text*
-    /__[^_]+__/,                         // Bold: __text__
-    /_[^_]+_/,                           // Italic: _text_
-    /~~[^~]+~~/,                         // Strikethrough: ~~text~~
-    /^\s*[-*_]{3,}\s*$/m,                // Horizontal rule
-    /^\|.+\|$/m,                         // Tables
-  ];
-
-  let markdownMatches = 0;
-  for (const pattern of markdownPatterns) {
-    if (pattern.test(trimmed)) {
-      markdownMatches++;
-    }
-  }
-
-  // If multiple markdown patterns match, it's likely markdown
-  if (markdownMatches >= 2) {
-    return 'markdown';
   }
 
   return 'plain';
@@ -75,86 +118,6 @@ function sanitizeHtml(html: string): string {
   sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
 
   return sanitized;
-}
-
-// Convert Markdown to HTML
-function markdownToHtml(markdown: string): string {
-  let html = markdown;
-
-  // Escape HTML entities first (but preserve existing HTML-like structures)
-  // We'll be more conservative here
-
-  // Code blocks (must be processed first to protect content)
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>');
-
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // Headers
-  html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
-  html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
-  html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
-  html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
-
-  // Bold and italic
-  html = html.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/___([^_]+)___/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
-
-  // Strikethrough
-  html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
-
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-  // Images
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />');
-
-  // Blockquotes
-  html = html.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
-  // Merge consecutive blockquotes
-  html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
-
-  // Horizontal rules
-  html = html.replace(/^[-*_]{3,}$/gm, '<hr />');
-
-  // Unordered lists
-  html = html.replace(/^(\s*)[-*+]\s+(.+)$/gm, '$1<li>$2</li>');
-
-  // Ordered lists
-  html = html.replace(/^(\s*)\d+\.\s+(.+)$/gm, '$1<li>$2</li>');
-
-  // Wrap consecutive li elements in ul/ol
-  html = html.replace(/(<li>[\s\S]*?<\/li>)(\n<li>[\s\S]*?<\/li>)*/g, (match) => {
-    return '<ul>' + match + '</ul>';
-  });
-
-  // Paragraphs: wrap text blocks not already in tags
-  const lines = html.split('\n');
-  const processedLines = lines.map(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return '';
-    // Skip if already wrapped in a block element
-    if (/^<(?:h[1-6]|p|div|ul|ol|li|pre|blockquote|hr|table|tr|td|th)/.test(trimmed)) {
-      return line;
-    }
-    // Skip if it's a closing tag
-    if (/^<\//.test(trimmed)) {
-      return line;
-    }
-    return `<p>${line}</p>`;
-  });
-  html = processedLines.join('\n');
-
-  // Clean up empty paragraphs
-  html = html.replace(/<p>\s*<\/p>/g, '');
-
-  return html;
 }
 
 // Convert plain text to HTML with proper formatting
@@ -184,27 +147,131 @@ function plainTextToHtml(text: string): string {
   return html;
 }
 
+// Markdown content component using react-markdown with KaTeX support
+function MarkdownContent({
+  content,
+  darkMode,
+  onImageClick
+}: {
+  content: string;
+  darkMode: boolean;
+  onImageClick: (src: string, alt: string) => void;
+}) {
+  return (
+    <article className={`article-content ${darkMode ? 'article-content-dark' : 'article-content-light'}`}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+          // Custom link renderer to open in new tab
+          a: ({ href, children, ...props }) => (
+            <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+              {children}
+            </a>
+          ),
+          // Custom image renderer with lightbox support
+          img: ({ src, alt, ...props }) => (
+            <img
+              src={src}
+              alt={alt || ''}
+              {...props}
+              className="cursor-zoom-in hover:opacity-90 transition-opacity"
+              onClick={() => src && onImageClick(src, alt || '')}
+            />
+          ),
+          // Custom code block renderer
+          code: ({ className, children, ...props }) => {
+            const match = /language-(\w+)/.exec(className || '');
+            const isInline = !match && !className;
+
+            if (isInline) {
+              return <code className="inline-code" {...props}>{children}</code>;
+            }
+
+            return (
+              <pre className={`code-block ${match ? `language-${match[1]}` : ''}`}>
+                <code {...props}>{children}</code>
+              </pre>
+            );
+          },
+          // Custom table renderer for better styling
+          table: ({ children, ...props }) => (
+            <div className="table-wrapper">
+              <table {...props}>{children}</table>
+            </div>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </article>
+  );
+}
+
 export function ArticleContent({ content, darkMode }: ArticleContentProps) {
+  const contentType = useMemo(() => detectContentType(content), [content]);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
+
+  const openLightbox = useCallback((src: string, alt: string) => {
+    setLightboxImage({ src, alt });
+  }, []);
+
+  const closeLightbox = useCallback(() => {
+    setLightboxImage(null);
+  }, []);
+
+  // Handle image clicks for HTML content
+  const handleHtmlImageClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      openLightbox(img.src, img.alt || '');
+    }
+  }, [openLightbox]);
+
+  // Use react-markdown for markdown content
+  if (contentType === 'markdown') {
+    return (
+      <>
+        <MarkdownContent content={content} darkMode={darkMode} onImageClick={openLightbox} />
+        {lightboxImage && (
+          <ImageLightbox
+            src={lightboxImage.src}
+            alt={lightboxImage.alt}
+            onClose={closeLightbox}
+          />
+        )}
+      </>
+    );
+  }
+
+  // For HTML and plain text, use dangerouslySetInnerHTML
   const processedContent = useMemo(() => {
     if (!content) return '';
-
-    const contentType = detectContentType(content);
 
     switch (contentType) {
       case 'html':
         return sanitizeHtml(content);
-      case 'markdown':
-        return markdownToHtml(content);
       case 'plain':
       default:
         return plainTextToHtml(content);
     }
-  }, [content]);
+  }, [content, contentType]);
 
   return (
-    <article
-      className={`article-content ${darkMode ? 'article-content-dark' : 'article-content-light'}`}
-      dangerouslySetInnerHTML={{ __html: processedContent }}
-    />
+    <>
+      <article
+        className={`article-content ${darkMode ? 'article-content-dark' : 'article-content-light'}`}
+        dangerouslySetInnerHTML={{ __html: processedContent }}
+        onClick={handleHtmlImageClick}
+      />
+      {lightboxImage && (
+        <ImageLightbox
+          src={lightboxImage.src}
+          alt={lightboxImage.alt}
+          onClose={closeLightbox}
+        />
+      )}
+    </>
   );
 }

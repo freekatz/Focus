@@ -1,8 +1,11 @@
 """
 Focus 配置管理
+
+配置优先级：环境变量 > 默认值
+生产环境通过 export 或 docker env 设置环境变量
+开发环境可通过 source .env 或 IDE 配置加载
 """
 from functools import lru_cache
-from pathlib import Path
 from typing import Optional
 
 from pydantic import Field
@@ -10,11 +13,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """应用配置"""
+    """应用配置 - 直接从环境变量读取"""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
         case_sensitive=False,
     )
 

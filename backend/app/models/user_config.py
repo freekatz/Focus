@@ -4,7 +4,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -43,7 +43,13 @@ class UserConfig(Base):
 
     # 界面配置
     theme: Mapped[str] = mapped_column(String(20), default="light")
+    color_theme: Mapped[str] = mapped_column(String(20), default="cream")
+    font_theme: Mapped[str] = mapped_column(String(20), default="sans")
+    custom_theme_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     entries_per_page: Mapped[int] = mapped_column(Integer, default=20)
+
+    # ArXiv 配置
+    auto_translate_abstract: Mapped[bool] = mapped_column(Boolean, default=True)  # 自动翻译摘要
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

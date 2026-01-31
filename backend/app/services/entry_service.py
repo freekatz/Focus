@@ -1,6 +1,4 @@
-"""
-文章条目服务 - 处理条目相关业务逻辑
-"""
+"""Entry service - handles entry-related business logic."""
 import random
 from datetime import datetime, timedelta
 from typing import Optional, List, Tuple, Literal
@@ -12,6 +10,22 @@ from sqlalchemy.orm import selectinload
 from app.models.entry import Entry, EntryStatus
 from app.models.rss import RssSource
 from app.utils.logger import logger
+from app.utils.datetime_utils import get_today_start_utc
+
+
+def get_status_priority_case():
+    """Return SQLAlchemy case statement for entry status priority ordering.
+
+    Priority order: interested(1) > unread(2) > favorite(3) > archived(4) > trash(5)
+    """
+    return case(
+        (Entry.status == EntryStatus.INTERESTED, 1),
+        (Entry.status == EntryStatus.UNREAD, 2),
+        (Entry.status == EntryStatus.FAVORITE, 3),
+        (Entry.status == EntryStatus.ARCHIVED, 4),
+        (Entry.status == EntryStatus.TRASH, 5),
+        else_=99
+    )
 
 
 async def get_entries(
@@ -23,55 +37,51 @@ async def get_entries(
     is_read: Optional[bool] = None,
     skip: int = 0,
     limit: int = 20,
+    exclude_untranslated_arxiv: bool = False,
 ) -> Tuple[List[Entry], int]:
-    """获取条目列表"""
+    """Get entry list.
+
+    Args:
+        exclude_untranslated_arxiv: If True, exclude untranslated ArXiv articles.
+    """
+    from app.models.entry import TranslationStatus
+
     query = select(Entry).options(selectinload(Entry.rss_source))
 
-    # 状态筛选
     if status:
         query = query.where(Entry.status == status)
 
-    # 来源筛选
     if rss_source_id:
         query = query.where(Entry.rss_source_id == rss_source_id)
 
-    # 分类筛选（基于 RSS 源的分类）
     if category:
         query = query.join(RssSource).where(RssSource.category == category)
 
-    # 时间筛选（仅基于首次采集时间 fetched_at）
+    # Time filter based on fetched_at
     if period:
-        # 获取本地时间的今日开始时间，然后转换为 UTC（数据库存储的是 UTC 时间）
-        local_today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        utc_offset = datetime.now() - datetime.utcnow()
-        today_start_utc = local_today_start - utc_offset
-
+        today_start_utc = get_today_start_utc()
         if period == "today":
-            # 基于 fetched_at 判断是否为今日
             query = query.where(Entry.fetched_at >= today_start_utc)
         elif period == "past":
-            # 基于 fetched_at 判断是否为过去
             query = query.where(Entry.fetched_at < today_start_utc)
 
-    # 已读筛选
     if is_read is not None:
         query = query.where(Entry.is_read == is_read)
 
-    # 获取总数
+    # Exclude untranslated ArXiv articles
+    if exclude_untranslated_arxiv:
+        query = query.where(
+            or_(
+                ~Entry.link.contains('arxiv.org'),
+                Entry.translation_status == TranslationStatus.COMPLETED.value,
+            )
+        )
+
     count_query = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_query)).scalar() or 0
 
-    # 排序：状态优先级 > display_order > 时间
-    # 优先级：interested(1) > unread(2) > favorite(3) > archived(4) > trash(5)
-    status_priority = case(
-        (Entry.status == EntryStatus.INTERESTED, 1),
-        (Entry.status == EntryStatus.UNREAD, 2),
-        (Entry.status == EntryStatus.FAVORITE, 3),
-        (Entry.status == EntryStatus.ARCHIVED, 4),
-        (Entry.status == EntryStatus.TRASH, 5),
-        else_=99
-    )
-    # 对于未读条目，优先使用 display_order 排序（支持随机打乱）
+    # Sort by status priority > display_order > time
+    status_priority = get_status_priority_case()
     query = query.order_by(status_priority, Entry.display_order.desc(), Entry.fetched_at.desc().nullslast())
     query = query.offset(skip).limit(limit)
 
@@ -239,10 +249,9 @@ async def search_entries(
     skip: int = 0,
     limit: int = 20,
 ) -> Tuple[List[Entry], int]:
-    """搜索条目"""
+    """Search entries by keyword."""
     query = select(Entry).options(selectinload(Entry.rss_source))
 
-    # 关键词搜索（标题和内容）
     search_pattern = f"%{query_text}%"
     query = query.where(
         or_(
@@ -261,20 +270,11 @@ async def search_entries(
     if to_date:
         query = query.where(Entry.published_at <= to_date)
 
-    # 获取总数
     count_query = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_query)).scalar() or 0
 
-    # 排序：与普通列表保持一致 - 状态优先级 > 采集时间
-    # 优先级：interested(1) > unread(2) > favorite(3) > archived(4) > trash(5)
-    status_priority = case(
-        (Entry.status == EntryStatus.INTERESTED, 1),
-        (Entry.status == EntryStatus.UNREAD, 2),
-        (Entry.status == EntryStatus.FAVORITE, 3),
-        (Entry.status == EntryStatus.ARCHIVED, 4),
-        (Entry.status == EntryStatus.TRASH, 5),
-        else_=99
-    )
+    # Sort by status priority > fetch time
+    status_priority = get_status_priority_case()
     query = query.order_by(status_priority, Entry.fetched_at.desc().nullslast())
     query = query.offset(skip).limit(limit)
 
@@ -285,27 +285,21 @@ async def search_entries(
 
 
 async def get_entry_stats(db: AsyncSession) -> dict:
-    """获取条目统计"""
-    # 总数
+    """Get entry statistics."""
     total = (await db.execute(select(func.count(Entry.id)))).scalar() or 0
 
-    # 按状态统计
     status_result = await db.execute(
         select(Entry.status, func.count(Entry.id)).group_by(Entry.status)
     )
     by_status = {row[0].value: row[1] for row in status_result}
 
-    # 今日数量（仅基于首次采集时间 fetched_at）
-    local_today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    utc_offset = datetime.now() - datetime.utcnow()
-    today_start_utc = local_today_start - utc_offset
+    today_start_utc = get_today_start_utc()
     today_count = (
         await db.execute(
             select(func.count(Entry.id)).where(Entry.fetched_at >= today_start_utc)
         )
     ).scalar() or 0
 
-    # 未读数量
     unread_count = by_status.get(EntryStatus.UNREAD.value, 0)
 
     return {
@@ -346,11 +340,27 @@ async def cleanup_expired_entries(db: AsyncSession, unmarked_days: int, trash_da
     return deleted_count
 
 
-async def shuffle_unread_entries(db: AsyncSession) -> int:
-    """随机打乱未读条目的显示顺序"""
-    # 获取所有未读条目
+async def shuffle_unread_entries(db: AsyncSession, source_id: Optional[int] = None) -> int:
+    """
+    随机打乱未读条目的显示顺序
+
+    使用批量 CASE WHEN 更新，避免 N+1 查询问题
+
+    Args:
+        db: 数据库会话
+        source_id: 可选的源 ID，如果指定则只打乱该源的条目
+
+    Returns:
+        打乱的条目数量
+    """
+    # 构建查询条件
+    conditions = [Entry.status == EntryStatus.UNREAD]
+    if source_id is not None:
+        conditions.append(Entry.rss_source_id == source_id)
+
+    # 获取所有符合条件的条目 ID
     result = await db.execute(
-        select(Entry.id).where(Entry.status == EntryStatus.UNREAD)
+        select(Entry.id).where(and_(*conditions))
     )
     entry_ids = [row[0] for row in result.all()]
 
@@ -359,17 +369,26 @@ async def shuffle_unread_entries(db: AsyncSession) -> int:
 
     # 生成随机顺序
     random.shuffle(entry_ids)
+    total = len(entry_ids)
 
-    # 批量更新 display_order
-    for order, entry_id in enumerate(entry_ids):
-        await db.execute(
-            update(Entry)
-            .where(Entry.id == entry_id)
-            .values(display_order=len(entry_ids) - order)  # 倒序，让第一个有最大的 order
-        )
+    # 使用 CASE WHEN 批量更新（单次查询替代 N 次更新）
+    # 构建: CASE WHEN id=1 THEN 100 WHEN id=2 THEN 99 ... END
+    case_conditions = [
+        (Entry.id == eid, total - i)  # 倒序，让第一个有最大的 order
+        for i, eid in enumerate(entry_ids)
+    ]
+
+    case_stmt = case(*case_conditions, else_=Entry.display_order)
+
+    await db.execute(
+        update(Entry)
+        .where(Entry.id.in_(entry_ids))
+        .values(display_order=case_stmt)
+    )
 
     await db.commit()
-    return len(entry_ids)
+    logger.info(f"Shuffled {total} unread entries" + (f" for source {source_id}" if source_id else ""))
+    return total
 
 
 async def archive_old_entries(db: AsyncSession, archive_after_days: int) -> int:

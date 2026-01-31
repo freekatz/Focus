@@ -21,6 +21,14 @@ class EntryStatus(str, Enum):
     ARCHIVED = "archived"       # 已归档（感兴趣/收藏超过90天）
 
 
+class TranslationStatus(str, Enum):
+    """ArXiv 翻译状态"""
+    PENDING = "pending"         # 待翻译
+    TRANSLATING = "translating" # 翻译中
+    COMPLETED = "completed"     # 已完成
+    FAILED = "failed"           # 翻译失败
+
+
 class Entry(Base):
     """文章条目表"""
 
@@ -57,6 +65,11 @@ class Entry(Base):
     ai_content_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     ai_processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
+    # ArXiv 翻译
+    translated_abstract: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 翻译后的摘要
+    brief_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 简要总结（帮助快速判断）
+    translation_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)  # 翻译状态
+
     # 用户笔记
     user_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
@@ -87,6 +100,10 @@ class Entry(Base):
         Index("ix_entry_status_published", "status", "published_at"),  # 复合索引：常用查询
         Index("ix_entry_is_read", "is_read"),
         Index("ix_entry_source_name", "rss_source_name"),  # 源名称索引，用于筛选孤立条目
+        # Focus 页面优化：按状态、源、显示顺序查询
+        Index("ix_entry_unread_source_order", "status", "rss_source_id", "display_order"),
+        # AI 解读状态查询
+        Index("ix_entry_ai_status", "ai_content_type", "ai_processed_at"),
         # 唯一约束：同一源下同一内容只能有一条
         # 注意：当 rss_source_id 为 NULL 时（源已删除），此约束不生效
         # SQLite 和 PostgreSQL 都将 NULL 视为不相等，所以孤立条目不受约束影响

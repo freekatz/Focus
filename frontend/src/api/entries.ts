@@ -55,4 +55,7 @@ export const entriesApi = {
 
   shuffleUnread: () =>
     apiClient.post<{ shuffled_count: number }>('/entries/unread/shuffle', {}),
+
+  reinterpret: (id: number) =>
+    apiClient.post<Entry>(`/entries/${id}/reinterpret`, {}),
 };
