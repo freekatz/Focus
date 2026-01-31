@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icons } from '../../components/icons/Icons';
 import { subscriptionsApi, rssApi } from '../../api';
@@ -27,6 +27,7 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const hasLoadedTab = useRef<{ my: boolean; market: boolean }>({ my: false, market: false });
 
   // Save tab state to sessionStorage
   useEffect(() => {
@@ -58,9 +59,12 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
     }
   }, [tab]);
 
+  // Only fetch when tab changes and hasn't been loaded yet
   useEffect(() => {
+    if (hasLoadedTab.current[tab]) return;
+    hasLoadedTab.current[tab] = true;
     fetchFeeds();
-  }, [fetchFeeds]);
+  }, [tab, fetchFeeds]);
 
   const toggleFeed = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -344,7 +348,6 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
           onSave={updateFeed}
           onDelete={deleteFeed}
           onRefresh={refreshSingleFeed}
-          darkMode={darkMode}
         />
       )}
 
@@ -352,7 +355,6 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSuccess={fetchFeeds}
-        darkMode={darkMode}
       />
     </div>
   );

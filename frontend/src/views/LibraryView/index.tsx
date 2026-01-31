@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icons } from '../../components/icons/Icons';
 import { entriesApi } from '../../api';
@@ -10,6 +10,7 @@ import type { Article, EntryStatus } from '../../types';
 interface LibraryViewProps {
   darkMode: boolean;
   onOpenArticle: (article: Article) => void;
+  refreshKey?: number;
 }
 
 type SortField = 'date' | 'title';
@@ -17,7 +18,7 @@ type SortOrder = 'asc' | 'desc';
 
 const PAGE_SIZE = 20;
 
-export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
+export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: LibraryViewProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [articles, setArticles] = useState<Article[]>([]);
@@ -25,6 +26,8 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const hasLoaded = useRef(false);
+  const lastRefreshKey = useRef(refreshKey);
 
   // Filter states - multi-select for status, default to saved and favorite
   const [statusFilters, setStatusFilters] = useState<Set<EntryStatus>>(new Set(['interested', 'favorite']));
@@ -85,9 +88,20 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
     }
   }, []);
 
+  // Initial load - only fetch once
   useEffect(() => {
+    if (hasLoaded.current) return;
+    hasLoaded.current = true;
     fetchEntries();
   }, [fetchEntries]);
+
+  // Refresh when refreshKey changes (triggered by parent)
+  useEffect(() => {
+    if (refreshKey !== lastRefreshKey.current) {
+      lastRefreshKey.current = refreshKey;
+      fetchEntries();
+    }
+  }, [refreshKey, fetchEntries]);
 
   // Get unique categories and years for filters
   const categories = useMemo(() => {
@@ -772,7 +786,6 @@ export function LibraryView({ darkMode, onOpenArticle }: LibraryViewProps) {
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         articles={articles.filter(a => selectedIds.has(a.id))}
-        darkMode={darkMode}
       />
     </div>
   );

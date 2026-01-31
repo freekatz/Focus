@@ -1,4 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
+import JSZip from "jszip";
 import { Icons } from "../icons/Icons";
 import { exportApi } from "../../api";
 import type { Article } from "../../types";
@@ -7,7 +8,6 @@ interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   articles: Article[];
-  darkMode: boolean;
 }
 
 type ExportTab = "share" | "zotero" | "copy" | "download";
@@ -16,7 +16,6 @@ export function ExportModal({
   isOpen,
   onClose,
   articles,
-  darkMode,
 }: ExportModalProps) {
   const [activeTab, setActiveTab] = useState<ExportTab>("share");
   const [loading, setLoading] = useState(false);
@@ -120,97 +119,106 @@ export function ExportModal({
     }
   };
 
-  const handleDownloadMarkdown = () => {
-    // Generate markdown content from AI summaries
-    const markdownContent = articles
-      .map((a) => {
-        const entry = a._entry;
-        const lines: string[] = [];
+  // Generate markdown content for a single article
+  const generateMarkdownForArticle = (article: Article): string => {
+    const entry = article._entry;
+    const lines: string[] = [];
 
-        lines.push(`# ${a.title}`);
-        lines.push("");
+    lines.push(`# ${article.title}`);
+    lines.push("");
 
-        if (entry?.rss_source_name) {
-          lines.push(`**Source:** ${entry.rss_source_name}`);
-        }
-        if (a.author) {
-          lines.push(`**Author:** ${a.author}`);
-        }
-        if (entry?.published_at) {
-          lines.push(`**Published:** ${new Date(entry.published_at).toLocaleDateString()}`);
-        }
-        if (entry?.link) {
-          lines.push(`**Link:** ${entry.link}`);
-        }
-        lines.push("");
+    if (entry?.rss_source_name) {
+      lines.push(`**Source:** ${entry.rss_source_name}`);
+    }
+    if (article.author) {
+      lines.push(`**Author:** ${article.author}`);
+    }
+    if (entry?.published_at) {
+      lines.push(`**Published:** ${new Date(entry.published_at).toLocaleDateString()}`);
+    }
+    if (entry?.link) {
+      lines.push(`**Link:** ${entry.link}`);
+    }
+    lines.push("");
 
-        // AI Summary / Brief Summary
-        if (entry?.ai_summary) {
-          lines.push("## AI Summary");
-          lines.push("");
-          lines.push(entry.ai_summary);
-          lines.push("");
-        } else if (entry?.brief_summary) {
-          lines.push("## Summary");
-          lines.push("");
-          lines.push(entry.brief_summary);
-          lines.push("");
-        }
-
-        // Translated Abstract (for ArXiv)
-        if (entry?.translated_abstract) {
-          lines.push("## Translated Abstract");
-          lines.push("");
-          lines.push(entry.translated_abstract);
-          lines.push("");
-        }
-
-        lines.push("---");
-        lines.push("");
-
-        return lines.join("\n");
-      })
-      .join("\n");
-
-    // Create and download file
-    const blob = new Blob([markdownContent], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-
-    // Generate filename with ArXiv ID and timestamp
-    const timestamp = new Date().toISOString().slice(0, 16).replace(/[T:]/g, "-");
-    let filename: string;
-
-    if (articles.length === 1) {
-      const article = articles[0];
-      const entry = article._entry;
-      // Extract ArXiv ID from link (e.g., https://arxiv.org/abs/2401.12345)
-      const arxivMatch = entry?.link?.match(/arxiv\.org\/abs\/(\d+\.\d+)/);
-      const arxivId = arxivMatch ? arxivMatch[1] : null;
-
-      if (arxivId) {
-        // ArXiv article: arxiv-2401.12345-Title-2024-01-31-14-30.md
-        const shortTitle = article.title.slice(0, 30).replace(/[/\\?%*:|"<>]/g, "-").trim();
-        filename = `arxiv-${arxivId}-${shortTitle}-${timestamp}.md`;
-      } else {
-        // Regular article: Title-SourceName-2024-01-31-14-30.md
-        const shortTitle = article.title.slice(0, 40).replace(/[/\\?%*:|"<>]/g, "-").trim();
-        const sourceName = entry?.rss_source_name?.slice(0, 15).replace(/[/\\?%*:|"<>]/g, "-") || "focus";
-        filename = `${shortTitle}-${sourceName}-${timestamp}.md`;
-      }
-    } else {
-      // Multiple articles: focus-export-5篇-2024-01-31-14-30.md
-      filename = `focus-export-${articles.length}篇-${timestamp}.md`;
+    // AI Summary / Brief Summary
+    if (entry?.ai_summary) {
+      lines.push("## AI Summary");
+      lines.push("");
+      lines.push(entry.ai_summary);
+      lines.push("");
+    } else if (entry?.brief_summary) {
+      lines.push("## Summary");
+      lines.push("");
+      lines.push(entry.brief_summary);
+      lines.push("");
     }
 
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Translated Abstract (for ArXiv)
+    if (entry?.translated_abstract) {
+      lines.push("## Translated Abstract");
+      lines.push("");
+      lines.push(entry.translated_abstract);
+      lines.push("");
+    }
 
-    setMessage({ type: "success", text: "Markdown file downloaded!" });
+    return lines.join("\n");
+  };
+
+  // Generate filename for a single article
+  const generateFilename = (article: Article): string => {
+    const entry = article._entry;
+    const arxivMatch = entry?.link?.match(/arxiv\.org\/abs\/(\d+\.\d+)/);
+    const arxivId = arxivMatch ? arxivMatch[1] : null;
+
+    if (arxivId) {
+      const shortTitle = article.title.slice(0, 30).replace(/[/\\?%*:|"<>]/g, "-").trim();
+      return `arxiv-${arxivId}-${shortTitle}.md`;
+    } else {
+      const shortTitle = article.title.slice(0, 40).replace(/[/\\?%*:|"<>]/g, "-").trim();
+      const sourceName = entry?.rss_source_name?.slice(0, 15).replace(/[/\\?%*:|"<>]/g, "-") || "focus";
+      return `${shortTitle}-${sourceName}.md`;
+    }
+  };
+
+  const handleDownloadMarkdown = async () => {
+    const timestamp = new Date().toISOString().slice(0, 16).replace(/[T:]/g, "-");
+
+    if (articles.length === 1) {
+      // Single article: download as markdown file
+      const article = articles[0];
+      const content = generateMarkdownForArticle(article);
+      const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = generateFilename(article).replace(".md", `-${timestamp}.md`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setMessage({ type: "success", text: "Markdown file downloaded!" });
+    } else {
+      // Multiple articles: download as zip file
+      const zip = new JSZip();
+
+      articles.forEach((article) => {
+        const content = generateMarkdownForArticle(article);
+        const filename = generateFilename(article);
+        zip.file(filename, content);
+      });
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `focus-export-${articles.length}-${timestamp}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setMessage({ type: "success", text: `${articles.length} files downloaded as zip!` });
+    }
   };
 
   const tabs: { id: ExportTab; label: string; icon: ReactNode }[] = [
@@ -229,42 +237,22 @@ export function ExportModal({
       />
 
       {/* Modal - Centered */}
-      <div
-        className={`relative w-full max-w-md rounded-2xl shadow-xl ${
-          darkMode ? "bg-theme-surface" : "bg-theme-surface"
-        }`}
-      >
+      <div className="relative w-full max-w-md rounded-2xl shadow-xl bg-theme-surface">
         {/* Header */}
-        <div
-          className={`flex items-center justify-between p-4 border-b ${
-            darkMode ? "border-theme-border" : "border-theme-border"
-          }`}
-        >
-          <h3
-            className={`text-h3 font-bold ${
-              darkMode ? "text-theme-text" : "text-theme-text"
-            }`}
-          >
+        <div className="flex items-center justify-between p-4 border-b border-theme-border">
+          <h3 className="text-h3 font-bold text-theme-text">
             Export {articles.length} item{articles.length > 1 ? "s" : ""}
           </h3>
           <button
             onClick={onClose}
-            className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${
-              darkMode
-                ? "hover:bg-theme-muted text-theme-text-secondary"
-                : "hover:bg-theme-muted text-theme-text-secondary"
-            }`}
+            className="min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors hover:bg-theme-muted text-theme-text-secondary"
           >
             <Icons.X />
           </button>
         </div>
 
         {/* Tabs */}
-        <div
-          className={`flex p-2 mx-4 mt-4 rounded-lg ${
-            darkMode ? "bg-theme-muted" : "bg-theme-muted"
-          }`}
-        >
+        <div className="flex p-2 mx-4 mt-4 rounded-lg bg-theme-muted">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -275,11 +263,7 @@ export function ExportModal({
               }}
               className={`flex-1 flex items-center justify-center gap-2 min-h-touch px-3 rounded-md text-ui-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? darkMode
-                    ? "bg-theme-selected text-theme-text shadow"
-                    : "bg-theme-surface text-theme-text shadow"
-                  : darkMode
-                  ? "text-theme-text-secondary hover:text-theme-text"
+                  ? "bg-theme-surface text-theme-text shadow"
                   : "text-theme-text-secondary hover:text-theme-text"
               }`}
             >
@@ -294,21 +278,13 @@ export function ExportModal({
           {activeTab === "share" && (
             <div className="space-y-4">
               <div>
-                <label
-                  className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
-                    darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
-                  }`}
-                >
+                <label className="block text-caption font-medium uppercase tracking-wider mb-2 text-theme-text-tertiary">
                   Expires in
                 </label>
                 <select
                   value={expiresInDays}
                   onChange={(e) => setExpiresInDays(parseInt(e.target.value))}
-                  className={`w-full min-h-touch p-2 rounded-lg border text-body-sm ${
-                    darkMode
-                      ? "bg-theme-muted border-theme-border text-theme-text"
-                      : "bg-theme-muted border-theme-border text-theme-text"
-                  }`}
+                  className="w-full min-h-touch p-2 rounded-lg border text-body-sm bg-theme-muted border-theme-border text-theme-text"
                 >
                   <option value={1}>1 day</option>
                   <option value={7}>7 days</option>
@@ -319,26 +295,16 @@ export function ExportModal({
 
               {shareUrl ? (
                 <div className="space-y-2">
-                  <div
-                    className={`flex items-center gap-2 p-3 rounded-lg ${
-                      darkMode ? "bg-theme-muted" : "bg-theme-muted"
-                    }`}
-                  >
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-theme-muted">
                     <input
                       type="text"
                       readOnly
                       value={shareUrl}
-                      className={`flex-1 bg-transparent text-body-sm outline-none ${
-                        darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
-                      }`}
+                      className="flex-1 bg-transparent text-body-sm outline-none text-theme-text-secondary"
                     />
                     <button
                       onClick={copyShareUrl}
-                      className={`min-h-touch min-w-touch flex items-center justify-center rounded-lg transition-colors ${
-                        darkMode
-                          ? "hover:bg-theme-selected text-theme-accent"
-                          : "hover:bg-theme-border text-theme-accent"
-                      }`}
+                      className="min-h-touch min-w-touch flex items-center justify-center rounded-lg transition-colors hover:bg-theme-border text-theme-accent"
                     >
                       <Icons.Share />
                     </button>
@@ -348,11 +314,7 @@ export function ExportModal({
                 <button
                   onClick={handleShare}
                   disabled={loading || entryIds.length === 0}
-                  className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
-                    darkMode
-                      ? "bg-theme-accent hover:bg-theme-accent-hover text-white"
-                      : "bg-theme-accent hover:bg-theme-accent-hover text-white"
-                  } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all bg-theme-accent hover:bg-theme-accent-hover text-white ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {loading ? "Creating..." : "Create Share Link"}
                 </button>
@@ -363,11 +325,7 @@ export function ExportModal({
           {activeTab === "zotero" && (
             <div className="space-y-4">
               <div>
-                <label
-                  className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
-                    darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
-                  }`}
-                >
+                <label className="block text-caption font-medium uppercase tracking-wider mb-2 text-theme-text-tertiary">
                   Collection
                 </label>
                 <input
@@ -375,21 +333,13 @@ export function ExportModal({
                   placeholder="Focus"
                   value={zoteroCollection}
                   onChange={(e) => setZoteroCollection(e.target.value)}
-                  className={`w-full min-h-touch p-2 rounded-lg border text-body-sm ${
-                    darkMode
-                      ? "bg-theme-muted border-theme-border text-theme-text"
-                      : "bg-theme-muted border-theme-border text-theme-text"
-                  }`}
+                  className="w-full min-h-touch p-2 rounded-lg border text-body-sm bg-theme-muted border-theme-border text-theme-text"
                 />
               </div>
               <button
                 onClick={handleZoteroExport}
                 disabled={loading || entryIds.length === 0}
-                className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
-                  darkMode
-                    ? "bg-theme-accent hover:bg-theme-accent text-white"
-                    : "bg-theme-accent hover:bg-theme-accent-hover text-white"
-                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all bg-theme-accent hover:bg-theme-accent-hover text-white ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 {loading ? "Exporting..." : "Export to Zotero"}
               </button>
@@ -398,34 +348,17 @@ export function ExportModal({
 
           {activeTab === "copy" && (
             <div className="space-y-4">
-              <div
-                className={`p-3 rounded-lg max-h-32 overflow-y-auto ${
-                  darkMode ? "bg-theme-muted" : "bg-theme-muted"
-                }`}
-              >
+              <div className="p-3 rounded-lg max-h-32 overflow-y-auto bg-theme-muted">
                 {articles.map((a, i) => (
                   <div
                     key={a.id}
-                    className={`text-body-sm py-1 ${
-                      i > 0
-                        ? "border-t " +
-                          (darkMode ? "border-theme-border" : "border-theme-border")
-                        : ""
-                    }`}
+                    className={`text-body-sm py-1 ${i > 0 ? "border-t border-theme-border" : ""}`}
                   >
-                    <div
-                      className={`font-medium truncate ${
-                        darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
-                      }`}
-                    >
+                    <div className="font-medium truncate text-theme-text-secondary">
                       {a.title}
                     </div>
                     {a._entry?.link && (
-                      <div
-                        className={`text-caption truncate ${
-                          darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
-                        }`}
-                      >
+                      <div className="text-caption truncate text-theme-text-tertiary">
                         {a._entry.link}
                       </div>
                     )}
@@ -435,11 +368,7 @@ export function ExportModal({
 
               <button
                 onClick={handleCopy}
-                className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
-                  darkMode
-                    ? "bg-theme-accent hover:bg-theme-accent text-white"
-                    : "bg-theme-accent hover:bg-theme-accent-hover text-white"
-                }`}
+                className="w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all bg-theme-accent hover:bg-theme-accent-hover text-white"
               >
                 Copy to Clipboard
               </button>
@@ -448,45 +377,24 @@ export function ExportModal({
 
           {activeTab === "download" && (
             <div className="space-y-4">
-              <div
-                className={`p-3 rounded-lg ${
-                  darkMode ? "bg-theme-muted" : "bg-theme-muted"
-                }`}
-              >
-                <p
-                  className={`text-body-sm ${
-                    darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
-                  }`}
-                >
+              <div className="p-3 rounded-lg bg-theme-muted">
+                <p className="text-body-sm text-theme-text-secondary">
                   Download AI summaries as a Markdown file, including article metadata, AI analysis, and translations.
                 </p>
               </div>
 
-              <div
-                className={`p-3 rounded-lg max-h-32 overflow-y-auto ${
-                  darkMode ? "bg-theme-muted" : "bg-theme-muted"
-                }`}
-              >
+              <div className="p-3 rounded-lg max-h-32 overflow-y-auto bg-theme-muted">
                 {articles.map((a, i) => {
                   const hasAiContent = a._entry?.ai_summary || a._entry?.brief_summary || a._entry?.translated_abstract;
                   return (
                     <div
                       key={a.id}
-                      className={`text-body-sm py-1 flex items-center gap-2 ${
-                        i > 0
-                          ? "border-t " +
-                            (darkMode ? "border-theme-border" : "border-theme-border")
-                          : ""
-                      }`}
+                      className={`text-body-sm py-1 flex items-center gap-2 ${i > 0 ? "border-t border-theme-border" : ""}`}
                     >
                       <span className={hasAiContent ? "text-theme-success" : "text-theme-text-muted"}>
                         {hasAiContent ? "✓" : "○"}
                       </span>
-                      <span
-                        className={`font-medium truncate flex-1 ${
-                          darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
-                        }`}
-                      >
+                      <span className="font-medium truncate flex-1 text-theme-text-secondary">
                         {a.title}
                       </span>
                     </div>
@@ -496,11 +404,7 @@ export function ExportModal({
 
               <button
                 onClick={handleDownloadMarkdown}
-                className={`w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all ${
-                  darkMode
-                    ? "bg-theme-accent hover:bg-theme-accent-hover text-white"
-                    : "bg-theme-accent hover:bg-theme-accent-hover text-white"
-                }`}
+                className="w-full min-h-touch py-3 rounded-xl font-medium text-ui transition-all bg-theme-accent hover:bg-theme-accent-hover text-white"
               >
                 Download Markdown
               </button>

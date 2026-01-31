@@ -5,7 +5,6 @@ import { Sidebar } from './components/layout/Sidebar';
 import { MobileHeader } from './components/layout/MobileHeader';
 import { MobileMenu } from './components/layout/MobileMenu';
 import { ToastContainer } from './components/shared/ToastContainer';
-import { useToast } from './context/ToastContext';
 import { LoginView } from './views/LoginView';
 import { HomeView } from './views/HomeView';
 import { SourcesView } from './views/SourcesView';
@@ -205,41 +204,39 @@ function App() {
           onScroll={(e) => { scrollPositionRef.current = e.currentTarget.scrollTop; }}
           className={`flex-1 overflow-y-auto overflow-x-hidden ${darkMode ? 'scrollbar-styled-dark' : 'scrollbar-styled'}`}
         >
-          {/* HomeView manages its own layout like ShareView */}
-          {activeTab === 'home' && (
+          {/* HomeView manages its own layout like ShareView - use CSS display to preserve state */}
+          <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
             <HomeView darkMode={darkMode} />
-          )}
+          </div>
 
-          {/* Other views use shared container */}
-          {activeTab !== 'home' && (
-            <div className="relative w-full min-h-full">
-              <div className="mx-auto flex size-full max-w-5xl flex-col px-4 md:px-6 lg:px-8">
-                {activeTab === 'sources' && (
-                  <SourcesView darkMode={darkMode} />
-                )}
-                {activeTab === 'library' && (
-                  <LibraryView
-                    key={libraryRefreshKey}
-                    darkMode={darkMode}
-                    onOpenArticle={handleOpenArticle}
-                  />
-                )}
-                {activeTab === 'settings' && (
-                  <SettingsView
-                    darkMode={darkMode}
-                    themeMode={themeMode}
-                    setThemeMode={setThemeMode}
-                    fontTheme={fontTheme}
-                    setFontTheme={setFontTheme}
-                    colorTheme={colorTheme}
-                    setColorTheme={setColorTheme}
-                    customThemeJson={customThemeJson}
-                    setCustomThemeJson={setCustomThemeJson}
-                  />
-                )}
+          {/* Other views use shared container - use CSS display to preserve state */}
+          <div style={{ display: activeTab !== 'home' ? 'block' : 'none' }} className="relative w-full min-h-full">
+            <div className="mx-auto flex size-full max-w-5xl flex-col px-4 md:px-6 lg:px-8">
+              <div style={{ display: activeTab === 'sources' ? 'block' : 'none' }}>
+                <SourcesView darkMode={darkMode} />
+              </div>
+              <div style={{ display: activeTab === 'library' ? 'block' : 'none' }}>
+                <LibraryView
+                  darkMode={darkMode}
+                  onOpenArticle={handleOpenArticle}
+                  refreshKey={libraryRefreshKey}
+                />
+              </div>
+              <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
+                <SettingsView
+                  darkMode={darkMode}
+                  themeMode={themeMode}
+                  setThemeMode={setThemeMode}
+                  fontTheme={fontTheme}
+                  setFontTheme={setFontTheme}
+                  colorTheme={colorTheme}
+                  setColorTheme={setColorTheme}
+                  customThemeJson={customThemeJson}
+                  setCustomThemeJson={setCustomThemeJson}
+                />
               </div>
             </div>
-          )}
+          </div>
         </div>
       </main>
 

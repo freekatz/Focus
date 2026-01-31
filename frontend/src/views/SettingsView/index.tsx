@@ -834,12 +834,12 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
       <Section title={t('settings.about')} icon={<Icons.Info />} darkMode={darkMode}>
         <div className="space-y-3 text-body-sm">
           <div className="flex justify-between">
-            <span className={darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}>{t('settings.version')}</span>
-            <span className={darkMode ? 'text-theme-text' : 'text-theme-text'}>1.0.0 (Beta)</span>
+            <span className="text-theme-text-secondary">{t('settings.version')}</span>
+            <span className="text-theme-text">{__APP_VERSION__}</span>
           </div>
           <div className="flex justify-between">
-            <span className={darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}>{t('settings.build')}</span>
-            <span className={darkMode ? 'text-theme-text' : 'text-theme-text'}>2025.12.16</span>
+            <span className="text-theme-text-secondary">{t('settings.build')}</span>
+            <span className="text-theme-text">{__BUILD_DATE__}</span>
           </div>
         </div>
       </Section>

@@ -248,7 +248,7 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
               {renderStatusBadge()}
               {isTrashed && (
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-theme-error/10 text-theme-error">
-                  Trash
+                  {t('library.trash')}
                 </span>
               )}
             </div>
@@ -288,28 +288,28 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
                 className="flex items-center gap-2 px-6 py-3 rounded-full font-medium text-sm bg-theme-accent text-white"
               >
                 <Icons.Check />
-                <span>Restore</span>
+                <span>{t('library.restore')}</span>
               </button>
             ) : (
               // Normal action bar
               <>
                 <button onClick={onDiscard} className="flex flex-col items-center gap-1 p-2 text-theme-text-tertiary">
                   <Icons.Trash />
-                  <span className="text-[10px] font-medium">Discard</span>
+                  <span className="text-[10px] font-medium">{t('library.discard')}</span>
                 </button>
                 <button onClick={onFavorite} className={`flex flex-col items-center gap-1 p-2 ${article.isFavorite ? 'text-theme-favorite' : 'text-theme-text-tertiary'}`}>
                   <Icons.Star />
-                  <span className="text-[10px] font-medium">Favorite</span>
+                  <span className="text-[10px] font-medium">{t('library.favorite')}</span>
                 </button>
                 <button onClick={() => setExportModalOpen(true)} className="flex flex-col items-center gap-1 p-2 text-theme-text-tertiary">
                   <Icons.Share />
-                  <span className="text-[10px] font-medium">Export</span>
+                  <span className="text-[10px] font-medium">{t('library.export')}</span>
                 </button>
               </>
             )}
             <button onClick={onClose} className="flex flex-col items-center gap-1 p-2 text-theme-text-tertiary">
               <Icons.X />
-              <span className="text-[10px] font-medium">Close</span>
+              <span className="text-[10px] font-medium">{t('common.close')}</span>
             </button>
           </div>
         </div>
@@ -336,7 +336,7 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
                 {renderStatusBadge()}
                 {isTrashed && (
                   <span className="text-xs font-medium px-2 py-1 rounded bg-theme-error/10 text-theme-error">
-                    Trash
+                    {t('library.trash')}
                   </span>
                 )}
               </div>
@@ -379,7 +379,7 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
                   className="flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-transform hover:scale-105 bg-theme-accent text-white"
                 >
                   <Icons.Check />
-                  <span>Restore Article</span>
+                  <span>{t('library.restore')}</span>
                 </button>
               </div>
             ) : (
@@ -391,21 +391,21 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
                     className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-theme-text-tertiary hover:bg-theme-muted hover:text-theme-error"
                   >
                     <Icons.Trash />
-                    <span className="text-sm font-medium">Discard</span>
+                    <span className="text-sm font-medium">{t('library.discard')}</span>
                   </button>
                   <button
                     onClick={onFavorite}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${article.isFavorite ? 'text-theme-favorite bg-theme-favorite/10' : 'text-theme-text-tertiary hover:bg-theme-muted hover:text-theme-favorite'}`}
                   >
                     <Icons.Star />
-                    <span className="text-sm font-medium">Favorite</span>
+                    <span className="text-sm font-medium">{t('library.favorite')}</span>
                   </button>
                   <button
                     onClick={() => setExportModalOpen(true)}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-theme-text-tertiary hover:bg-theme-muted hover:text-theme-text"
                   >
                     <Icons.Share />
-                    <span className="text-sm font-medium">Export</span>
+                    <span className="text-sm font-medium">{t('library.export')}</span>
                   </button>
                 </div>
               </>
@@ -419,7 +419,6 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
           isOpen={exportModalOpen}
           onClose={() => setExportModalOpen(false)}
           articles={[article]}
-          darkMode={darkMode}
         />
       )}
     </>

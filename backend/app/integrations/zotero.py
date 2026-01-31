@@ -13,6 +13,7 @@ from app.utils.logger import logger
 # AI content_type 到 Zotero item type 的映射
 CONTENT_TYPE_TO_ZOTERO_TYPE = {
     "paper": "journalArticle",      # 学术论文 -> 期刊文章
+    "preprint": "preprint",         # 预印本 -> 预印本
     "blog": "blogPost",             # 博客 -> 博客文章
     "news": "newspaperArticle",     # 新闻 -> 报纸文章
     "tutorial": "webpage",          # 教程 -> 网页
@@ -86,16 +87,21 @@ class ZoteroClient:
             logger.error(f"Failed to get/create collection '{collection_name}': {e}")
             return None
 
-    def _get_zotero_item_type(self, content_type: Optional[str]) -> str:
+    def _get_zotero_item_type(self, content_type: Optional[str], link: Optional[str] = None) -> str:
         """
         根据 AI 识别的内容类型获取对应的 Zotero item type
 
         Args:
             content_type: AI 识别的内容类型 (paper/blog/news/tutorial/social/other)
+            link: 文章链接，用于检测 ArXiv 等特殊来源
 
         Returns:
             Zotero item type
         """
+        # ArXiv 文献使用预印本类型
+        if link and "arxiv.org" in link:
+            return "preprint"
+
         if content_type:
             return CONTENT_TYPE_TO_ZOTERO_TYPE.get(content_type.lower(), "webpage")
         return "webpage"
@@ -112,8 +118,8 @@ class ZoteroClient:
             创建成功返回 item key，失败返回 None
         """
         try:
-            # 根据 AI 内容类型选择 Zotero item type
-            item_type = self._get_zotero_item_type(entry.ai_content_type)
+            # 根据 AI 内容类型和链接选择 Zotero item type
+            item_type = self._get_zotero_item_type(entry.ai_content_type, entry.link)
             template = self.client.item_template(item_type)
 
             # 通用字段
@@ -122,11 +128,22 @@ class ZoteroClient:
             template["accessDate"] = datetime.utcnow().strftime("%Y-%m-%d")
 
             # 根据 item type 设置不同字段
-            if item_type == "journalArticle":
+            if item_type == "preprint":
+                # 预印本类型（ArXiv 等）
+                template["repository"] = "arXiv"
+                # 从链接提取 ArXiv ID
+                import re
+                arxiv_match = re.search(r'arxiv\.org/abs/(\d+\.\d+)', entry.link or '')
+                if arxiv_match:
+                    template["archiveID"] = f"arXiv:{arxiv_match.group(1)}"
+                if entry.author:
+                    template["creators"] = [
+                        {"creatorType": "author", "name": entry.author}
+                    ]
+            elif item_type == "journalArticle":
                 # 论文类型
                 template["publicationTitle"] = entry.rss_source.name if entry.rss_source else ""
                 if entry.author:
-                    # 论文作者格式：lastName, firstName
                     template["creators"] = [
                         {"creatorType": "author", "name": entry.author}
                     ]

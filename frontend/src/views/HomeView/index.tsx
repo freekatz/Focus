@@ -45,6 +45,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
   const [jumpInput, setJumpInput] = useState("");
 
   const contentRef = useRef<HTMLDivElement>(null);
+  const hasLoaded = useRef(false);
 
   // Fetch subscriptions
   const fetchSubscriptions = useCallback(async () => {
@@ -90,10 +91,21 @@ export function HomeView({ darkMode }: HomeViewProps) {
     }
   }, []);
 
+  // Initial load - only fetch once, then when source changes
   useEffect(() => {
-    fetchSubscriptions();
-    fetchEntries(selectedSourceId);
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      fetchSubscriptions();
+      fetchEntries(selectedSourceId);
+    }
   }, [fetchSubscriptions, fetchEntries, selectedSourceId]);
+
+  // Refetch when source filter changes (after initial load)
+  useEffect(() => {
+    if (hasLoaded.current && selectedSourceId !== null) {
+      fetchEntries(selectedSourceId);
+    }
+  }, [selectedSourceId, fetchEntries]);
 
   // Reset scroll position on article change
   useEffect(() => {
