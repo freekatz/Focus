@@ -70,6 +70,7 @@ SECRET_KEY=替换为随机字符串
 DEFAULT_PASSWORD=替换为你的密码
 FRONTEND_URL=https://your-domain.com
 CORS_ORIGINS=https://your-domain.com
+ALLOWED_HOSTS=localhost,127.0.0.1,your-domain.com
 AI_PROVIDER=openai
 AI_MODEL=gpt-4o-mini
 AI_API_KEY=your-api-key
@@ -114,6 +115,7 @@ Caddy 会自动申请和续期 HTTPS 证书。
 | `DEFAULT_PASSWORD` | 管理员密码 |
 | `FRONTEND_URL` | 前端地址，用于生成分享链接 |
 | `CORS_ORIGINS` | 允许的跨域来源，与 FRONTEND_URL 一致 |
+| `ALLOWED_HOSTS` | 允许访问的域名，必须包含你的域名 |
 | `AI_PROVIDER` | `openai` 或 `openai_compatible` |
 | `AI_MODEL` | 模型名称 |
 | `AI_API_KEY` | AI API 密钥 |

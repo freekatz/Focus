@@ -5,12 +5,17 @@ services:
     image: ghcr.io/${GITHUB_USERNAME:-freekatz}/focus-backend:latest
     container_name: focus-backend
     restart: unless-stopped
+    networks:
+      focus-net:
+        aliases:
+          - backend
     environment:
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
       - DEFAULT_PASSWORD=${DEFAULT_PASSWORD:-focus123}
       - DATABASE_URL=sqlite+aiosqlite:///./data/focus.db
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
       - AI_PROVIDER=${AI_PROVIDER:-openai}
       - AI_API_KEY=${AI_API_KEY:-}
       - AI_MODEL=${AI_MODEL:-gpt-4o-mini}
@@ -33,11 +38,17 @@ services:
     image: ghcr.io/${GITHUB_USERNAME:-freekatz}/focus-frontend:latest
     container_name: focus-frontend
     restart: unless-stopped
+    networks:
+      - focus-net
     ports:
       - "8080:80"
     depends_on:
       backend:
         condition: service_healthy
+
+networks:
+  focus-net:
+    name: focus-net
 
 volumes:
   focus-data:
