@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: focus-backend
+    restart: unless-stopped
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - DEFAULT_PASSWORD=${DEFAULT_PASSWORD:-focus123}
+      - DATABASE_URL=sqlite+aiosqlite:///./data/focus.db
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+      - AI_PROVIDER=${AI_PROVIDER:-openai}
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-gpt-4o-mini}
+      - AI_BASE_URL=${AI_BASE_URL:-}
+      - ZOTERO_LIBRARY_ID=${ZOTERO_LIBRARY_ID:-}
+      - ZOTERO_API_KEY=${ZOTERO_API_KEY:-}
+    volumes:
+      - focus-data:/app/data
+      - focus-logs:/app/logs
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build: ./frontend
+    container_name: focus-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  focus-data:
+    name: focus-data
+  focus-logs:
+    name: focus-logs

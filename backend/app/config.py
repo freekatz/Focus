@@ -1,8 +1,11 @@
 """
 Focus 配置管理
+
+配置优先级：环境变量 > 默认值
+生产环境通过 export 或 docker env 设置环境变量
+开发环境可通过 source .env 或 IDE 配置加载
 """
 from functools import lru_cache
-from pathlib import Path
 from typing import Optional
 
 from pydantic import Field
@@ -10,11 +13,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """应用配置"""
+    """应用配置 - 直接从环境变量读取"""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
         case_sensitive=False,
     )
 
@@ -65,9 +66,6 @@ class Settings(BaseSettings):
     ai_model: str = Field(default="gpt-4o-mini", description="AI 模型")
     ai_api_key: Optional[str] = Field(default=None, description="AI API 密钥")
     ai_base_url: Optional[str] = Field(default=None, description="AI API 基础 URL")
-
-    # ArXiv 解读配置
-    interpretations_dir: str = Field(default="data/interpretations", description="ArXiv 解读文件保存目录")
 
     # Zotero 配置
     zotero_library_id: Optional[str] = Field(default=None, description="Zotero 库 ID")

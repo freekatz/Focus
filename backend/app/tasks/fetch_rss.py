@@ -384,7 +384,7 @@ async def interpret_arxiv_entry(entry_id: int):
     Args:
         entry_id: 文章 ID
     """
-    from app.services.arxiv_service import ArxivInterpreter, save_interpretation_to_file, NoHtmlAvailableError
+    from app.services.arxiv_service import ArxivInterpreter, NoHtmlAvailableError
 
     async with async_session_maker() as db:
         # 获取文章
@@ -431,17 +431,13 @@ async def interpret_arxiv_entry(entry_id: int):
             interpreter = ArxivInterpreter(config)
             interpretation = await interpreter.interpret(entry)
 
-            # 保存解读结果到本地文件
-            file_path = await save_interpretation_to_file(entry, interpretation)
-
-            # 保存结果到数据库（索引）
+            # 保存结果到数据库
             entry.ai_summary = interpretation
             entry.ai_content_type = "arxiv_interpretation"
             entry.ai_processed_at = datetime.utcnow()
-            entry.interpretation_file = file_path  # 保存文件路径
             await db.commit()
 
-            logger.info(f"Completed interpretation for entry {entry_id}, saved to {file_path}")
+            logger.info(f"Completed interpretation for entry {entry_id}")
 
         except NoHtmlAvailableError as e:
             logger.info(f"Entry {entry_id} has no HTML version: {e}")

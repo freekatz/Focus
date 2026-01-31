@@ -64,7 +64,6 @@ class Entry(Base):
     ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ai_content_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     ai_processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    interpretation_file: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)  # 解读文件路径
 
     # ArXiv 翻译
     translated_abstract: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 翻译后的摘要

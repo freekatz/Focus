@@ -7,13 +7,8 @@ ArXiv 论文深度解读服务
 2. 使用 Q1-Q6 框架进行两轮深度解读
 3. 合并输出 Markdown 格式解读
 4. 摘要翻译（中文）
-5. 解读结果保存到本地文件
 """
-import os
 import re
-import asyncio
-from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
 import httpx
@@ -27,7 +22,6 @@ from app.agents.arxiv_prompts import (
     ROUND1_USER_PROMPT,
     ROUND2_USER_PROMPT,
 )
-from app.config import settings
 from app.utils.logger import logger
 
 
@@ -35,10 +29,6 @@ class NoHtmlAvailableError(Exception):
     """ArXiv 论文没有 HTML 版本（404 错误）"""
     pass
 
-
-def get_interpretations_dir() -> Path:
-    """获取解读文件保存目录（支持 env 配置）"""
-    return Path(settings.interpretations_dir)
 
 # API 请求超时配置（秒）
 API_TIMEOUT = 120.0
@@ -481,93 +471,3 @@ class ArxivInterpreter:
         text = re.sub(r'[ \t]+', ' ', text)
         text = re.sub(r'\n{3,}', '\n\n', text)
         return text.strip()
-
-
-def _sanitize_filename(text: str, max_length: int = 50) -> str:
-    """
-    将文本转换为安全的文件名
-
-    Args:
-        text: 原始文本
-        max_length: 最大长度
-
-    Returns:
-        安全的文件名字符串
-    """
-    # 移除或替换不安全的字符
-    unsafe_chars = '<>:"/\\|?*\n\r\t'
-    for char in unsafe_chars:
-        text = text.replace(char, '_')
-
-    # 替换多个连续空格/下划线为单个下划线
-    text = re.sub(r'[\s_]+', '_', text)
-
-    # 移除首尾的下划线和空格
-    text = text.strip('_ ')
-
-    # 截断到最大长度
-    if len(text) > max_length:
-        text = text[:max_length].rstrip('_')
-
-    return text or 'untitled'
-
-
-async def save_interpretation_to_file(entry: Entry, interpretation: str) -> str:
-    """
-    保存解读结果到本地文件
-
-    文件命名格式: {arxiv_id}_{title_short}_{date}.md
-    例如: 2501.12345_Attention_Is_All_You_Need_20250130.md
-
-    Args:
-        entry: 文章条目
-        interpretation: 解读内容（Markdown 格式）
-
-    Returns:
-        保存的文件路径
-    """
-    # 获取目录并确保存在
-    interpretations_dir = get_interpretations_dir()
-    interpretations_dir.mkdir(parents=True, exist_ok=True)
-
-    # 提取 arxiv_id
-    arxiv_id = extract_arxiv_id(entry.link)
-    safe_arxiv_id = arxiv_id.replace("/", "_").replace(".", "_") if arxiv_id else f"entry_{entry.id}"
-
-    # 生成安全的标题片段
-    title_short = _sanitize_filename(entry.title, max_length=40)
-
-    # 生成日期字符串
-    date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
-
-    # 组合文件名: arxiv_id_title_date.md
-    filename = f"{safe_arxiv_id}_{title_short}_{date_str}.md"
-    file_path = interpretations_dir / filename
-
-    # 格式化发布时间
-    pub_time = entry.published_at.strftime("%Y-%m-%d %H:%M") if entry.published_at else 'Unknown'
-    interpret_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-
-    # 构建完整的 Markdown 内容
-    content = f"""# {entry.title}
-
-| 属性 | 值 |
-|------|-----|
-| ArXiv ID | {arxiv_id or 'N/A'} |
-| 来源 | {entry.rss_source_name or 'Unknown'} |
-| 作者 | {entry.author or 'Unknown'} |
-| 发布时间 | {pub_time} |
-| 解读时间 | {interpret_time} |
-| 原文链接 | {entry.link} |
-
----
-
-{interpretation}
-"""
-
-    # 写入文件
-    file_path.write_text(content, encoding="utf-8")
-
-    logger.info(f"Saved interpretation to {file_path}")
-
-    return str(file_path)

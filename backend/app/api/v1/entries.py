@@ -313,7 +313,6 @@ async def reinterpret_entry(
     entry.ai_summary = None
     entry.ai_content_type = None
     entry.ai_processed_at = None
-    entry.interpretation_file = None
     await db.commit()
 
     # 触发重新解读

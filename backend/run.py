@@ -2,6 +2,13 @@
 import asyncio
 import signal
 import sys
+from pathlib import Path
+
+# Load .env file if exists (for development)
+env_file = Path(__file__).parent.parent / ".env"
+if env_file.exists():
+    from dotenv import load_dotenv
+    load_dotenv(env_file)
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config

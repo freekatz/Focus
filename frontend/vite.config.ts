@@ -4,7 +4,12 @@ import { fileURLToPath, URL } from "node:url";
 import pkg from "./package.json";
 
 // Allowed hosts for dev and preview servers
-const ALLOWED_HOSTS = ["localhost", "127.0.0.1", "focus.1uvu.com", "focus.wlb.life"];
+const ALLOWED_HOSTS = [
+  "localhost",
+  "127.0.0.1",
+  "focus.1uvu.com",
+  "focus.wlb.life",
+];
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
