@@ -104,6 +104,7 @@ async def list_unread_entries(
     db: DbSession,
     current_user: CurrentUser,
     period: Optional[Literal["today", "past"]] = None,
+    rss_source_id: Optional[int] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
@@ -115,6 +116,7 @@ async def list_unread_entries(
     items, total = await entry_service.get_entries(
         db,
         status=EntryStatus.UNREAD,
+        rss_source_id=rss_source_id,
         period=period,
         skip=skip,
         limit=page_size,

@@ -74,6 +74,23 @@ function detectContentType(content: string): ContentType {
 
   const trimmed = content.trim();
 
+  // 优先检测 HTML：检测到 HTML 标签就认定为 HTML
+  // HTML 检测需要在 Markdown 之前，因为有些 RSS/Atom 内容包含 HTML
+  const htmlPatterns = [
+    // 常见 HTML 标签
+    /<\/?(?:p|div|span|a|img|h[1-6]|ul|ol|li|table|tr|td|th|br|hr|blockquote|pre|code|em|strong|b|i|u|s|sub|sup|article|section|header|footer|nav|aside|figure|figcaption)[^>]*>/i,
+    // 文档结构标签
+    /<\/?(?:html|head|body|meta|link|script|style)[^>]*>/i,
+    // HTML 实体
+    /&(?:nbsp|lt|gt|amp|quot|apos|#\d+|#x[0-9a-f]+);/i,
+  ];
+
+  for (const pattern of htmlPatterns) {
+    if (pattern.test(trimmed)) {
+      return 'html';
+    }
+  }
+
   // Markdown 特征检测：检测到任意一个就认定为 Markdown
   // 这些特征在 HTML 中不会出现
   if (
@@ -84,19 +101,6 @@ function detectContentType(content: string): ContentType {
     /\$[^$\n]+\$/.test(trimmed)           // Inline math: $...$
   ) {
     return 'markdown';
-  }
-
-  // Check for HTML tags
-  const htmlPatterns = [
-    /<\/?(?:p|div|span|a|img|h[1-6]|ul|ol|li|table|tr|td|th|br|hr|blockquote|pre|code|em|strong|b|i|u|s|sub|sup|article|section|header|footer|nav|aside|figure|figcaption)[^>]*>/i,
-    /<\/?(?:html|head|body|meta|link|script|style)[^>]*>/i,
-    /&(?:nbsp|lt|gt|amp|quot|apos|#\d+|#x[0-9a-f]+);/i,
-  ];
-
-  for (const pattern of htmlPatterns) {
-    if (pattern.test(trimmed)) {
-      return 'html';
-    }
   }
 
   return 'plain';

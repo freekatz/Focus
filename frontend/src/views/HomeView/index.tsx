@@ -44,6 +44,11 @@ export function HomeView({ darkMode }: HomeViewProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [jumpInput, setJumpInput] = useState("");
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   const contentRef = useRef<HTMLDivElement>(null);
   const hasLoaded = useRef(false);
 
@@ -57,39 +62,37 @@ export function HomeView({ darkMode }: HomeViewProps) {
     }
   }, []);
 
-  // Fetch unread entries
-  const fetchEntries = useCallback(async (sourceId?: number | null) => {
+  // Fetch unread entries (supports pagination)
+  const fetchEntries = useCallback(async (sourceId?: number | null, append = false) => {
     try {
-      setLoading(true);
-      const [entriesResponse, subscriptionsResponse] = await Promise.all([
-        entriesApi.getUnread(1, 100),
-        subscriptionsApi.getMySubscriptions(),
-      ]);
+      const currentPage = append ? page + 1 : 1;
 
-      const subscribedSourceIds = new Set(
-        subscriptionsResponse.items.map((sub) => sub.rss_source_id),
-      );
-
-      let filteredEntries = entriesResponse.items.filter((entry) =>
-        subscribedSourceIds.has(entry.rss_source_id),
-      );
-
-      // Filter by selected source if specified
-      if (sourceId) {
-        filteredEntries = filteredEntries.filter(
-          (entry) => entry.rss_source_id === sourceId,
-        );
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+        setPage(1);
       }
 
-      const mappedArticles = filteredEntries.map(mapEntryToArticle);
-      setArticles(mappedArticles);
-      setCurrentIndex(0);
+      const entriesResponse = await entriesApi.getUnread(currentPage, 30, sourceId || undefined);
+      const mappedArticles = entriesResponse.items.map(mapEntryToArticle);
+
+      if (append) {
+        setArticles(prev => [...prev, ...mappedArticles]);
+      } else {
+        setArticles(mappedArticles);
+        setCurrentIndex(0);
+      }
+
+      setPage(currentPage);
+      setHasMore(entriesResponse.has_more);
     } catch (error) {
       console.error("Failed to fetch entries:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, []);
+  }, [page]);
 
   // Initial load - only fetch once, then when source changes
   useEffect(() => {
@@ -126,9 +129,14 @@ export function HomeView({ darkMode }: HomeViewProps) {
         article._entry.id,
         mapActionToBackendStatus("save"),
       );
+      const newLength = articles.length - 1;
       setArticles((prev) => prev.filter((_, i) => i !== currentIndex));
-      if (currentIndex >= articles.length - 1) {
-        setCurrentIndex(Math.max(0, articles.length - 2));
+      if (currentIndex >= newLength) {
+        setCurrentIndex(Math.max(0, newLength - 1));
+      }
+      // Auto-load more when approaching the end
+      if (currentIndex >= newLength - 5 && hasMore && !loadingMore) {
+        fetchEntries(selectedSourceId, true);
       }
     } catch (error) {
       console.error("Failed to save article:", error);
@@ -149,9 +157,14 @@ export function HomeView({ darkMode }: HomeViewProps) {
         article._entry.id,
         mapActionToBackendStatus("discard"),
       );
+      const newLength = articles.length - 1;
       setArticles((prev) => prev.filter((_, i) => i !== currentIndex));
-      if (currentIndex >= articles.length - 1) {
-        setCurrentIndex(Math.max(0, articles.length - 2));
+      if (currentIndex >= newLength) {
+        setCurrentIndex(Math.max(0, newLength - 1));
+      }
+      // Auto-load more when approaching the end
+      if (currentIndex >= newLength - 5 && hasMore && !loadingMore) {
+        fetchEntries(selectedSourceId, true);
       }
     } catch (error) {
       console.error("Failed to discard article:", error);
@@ -190,7 +203,13 @@ export function HomeView({ darkMode }: HomeViewProps) {
   // Navigate to next article
   const goNext = () => {
     if (currentIndex < articles.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+
+      // Auto-load more when approaching the end
+      if (nextIndex >= articles.length - 5 && hasMore && !loadingMore) {
+        fetchEntries(selectedSourceId, true);
+      }
     }
   };
 

@@ -21,8 +21,14 @@ export const entriesApi = {
     return apiClient.get<EntryListResponse>(`/entries${query ? `?${query}` : ''}`);
   },
 
-  getUnread: (page = 1, pageSize = 20) =>
-    apiClient.get<EntryListResponse>(`/entries/unread?page=${page}&page_size=${pageSize}`),
+  getUnread: (page = 1, pageSize = 20, rssSourceId?: number) => {
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize),
+    });
+    if (rssSourceId) params.append('rss_source_id', String(rssSourceId));
+    return apiClient.get<EntryListResponse>(`/entries/unread?${params}`);
+  },
 
   getById: (id: number) =>
     apiClient.get<Entry>(`/entries/${id}`),

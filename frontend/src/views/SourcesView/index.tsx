@@ -175,6 +175,9 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
 
     setRefreshing(false);
 
+    // Refresh feeds list to show updated data
+    fetchFeeds();
+
     if (errorCount === 0) {
       setRefreshMessage({
         type: 'success',

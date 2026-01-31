@@ -4,7 +4,7 @@ RSS 服务 - 处理 RSS 相关业务逻辑
 import asyncio
 import ssl
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import partial
 from typing import Optional, List, Tuple
 import feedparser
@@ -374,19 +374,36 @@ async def fetch_rss_entries(db: AsyncSession, rss_source: RssSource) -> Tuple[in
                 skipped_duplicates += 1
                 continue
 
-            # 解析发布时间
+            # 解析发布时间（兼容 RSS 和 Atom 格式）
+            # RSS 使用 published_parsed，Atom 可能使用 updated_parsed
             published_at = None
             if entry.get("published_parsed"):
                 published_at = datetime(*entry.published_parsed[:6])
+            elif entry.get("updated_parsed"):
+                # Atom feed 可能只有 updated 没有 published
+                published_at = datetime(*entry.updated_parsed[:6])
 
-            # 获取内容
+            # 过滤超过 30 天的旧文章
+            if published_at:
+                cutoff_date = datetime.utcnow() - timedelta(days=30)
+                if published_at < cutoff_date:
+                    continue
+
+            # 获取内容（兼容 RSS 和 Atom 格式）
+            # Atom: content > summary
+            # RSS: content:encoded > description > summary
             content = ""
             if entry.get("content"):
+                # Atom 和 RSS content:encoded
                 content = entry.content[0].get("value", "")
             elif entry.get("summary"):
                 content = entry.summary
             elif entry.get("description"):
                 content = entry.description
+
+            # 清理标题和内容中的多余空白
+            title = title.strip() if title else ""
+            content = content.strip() if content else ""
 
             # 创建条目
             new_entry = Entry(
