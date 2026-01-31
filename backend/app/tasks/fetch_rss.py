@@ -338,6 +338,7 @@ async def scan_pending_arxiv_tasks():
             asyncio.create_task(batch_translate_abstracts(untranslated, config))
 
         # 2. 扫描已保存但未解读的 ArXiv 文章（包括解读失败需要重试的）
+        # 注意：no_html 状态不在此列表中，因为没有 HTML 版本的论文无法解读
         interpretation_result = await db.execute(
             select(Entry)
             .options(selectinload(Entry.rss_source))
@@ -348,7 +349,7 @@ async def scan_pending_arxiv_tasks():
                     Entry.ai_content_type.is_(None),
                     # 解读中断：因重启而停在 interpreting 状态
                     Entry.ai_content_type == "interpreting",
-                    # 解读失败：error 状态，需要重试
+                    # 解读失败：error 状态，需要重试（不包括 no_html）
                     Entry.ai_content_type == "error",
                 )
             )
@@ -383,7 +384,7 @@ async def interpret_arxiv_entry(entry_id: int):
     Args:
         entry_id: 文章 ID
     """
-    from app.services.arxiv_service import ArxivInterpreter, save_interpretation_to_file
+    from app.services.arxiv_service import ArxivInterpreter, save_interpretation_to_file, NoHtmlAvailableError
 
     async with async_session_maker() as db:
         # 获取文章
@@ -441,6 +442,12 @@ async def interpret_arxiv_entry(entry_id: int):
             await db.commit()
 
             logger.info(f"Completed interpretation for entry {entry_id}, saved to {file_path}")
+
+        except NoHtmlAvailableError as e:
+            logger.info(f"Entry {entry_id} has no HTML version: {e}")
+            entry.ai_content_type = "no_html"
+            entry.ai_summary = None  # 不保存错误信息，前端显示翻译内容
+            await db.commit()
 
         except Exception as e:
             logger.error(f"Failed to interpret entry {entry_id}: {e}")

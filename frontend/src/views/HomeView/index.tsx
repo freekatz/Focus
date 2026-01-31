@@ -281,6 +281,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
     current._entry?.ai_content_type === "arxiv_interpretation";
   const isInterpreting = current._entry?.ai_content_type === "interpreting";
   const isInterpretFailed = current._entry?.ai_content_type === "error";
+  const isNoHtml = current._entry?.ai_content_type === "no_html";
   const translatedAbstract = current._entry?.translated_abstract;
   const briefSummary = current._entry?.brief_summary;
 
@@ -302,20 +303,24 @@ export function HomeView({ darkMode }: HomeViewProps) {
                 className={`px-2 py-0.5 rounded text-xs font-medium ${
                   hasInterpretation
                     ? "bg-theme-success/15 text-theme-success"
-                    : isInterpretFailed
-                      ? "bg-theme-error/15 text-theme-error"
-                      : isInterpreting
-                        ? "bg-theme-warning/15 text-theme-warning"
-                        : "bg-theme-accent/15 text-theme-accent"
+                    : isNoHtml
+                      ? "bg-theme-muted text-theme-text-secondary"
+                      : isInterpretFailed
+                        ? "bg-theme-error/15 text-theme-error"
+                        : isInterpreting
+                          ? "bg-theme-warning/15 text-theme-warning"
+                          : "bg-theme-accent/15 text-theme-accent"
                 }`}
               >
                 {hasInterpretation
                   ? t("home.interpreted")
-                  : isInterpretFailed
-                    ? t("home.interpretFailed")
-                    : isInterpreting
-                      ? t("home.interpreting")
-                      : "ArXiv"}
+                  : isNoHtml
+                    ? t("home.noHtml")
+                    : isInterpretFailed
+                      ? t("home.interpretFailed")
+                      : isInterpreting
+                        ? t("home.interpreting")
+                        : "ArXiv"}
               </span>
             )}
           </span>
@@ -389,6 +394,11 @@ export function HomeView({ darkMode }: HomeViewProps) {
                   darkMode={darkMode}
                 />
               </section>
+            ) : isNoHtml ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-theme-text-secondary">
+                <Icons.Info />
+                <span>{t("home.noHtmlAvailable")}</span>
+              </div>
             ) : isInterpreting ? (
               <div className="flex items-center gap-3 py-8 justify-center text-theme-text-secondary">
                 <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />

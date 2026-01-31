@@ -31,6 +31,11 @@ from app.config import settings
 from app.utils.logger import logger
 
 
+class NoHtmlAvailableError(Exception):
+    """ArXiv 论文没有 HTML 版本（404 错误）"""
+    pass
+
+
 def get_interpretations_dir() -> Path:
     """获取解读文件保存目录（支持 env 配置）"""
     return Path(settings.interpretations_dir)
@@ -295,6 +300,12 @@ class ArxivInterpreter:
                 response = await client.get(html_url, headers=headers, follow_redirects=True)
                 response.raise_for_status()
                 html_content = response.text
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                logger.info(f"ArXiv HTML not available (404): {html_url}")
+                raise NoHtmlAvailableError(f"HTML version not available for {arxiv_id}")
+            logger.warning(f"Failed to fetch arXiv HTML (HTTP {e.response.status_code}): {e}")
+            return None
         except httpx.HTTPError as e:
             logger.warning(f"Failed to fetch arXiv HTML: {e}")
             return None

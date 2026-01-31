@@ -39,6 +39,7 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
   const hasInterpretation = article._entry?.ai_summary && article._entry?.ai_content_type === 'arxiv_interpretation';
   const isInterpreting = article._entry?.ai_content_type === 'interpreting';
   const isInterpretFailed = article._entry?.ai_content_type === 'error';
+  const isNoHtml = article._entry?.ai_content_type === 'no_html';
   const translatedAbstract = article._entry?.translated_abstract;
   const translationStatus = article._entry?.translation_status;
   const isTranslating = translationStatus === 'translating';
@@ -97,8 +98,8 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
       );
     }
 
-    if (isTranslationCompleted || translatedAbstract) {
-      // Translation completed but not interpreted: show like HomeView
+    if (isNoHtml || isTranslationCompleted || translatedAbstract) {
+      // no_html or translation completed but not interpreted: show translation content
       return (
         <>
           {/* 要点总结 + 翻译摘要：无标题 */}
@@ -128,14 +129,22 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
             </div>
           </details>
 
-          {/* Interpretation status */}
-          {isInterpreting && (
+          {/* no_html status - show info message, no retry button */}
+          {isNoHtml && (
+            <div className="flex items-center justify-center gap-2 py-4 text-theme-text-secondary">
+              <Icons.Info />
+              <span>{t("home.noHtmlAvailable")}</span>
+            </div>
+          )}
+
+          {/* Interpretation status (only if not no_html) */}
+          {!isNoHtml && isInterpreting && (
             <div className="flex items-center gap-3 py-6 justify-center text-theme-text-tertiary">
               <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
               <span>{t("home.interpretingArticle")}</span>
             </div>
           )}
-          {isInterpretFailed && (
+          {!isNoHtml && isInterpretFailed && (
             <div className="flex items-center justify-center gap-3 py-6 text-theme-error">
               <span>{t("home.interpretFailed")}</span>
               <button
@@ -195,6 +204,9 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
     if (hasInterpretation) {
       badgeClass = darkMode ? "bg-green-900/30 text-green-400" : "bg-green-100 text-green-700";
       badgeText = t("home.interpreted");
+    } else if (isNoHtml) {
+      badgeClass = darkMode ? "bg-gray-700/50 text-gray-400" : "bg-gray-100 text-gray-600";
+      badgeText = t("home.noHtml");
     } else if (isInterpretFailed) {
       badgeClass = darkMode ? "bg-red-900/30 text-red-400" : "bg-red-100 text-red-700";
       badgeText = t("home.interpretFailed");

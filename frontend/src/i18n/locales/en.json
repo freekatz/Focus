@@ -246,6 +246,8 @@
     "interpreting": "Interpreting...",
     "interpretingArticle": "Interpreting article...",
     "interpretFailed": "Interpret Failed",
+    "noHtml": "No HTML",
+    "noHtmlAvailable": "HTML version not available, deep interpretation unavailable",
     "reinterpret": "Reinterpret",
     "reinterpretStarted": "Reinterpretation started",
     "reinterpretFailed": "Failed to start reinterpretation",
