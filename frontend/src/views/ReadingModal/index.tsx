@@ -202,28 +202,28 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
     let badgeText = "ArXiv";
 
     if (hasInterpretation) {
-      badgeClass = darkMode ? "bg-green-900/30 text-green-400" : "bg-green-100 text-green-700";
+      badgeClass = "bg-theme-success/15 text-theme-success";
       badgeText = t("home.interpreted");
     } else if (isNoHtml) {
-      badgeClass = darkMode ? "bg-gray-700/50 text-gray-400" : "bg-gray-100 text-gray-600";
+      badgeClass = "bg-theme-muted text-theme-text-secondary";
       badgeText = t("home.noHtml");
     } else if (isInterpretFailed) {
-      badgeClass = darkMode ? "bg-red-900/30 text-red-400" : "bg-red-100 text-red-700";
+      badgeClass = "bg-theme-error/15 text-theme-error";
       badgeText = t("home.interpretFailed");
     } else if (isInterpreting) {
-      badgeClass = darkMode ? "bg-yellow-900/30 text-yellow-400" : "bg-yellow-100 text-yellow-700";
+      badgeClass = "bg-theme-warning/15 text-theme-warning";
       badgeText = t("home.interpreting");
     } else if (isTranslationFailed) {
-      badgeClass = darkMode ? "bg-red-900/30 text-red-400" : "bg-red-100 text-red-700";
+      badgeClass = "bg-theme-error/15 text-theme-error";
       badgeText = t("home.translationFailed");
     } else if (isTranslating) {
-      badgeClass = darkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700";
+      badgeClass = "bg-theme-accent/15 text-theme-accent";
       badgeText = t("library.translating");
     } else if (isTranslationCompleted) {
-      badgeClass = darkMode ? "bg-teal-900/30 text-teal-400" : "bg-teal-100 text-teal-700";
+      badgeClass = "bg-theme-success/15 text-theme-success";
       badgeText = t("library.translated");
     } else {
-      badgeClass = darkMode ? "bg-purple-900/30 text-purple-400" : "bg-purple-100 text-purple-700";
+      badgeClass = "bg-theme-accent/15 text-theme-accent";
     }
 
     return (

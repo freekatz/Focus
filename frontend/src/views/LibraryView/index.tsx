@@ -570,18 +570,18 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
                       {article._entry?.link?.includes('arxiv.org') && (
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
                           article._entry?.ai_content_type === 'arxiv_interpretation'
-                            ? 'bg-green-100 text-green-700'
+                            ? 'bg-theme-success/15 text-theme-success'
                             : article._entry?.ai_content_type === 'error'
-                              ? 'bg-red-100 text-red-700'
+                              ? 'bg-theme-error/15 text-theme-error'
                               : article._entry?.ai_content_type === 'interpreting'
-                                ? 'bg-amber-100 text-amber-700'
+                                ? 'bg-theme-warning/15 text-theme-warning'
                                 : article._entry?.translation_status === 'translating'
-                                  ? 'bg-blue-100 text-blue-700'
+                                  ? 'bg-theme-accent/15 text-theme-accent'
                                   : article._entry?.translation_status === 'completed'
-                                    ? 'bg-teal-100 text-teal-700'
+                                    ? 'bg-theme-success/15 text-theme-success'
                                     : article._entry?.translation_status === 'pending'
-                                      ? 'bg-gray-100 text-gray-600'
-                                      : 'bg-purple-100 text-purple-700'
+                                      ? 'bg-theme-muted text-theme-text-secondary'
+                                      : 'bg-theme-accent/15 text-theme-accent'
                         }`}>
                           {article._entry?.ai_content_type === 'arxiv_interpretation'
                             ? t('home.interpreted')

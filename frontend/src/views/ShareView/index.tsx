@@ -266,10 +266,10 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
               {isArxiv && (
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                   hasInterpretation
-                    ? "bg-green-100 text-green-700"
+                    ? "bg-theme-success/15 text-theme-success"
                     : current.translation_status === 'completed'
-                      ? "bg-teal-100 text-teal-700"
-                      : "bg-purple-100 text-purple-700"
+                      ? "bg-theme-success/15 text-theme-success"
+                      : "bg-theme-accent/15 text-theme-accent"
                 }`}>
                   {hasInterpretation
                     ? t("home.interpreted")
