@@ -111,6 +111,7 @@ async def list_unread_entries(
     """获取未读条目列表
 
     注意：ArXiv 文章只有翻译完成后才会返回，未翻译的 ArXiv 文章会在后台自动翻译。
+    只返回用户已订阅源的文章。
     """
     skip = (page - 1) * page_size
     items, total = await entry_service.get_entries(
@@ -121,6 +122,8 @@ async def list_unread_entries(
         skip=skip,
         limit=page_size,
         exclude_untranslated_arxiv=True,  # 排除未翻译的 ArXiv 文章
+        user_id=current_user.id,           # 用户 ID
+        only_subscribed=True,              # 只返回已订阅源的文章
     )
 
     return EntryListResponse(

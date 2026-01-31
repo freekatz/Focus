@@ -22,12 +22,18 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
     return sessionStorage.getItem('sourcesView_category') || 'all';
   });
   const [editingFeed, setEditingFeed] = useState<Feed | null>(null);
-  const [feeds, setFeeds] = useState<Feed[]>([]);
+  // Separate cache for each tab
+  const [myFeeds, setMyFeeds] = useState<Feed[]>([]);
+  const [marketFeeds, setMarketFeeds] = useState<Feed[]>([]);
   const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const hasLoadedTab = useRef<{ my: boolean; market: boolean }>({ my: false, market: false });
+
+  // Get feeds for current tab
+  const feeds = tab === 'my' ? myFeeds : marketFeeds;
+  const setFeeds = tab === 'my' ? setMyFeeds : setMarketFeeds;
 
   // Save tab state to sessionStorage
   useEffect(() => {
@@ -40,24 +46,29 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
   }, [selectedCategory]);
 
   // Fetch feeds based on tab
-  const fetchFeeds = useCallback(async () => {
-    setLoading(true);
+  const fetchFeeds = useCallback(async (forceTab?: 'my' | 'market') => {
+    const targetTab = forceTab || tab;
+    // Only show loading spinner if we don't have cached data
+    const hasCachedData = targetTab === 'my' ? myFeeds.length > 0 : marketFeeds.length > 0;
+    if (!hasCachedData) {
+      setLoading(true);
+    }
     try {
-      if (tab === 'my') {
+      if (targetTab === 'my') {
         const response = await subscriptionsApi.getMySubscriptions();
         const mappedFeeds = response.items.map(mapSubscriptionToFeed);
-        setFeeds(mappedFeeds);
+        setMyFeeds(mappedFeeds);
       } else {
         const response = await subscriptionsApi.getMarket();
         const mappedFeeds = response.items.map(mapMarketItemToFeed);
-        setFeeds(mappedFeeds);
+        setMarketFeeds(mappedFeeds);
       }
     } catch (error) {
       console.error('Failed to fetch feeds:', error);
     } finally {
       setLoading(false);
     }
-  }, [tab]);
+  }, [tab, myFeeds.length, marketFeeds.length]);
 
   // Only fetch when tab changes and hasn't been loaded yet
   useEffect(() => {
@@ -71,22 +82,39 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
     const feed = feeds.find(f => f.id === id);
     if (!feed) return;
 
+    // If already subscribed in market view, do nothing (just show status)
+    if (tab === 'market' && feed.subscribed) {
+      return;
+    }
+
     try {
       if (feed.subscribed) {
-        // Unsubscribe
+        // Unsubscribe (only in my tab)
         if (feed._subscription) {
           await subscriptionsApi.unsubscribe(feed._subscription.id);
+          // Update local state immediately (optimistic update)
+          setMyFeeds(prev => prev.map(f =>
+            f.id === id ? { ...f, subscribed: false } : f
+          ));
+          // Invalidate market tab cache
+          hasLoadedTab.current.market = false;
         }
       } else {
-        // Subscribe
+        // Subscribe (in market tab)
         if (feed._marketItem) {
           await subscriptionsApi.subscribe(feed._marketItem.id);
+          // Update local state immediately (optimistic update)
+          setMarketFeeds(prev => prev.map(f =>
+            f.id === id ? { ...f, subscribed: true } : f
+          ));
+          // Invalidate my tab cache
+          hasLoadedTab.current.my = false;
         }
       }
-      // Refresh feeds
-      fetchFeeds();
     } catch (error) {
       console.error('Failed to toggle subscription:', error);
+      // Revert on error by refetching
+      fetchFeeds();
     }
   };
 
@@ -329,9 +357,12 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
                 </div>
                 <button
                   onClick={(e) => toggleFeed(feed.id, e)}
+                  disabled={tab === 'market' && feed.subscribed}
                   className={`min-h-touch px-4 rounded-xl text-caption font-bold uppercase tracking-wider transition-colors min-w-[90px] ${
                     feed.subscribed
-                      ? (darkMode ? 'bg-theme-muted text-theme-text-secondary hover:bg-red-100 hover:text-red-600' : 'bg-theme-muted text-theme-text-secondary hover:bg-red-50 hover:text-red-500')
+                      ? tab === 'market'
+                        ? 'bg-theme-muted text-theme-text-muted cursor-not-allowed'
+                        : (darkMode ? 'bg-theme-muted text-theme-text-secondary hover:bg-red-100 hover:text-red-600' : 'bg-theme-muted text-theme-text-secondary hover:bg-red-50 hover:text-red-500')
                       : (darkMode ? 'bg-theme-accent text-white hover:bg-theme-accent' : 'bg-theme-text text-theme-base hover:bg-theme-text-secondary')
                   }`}
                 >

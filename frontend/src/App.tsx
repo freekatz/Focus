@@ -206,7 +206,7 @@ function App() {
         >
           {/* HomeView manages its own layout like ShareView - use CSS display to preserve state */}
           <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
-            <HomeView darkMode={darkMode} />
+            <HomeView darkMode={darkMode} isActive={activeTab === 'home'} />
           </div>
 
           {/* Other views use shared container - use CSS display to preserve state */}

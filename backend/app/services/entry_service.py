@@ -38,15 +38,27 @@ async def get_entries(
     skip: int = 0,
     limit: int = 20,
     exclude_untranslated_arxiv: bool = False,
+    user_id: Optional[int] = None,
+    only_subscribed: bool = False,
 ) -> Tuple[List[Entry], int]:
     """Get entry list.
 
     Args:
         exclude_untranslated_arxiv: If True, exclude untranslated ArXiv articles.
+        user_id: User ID for filtering subscribed sources.
+        only_subscribed: If True, only return entries from user's subscribed sources.
     """
     from app.models.entry import TranslationStatus
+    from app.models.subscription import UserRssSubscription
 
     query = select(Entry).options(selectinload(Entry.rss_source))
+
+    # Filter by user's subscribed sources
+    if only_subscribed and user_id:
+        subscribed_subquery = select(UserRssSubscription.rss_source_id).where(
+            UserRssSubscription.user_id == user_id
+        )
+        query = query.where(Entry.rss_source_id.in_(subscribed_subquery))
 
     if status:
         query = query.where(Entry.status == status)

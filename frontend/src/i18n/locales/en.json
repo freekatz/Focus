@@ -22,7 +22,8 @@
     "info": "Info",
     "left": "Left",
     "adding": "Adding...",
-    "parsing": "Parsing..."
+    "parsing": "Parsing...",
+    "refresh": "Refresh"
   },
   "nav": {
     "home": "Home",

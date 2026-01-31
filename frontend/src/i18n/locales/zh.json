@@ -22,7 +22,8 @@
     "info": "信息",
     "left": "剩余",
     "adding": "添加中...",
-    "parsing": "解析中..."
+    "parsing": "解析中...",
+    "refresh": "刷新"
   },
   "nav": {
     "home": "首页",

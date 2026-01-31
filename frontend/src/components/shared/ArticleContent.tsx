@@ -106,7 +106,7 @@ function detectContentType(content: string): ContentType {
   return 'plain';
 }
 
-// Sanitize HTML to prevent XSS
+// Sanitize HTML to prevent XSS and remove inline styles
 function sanitizeHtml(html: string): string {
   // Remove script tags and their content
   let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
@@ -120,6 +120,9 @@ function sanitizeHtml(html: string): string {
 
   // Remove style tags
   sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+
+  // Remove inline style attributes (especially color, background-color that affect theme)
+  sanitized = sanitized.replace(/\s*style\s*=\s*["'][^"']*["']/gi, '');
 
   return sanitized;
 }

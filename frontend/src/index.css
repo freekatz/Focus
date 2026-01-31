@@ -8,6 +8,13 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* Apply to all scrollable containers */
+.overflow-y-auto,
+.overflow-x-auto,
+.overflow-auto {
+  overscroll-behavior: none;
+}
+
 /* ===== CSS Variable Defaults (Cream Light Theme) ===== */
 /* These are set dynamically by applyTheme() in themes.ts */
 :root {

@@ -12,6 +12,7 @@ import type { Subscription } from "../../types/subscription";
 
 interface HomeViewProps {
   darkMode: boolean;
+  isActive?: boolean;
 }
 
 // Check if article is from ArXiv
@@ -33,7 +34,11 @@ function formatDate(dateString: string | null): string {
   });
 }
 
-export function HomeView({ darkMode }: HomeViewProps) {
+// Page size constants
+const INITIAL_PAGE_SIZE = 15;  // Smaller first page for faster initial load
+const NORMAL_PAGE_SIZE = 30;   // Normal page size for subsequent loads
+
+export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
   const { t } = useTranslation();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +53,10 @@ export function HomeView({ darkMode }: HomeViewProps) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Preload state
+  const [nextPageData, setNextPageData] = useState<Article[] | null>(null);
+  const [isPreloading, setIsPreloading] = useState(false);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const hasLoaded = useRef(false);
@@ -66,15 +75,18 @@ export function HomeView({ darkMode }: HomeViewProps) {
   const fetchEntries = useCallback(async (sourceId?: number | null, append = false) => {
     try {
       const currentPage = append ? page + 1 : 1;
+      // Use smaller page size for first load, normal size for subsequent
+      const pageSize = !append && currentPage === 1 ? INITIAL_PAGE_SIZE : NORMAL_PAGE_SIZE;
 
       if (append) {
         setLoadingMore(true);
       } else {
         setLoading(true);
         setPage(1);
+        setNextPageData(null); // Clear preloaded data on fresh fetch
       }
 
-      const entriesResponse = await entriesApi.getUnread(currentPage, 30, sourceId || undefined);
+      const entriesResponse = await entriesApi.getUnread(currentPage, pageSize, sourceId || undefined);
       const mappedArticles = entriesResponse.items.map(mapEntryToArticle);
 
       if (append) {
@@ -94,6 +106,46 @@ export function HomeView({ darkMode }: HomeViewProps) {
     }
   }, [page]);
 
+  // Preload next page in background
+  const preloadNextPage = useCallback(async () => {
+    if (!hasMore || isPreloading || nextPageData || loadingMore) return;
+
+    setIsPreloading(true);
+    try {
+      const response = await entriesApi.getUnread(page + 1, NORMAL_PAGE_SIZE, selectedSourceId || undefined);
+      const mappedArticles = response.items.map(mapEntryToArticle);
+      setNextPageData(mappedArticles);
+    } catch (error) {
+      console.error("Preload failed:", error);
+    } finally {
+      setIsPreloading(false);
+    }
+  }, [hasMore, isPreloading, nextPageData, loadingMore, page, selectedSourceId]);
+
+  // Trigger preload when remaining articles <= 10
+  useEffect(() => {
+    const remaining = articles.length - currentIndex;
+    if (remaining <= 10 && hasMore && !nextPageData && !isPreloading && !loadingMore) {
+      preloadNextPage();
+    }
+  }, [currentIndex, articles.length, hasMore, nextPageData, isPreloading, loadingMore, preloadNextPage]);
+
+  // Apply preloaded data when remaining articles <= 5
+  useEffect(() => {
+    const remaining = articles.length - currentIndex;
+    if (remaining <= 5 && nextPageData && nextPageData.length > 0) {
+      setArticles(prev => [...prev, ...nextPageData]);
+      setPage(p => p + 1);
+      setHasMore(nextPageData.length === NORMAL_PAGE_SIZE);
+      setNextPageData(null);
+    }
+  }, [currentIndex, articles.length, nextPageData]);
+
+  // Clear preloaded data when source changes
+  useEffect(() => {
+    setNextPageData(null);
+  }, [selectedSourceId]);
+
   // Initial load - only fetch once, then when source changes
   useEffect(() => {
     if (!hasLoaded.current) {
@@ -102,6 +154,16 @@ export function HomeView({ darkMode }: HomeViewProps) {
       fetchEntries(selectedSourceId);
     }
   }, [fetchSubscriptions, fetchEntries, selectedSourceId]);
+
+  // Refresh subscriptions when tab becomes active (to catch subscription changes from SourcesView)
+  const wasActive = useRef(isActive);
+  useEffect(() => {
+    if (isActive && !wasActive.current) {
+      // Tab just became active, refresh subscriptions silently
+      fetchSubscriptions();
+    }
+    wasActive.current = isActive;
+  }, [isActive, fetchSubscriptions]);
 
   // Refetch when source filter changes (after initial load)
   useEffect(() => {
@@ -134,10 +196,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
       if (currentIndex >= newLength) {
         setCurrentIndex(Math.max(0, newLength - 1));
       }
-      // Auto-load more when approaching the end
-      if (currentIndex >= newLength - 5 && hasMore && !loadingMore) {
-        fetchEntries(selectedSourceId, true);
-      }
+      // Note: Preload/load-more is now handled by useEffect hooks
     } catch (error) {
       console.error("Failed to save article:", error);
     } finally {
@@ -162,10 +221,7 @@ export function HomeView({ darkMode }: HomeViewProps) {
       if (currentIndex >= newLength) {
         setCurrentIndex(Math.max(0, newLength - 1));
       }
-      // Auto-load more when approaching the end
-      if (currentIndex >= newLength - 5 && hasMore && !loadingMore) {
-        fetchEntries(selectedSourceId, true);
-      }
+      // Note: Preload/load-more is now handled by useEffect hooks
     } catch (error) {
       console.error("Failed to discard article:", error);
     } finally {
@@ -203,13 +259,8 @@ export function HomeView({ darkMode }: HomeViewProps) {
   // Navigate to next article
   const goNext = () => {
     if (currentIndex < articles.length - 1) {
-      const nextIndex = currentIndex + 1;
-      setCurrentIndex(nextIndex);
-
-      // Auto-load more when approaching the end
-      if (nextIndex >= articles.length - 5 && hasMore && !loadingMore) {
-        fetchEntries(selectedSourceId, true);
-      }
+      setCurrentIndex(currentIndex + 1);
+      // Note: Preload/load-more is now handled by useEffect hooks
     }
   };
 
@@ -265,6 +316,174 @@ export function HomeView({ darkMode }: HomeViewProps) {
     );
   }
 
+  // Handle refresh
+  const handleRefresh = () => {
+    fetchEntries(selectedSourceId);
+  };
+
+  // Render the unified floating action bar
+  const renderActionBar = () => (
+    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
+      <div className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-full shadow-lg transition-micro bg-theme-surface border border-theme-border">
+        {/* Previous */}
+        <button
+          onClick={goPrev}
+          disabled={articles.length === 0 || currentIndex === 0}
+          className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+            articles.length === 0 || currentIndex === 0
+              ? "text-theme-text-muted cursor-not-allowed"
+              : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+          }`}
+          title={t("home.prevArticle")}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          <span className="hidden md:inline">{t("home.prevArticle")}</span>
+        </button>
+
+        {/* Divider */}
+        <div className="w-px h-4 bg-theme-border" />
+
+        {/* Discard - hidden when no articles */}
+        {articles.length > 0 && (
+          <button
+            onClick={handleDiscard}
+            disabled={isAnimating}
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+              isAnimating
+                ? "opacity-50 cursor-not-allowed"
+                : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-error cursor-pointer active:scale-95"
+            }`}
+            title={t("home.discard")}
+          >
+            <Icons.X />
+            <span className="hidden md:inline">{t("home.discard")}</span>
+          </button>
+        )}
+
+        {/* Source Filter */}
+        <select
+          value={selectedSourceId || ""}
+          onChange={handleSourceChange}
+          className="px-1 py-1 rounded text-xs border-0 bg-transparent cursor-pointer max-w-[60px] md:max-w-[100px] text-theme-text-secondary"
+        >
+          <option value="">{t("common.all")}</option>
+          {subscriptions.map((sub) => (
+            <option key={sub.id} value={sub.rss_source_id}>
+              {sub.rss_source_name || `#${sub.rss_source_id}`}
+            </option>
+          ))}
+        </select>
+
+        {/* Article Counter */}
+        <div className="flex items-center flex-shrink-0 whitespace-nowrap">
+          {articles.length > 0 ? (
+            <>
+              <input
+                type="text"
+                value={jumpInput}
+                onChange={(e) => setJumpInput(e.target.value)}
+                onKeyDown={handleJumpToArticle}
+                placeholder={String(currentIndex + 1)}
+                className="w-8 text-center text-caption bg-transparent border-0 outline-none text-theme-text-secondary placeholder-theme-text-tertiary"
+              />
+              <span className="text-caption text-theme-text-tertiary">
+                /{articles.length}
+              </span>
+            </>
+          ) : (
+            <span className="text-caption text-theme-text-muted px-2">0/0</span>
+          )}
+        </div>
+
+        {/* Shuffle */}
+        <button
+          onClick={handleShuffle}
+          disabled={articles.length === 0 || isShuffling || isAnimating}
+          className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+            articles.length === 0 || isShuffling || isAnimating
+              ? "text-theme-text-muted cursor-not-allowed"
+              : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
+          }`}
+          title={t("home.shuffle")}
+        >
+          <Icons.Shuffle />
+          <span className="hidden md:inline">{t("home.shuffle")}</span>
+        </button>
+
+        {/* Refresh */}
+        <button
+          onClick={handleRefresh}
+          disabled={loading}
+          className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+            loading
+              ? "opacity-50 cursor-not-allowed"
+              : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
+          }`}
+          title={t("common.refresh")}
+        >
+          <Icons.Refresh />
+        </button>
+
+        {/* Divider */}
+        <div className="w-px h-4 bg-theme-border" />
+
+        {/* Save - hidden when no articles */}
+        {articles.length > 0 && (
+          <button
+            onClick={handleSave}
+            disabled={isAnimating}
+            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+              isAnimating
+                ? "opacity-50 cursor-not-allowed"
+                : "text-theme-accent hover:bg-theme-muted cursor-pointer active:scale-95"
+            }`}
+            title={t("home.save")}
+          >
+            <Icons.Check />
+            <span className="hidden md:inline">{t("home.save")}</span>
+          </button>
+        )}
+
+        {/* Next */}
+        <button
+          onClick={goNext}
+          disabled={articles.length === 0 || currentIndex === articles.length - 1}
+          className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
+            articles.length === 0 || currentIndex === articles.length - 1
+              ? "text-theme-text-muted cursor-not-allowed"
+              : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+          }`}
+          title={t("home.nextArticle")}
+        >
+          <span className="hidden md:inline">{t("home.nextArticle")}</span>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+    </nav>
+  );
+
   if (articles.length === 0) {
     return (
       <>
@@ -280,27 +499,8 @@ export function HomeView({ darkMode }: HomeViewProps) {
           </p>
         </div>
 
-        {/* Floating Action Bar - Always show source selector */}
-        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-full shadow-lg backdrop-blur-sm bg-theme-surface/95 border border-theme-border">
-            {/* Source Filter */}
-            <span className="text-xs text-theme-text-tertiary">
-              {t("home.source")}:
-            </span>
-            <select
-              value={selectedSourceId || ""}
-              onChange={handleSourceChange}
-              className="px-2 py-1 rounded text-sm border-0 bg-transparent cursor-pointer text-theme-text-secondary"
-            >
-              <option value="">{t("common.all")}</option>
-              {subscriptions.map((sub) => (
-                <option key={sub.id} value={sub.rss_source_id}>
-                  {sub.rss_source_name || `#${sub.rss_source_id}`}
-                </option>
-              ))}
-            </select>
-          </div>
-        </nav>
+        {/* Unified Floating Action Bar */}
+        {renderActionBar()}
       </>
     );
   }
@@ -443,142 +643,8 @@ export function HomeView({ darkMode }: HomeViewProps) {
         )}
       </article>
 
-      {/* Unified Floating Action Bar - PC shows text labels, mobile icons only */}
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10">
-        <div className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-full shadow-xl backdrop-blur-sm transition-micro bg-theme-surface/95 border border-theme-border">
-          {/* Previous */}
-          <button
-            onClick={goPrev}
-            disabled={currentIndex === 0}
-            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
-              currentIndex === 0
-                ? "text-theme-text-muted cursor-not-allowed"
-                : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
-            }`}
-            title={t("home.prevArticle")}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            <span className="hidden md:inline">{t("home.prevArticle")}</span>
-          </button>
-
-          {/* Divider */}
-          <div className="w-px h-4 bg-theme-border" />
-
-          {/* Discard */}
-          <button
-            onClick={handleDiscard}
-            disabled={isAnimating}
-            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
-              isAnimating
-                ? "opacity-50 cursor-not-allowed"
-                : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-error cursor-pointer active:scale-95"
-            }`}
-            title={t("home.discard")}
-          >
-            <Icons.X />
-            <span className="hidden md:inline">{t("home.discard")}</span>
-          </button>
-
-          {/* Source Filter */}
-          <select
-            value={selectedSourceId || ""}
-            onChange={handleSourceChange}
-            className="px-1 py-1 rounded text-xs border-0 bg-transparent cursor-pointer max-w-[60px] md:max-w-[100px] text-theme-text-secondary"
-          >
-            <option value="">{t("common.all")}</option>
-            {subscriptions.map((sub) => (
-              <option key={sub.id} value={sub.rss_source_id}>
-                {sub.rss_source_name || `#${sub.rss_source_id}`}
-              </option>
-            ))}
-          </select>
-
-          {/* Article Counter */}
-          <div className="flex items-center flex-shrink-0 whitespace-nowrap">
-            <input
-              type="text"
-              value={jumpInput}
-              onChange={(e) => setJumpInput(e.target.value)}
-              onKeyDown={handleJumpToArticle}
-              placeholder={String(currentIndex + 1)}
-              className="w-8 text-center text-caption bg-transparent border-0 outline-none text-theme-text-secondary placeholder-theme-text-tertiary"
-            />
-            <span className="text-caption text-theme-text-tertiary">
-              /{articles.length}
-            </span>
-          </div>
-
-          {/* Shuffle */}
-          <button
-            onClick={handleShuffle}
-            disabled={isShuffling || isAnimating}
-            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
-              isShuffling || isAnimating
-                ? "opacity-50 cursor-not-allowed"
-                : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
-            }`}
-            title={t("home.shuffle")}
-          >
-            <Icons.Shuffle />
-            <span className="hidden md:inline">{t("home.shuffle")}</span>
-          </button>
-
-          {/* Divider */}
-          <div className="w-px h-4 bg-theme-border" />
-
-          {/* Save */}
-          <button
-            onClick={handleSave}
-            disabled={isAnimating}
-            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
-              isAnimating
-                ? "opacity-50 cursor-not-allowed"
-                : "text-theme-accent hover:bg-theme-muted cursor-pointer active:scale-95"
-            }`}
-            title={t("home.save")}
-          >
-            <Icons.Check />
-            <span className="hidden md:inline">{t("home.save")}</span>
-          </button>
-
-          {/* Next */}
-          <button
-            onClick={goNext}
-            disabled={currentIndex === articles.length - 1}
-            className={`flex items-center justify-center gap-1 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full transition-micro text-ui-sm ${
-              currentIndex === articles.length - 1
-                ? "text-theme-text-muted cursor-not-allowed"
-                : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
-            }`}
-            title={t("home.nextArticle")}
-          >
-            <span className="hidden md:inline">{t("home.nextArticle")}</span>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        </div>
-      </nav>
+      {/* Unified Floating Action Bar */}
+      {renderActionBar()}
     </>
   );
 }
