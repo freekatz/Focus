@@ -24,6 +24,7 @@ export interface UserConfig {
   theme: string | null;
   color_theme: string | null;
   font_theme: string | null;
+  font_size: string | null;
   custom_theme_json: string | null;
   entries_per_page: number;
 }
@@ -42,6 +43,7 @@ export interface UserConfigUpdateRequest {
   theme?: string;
   color_theme?: string;
   font_theme?: string;
+  font_size?: string;
   custom_theme_json?: string;
   unmarked_retention_days?: number;
   trash_retention_days?: number;
