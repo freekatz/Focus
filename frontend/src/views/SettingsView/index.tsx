@@ -9,6 +9,7 @@ import type { UserConfig } from '../../types';
 
 type FontTheme = 'sans' | 'serif' | 'mono';
 type ThemeMode = 'light' | 'dark' | 'system';
+type FontSize = 'small' | 'medium' | 'large';
 
 interface SettingsViewProps {
   darkMode: boolean;
@@ -16,6 +17,8 @@ interface SettingsViewProps {
   setThemeMode: (value: ThemeMode) => void;
   fontTheme: FontTheme;
   setFontTheme: (value: FontTheme) => void;
+  fontSize: FontSize;
+  setFontSize: (value: FontSize) => void;
   colorTheme: ColorThemeId;
   setColorTheme: (value: ColorThemeId) => void;
   customThemeJson: string | null;
@@ -245,7 +248,7 @@ function ChangePasswordModal({
   );
 }
 
-export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, setFontTheme, colorTheme, setColorTheme, customThemeJson, setCustomThemeJson }: SettingsViewProps) {
+export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, setFontTheme, fontSize, setFontSize, colorTheme, setColorTheme, customThemeJson, setCustomThemeJson }: SettingsViewProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { language, setLanguage, languages } = useLanguage();
@@ -609,6 +612,38 @@ export function SettingsView({ darkMode, themeMode, setThemeMode, fontTheme, set
                       ? 'text-theme-text-secondary hover:text-theme-text'
                       : 'text-theme-text-secondary hover:text-theme-text'
                 }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </Row>
+
+        {/* Font Size */}
+        <Row label={t('settings.fontSize')} darkMode={darkMode}>
+          <div className={`flex p-1 rounded-lg ${darkMode ? 'bg-theme-muted' : 'bg-theme-muted'}`}>
+            {([
+              { value: 'small' as FontSize, label: t('settings.fontSizeSmall') },
+              { value: 'medium' as FontSize, label: t('settings.fontSizeMedium') },
+              { value: 'large' as FontSize, label: t('settings.fontSizeLarge') },
+            ]).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setFontSize(option.value)}
+                className={`min-h-touch px-3 rounded-lg text-ui-sm font-medium transition-all ${
+                  fontSize === option.value
+                    ? darkMode
+                      ? 'bg-theme-selected text-theme-text shadow'
+                      : 'bg-theme-surface text-theme-text shadow'
+                    : darkMode
+                      ? 'text-theme-text-secondary hover:text-theme-text'
+                      : 'text-theme-text-secondary hover:text-theme-text'
+                }`}
+                style={{
+                  fontSize: option.value === 'small' ? '0.875rem' : option.value === 'large' ? '1.125rem' : '1rem'
+                }}
               >
                 {option.label}
               </button>

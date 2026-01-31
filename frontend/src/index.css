@@ -143,6 +143,49 @@ html {
   }
 }
 
+/* ===== Font Size Adjustment Classes ===== */
+/* Small: -2px from default at each breakpoint */
+html.font-size-small {
+  font-size: 14px !important;
+}
+@media (min-width: 768px) {
+  html.font-size-small {
+    font-size: 14px !important;
+  }
+}
+@media (min-width: 1024px) {
+  html.font-size-small {
+    font-size: 15px !important;
+  }
+}
+@media (min-width: 1440px) {
+  html.font-size-small {
+    font-size: 16px !important;
+  }
+}
+
+/* Medium: uses default values (no override needed) */
+
+/* Large: +2px from default at each breakpoint */
+html.font-size-large {
+  font-size: 18px !important;
+}
+@media (min-width: 768px) {
+  html.font-size-large {
+    font-size: 18px !important;
+  }
+}
+@media (min-width: 1024px) {
+  html.font-size-large {
+    font-size: 19px !important;
+  }
+}
+@media (min-width: 1440px) {
+  html.font-size-large {
+    font-size: 20px !important;
+  }
+}
+
 /* Dark mode base - Colors handled by CSS variables */
 .dark body,
 body.dark {

@@ -51,7 +51,7 @@ const getShareCode = (): string | null => {
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { darkMode, themeMode, setThemeMode, fontTheme, setFontTheme, colorTheme, setColorTheme, customThemeJson, setCustomThemeJson } = useTheme();
+  const { darkMode, themeMode, setThemeMode, fontTheme, setFontTheme, fontSize, setFontSize, colorTheme, setColorTheme, customThemeJson, setCustomThemeJson } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>(getTabFromPath);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
@@ -229,6 +229,8 @@ function App() {
                   setThemeMode={setThemeMode}
                   fontTheme={fontTheme}
                   setFontTheme={setFontTheme}
+                  fontSize={fontSize}
+                  setFontSize={setFontSize}
                   colorTheme={colorTheme}
                   setColorTheme={setColorTheme}
                   customThemeJson={customThemeJson}

@@ -4,6 +4,7 @@ import { type ColorThemeId, applyTheme, applyCustomTheme, isValidThemeId, colorT
 
 type FontTheme = 'sans' | 'serif' | 'mono';
 type ThemeMode = 'light' | 'dark' | 'system';
+type FontSize = 'small' | 'medium' | 'large';
 
 interface ThemeContextType {
   darkMode: boolean;
@@ -11,6 +12,8 @@ interface ThemeContextType {
   setThemeMode: (value: ThemeMode) => void;
   fontTheme: FontTheme;
   setFontTheme: (value: FontTheme) => void;
+  fontSize: FontSize;
+  setFontSize: (value: FontSize) => void;
   colorTheme: ColorThemeId;
   setColorTheme: (value: ColorThemeId) => void;
   customThemeJson: string | null;
@@ -21,6 +24,7 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 
 const THEME_MODE_KEY = 'focus-theme-mode';
 const FONT_THEME_KEY = 'focus-font-theme';
+const FONT_SIZE_KEY = 'focus-font-size';
 const COLOR_THEME_KEY = 'focus-color-theme';
 const CUSTOM_THEME_KEY = 'focus-custom-theme';
 
@@ -43,6 +47,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return stored as FontTheme;
     }
     return 'sans';
+  });
+
+  const [fontSize, setFontSizeState] = useState<FontSize>(() => {
+    const stored = localStorage.getItem(FONT_SIZE_KEY);
+    if (stored && ['small', 'medium', 'large'].includes(stored)) {
+      return stored as FontSize;
+    }
+    return 'medium';
   });
 
   const [colorTheme, setColorThemeState] = useState<ColorThemeId>(() => {
@@ -87,6 +99,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           setFontThemeState(config.font_theme as FontTheme);
           localStorage.setItem(FONT_THEME_KEY, config.font_theme);
         }
+        if (config.font_size && ['small', 'medium', 'large'].includes(config.font_size)) {
+          setFontSizeState(config.font_size as FontSize);
+          localStorage.setItem(FONT_SIZE_KEY, config.font_size);
+        }
         if (config.custom_theme_json) {
           setCustomThemeJsonState(config.custom_theme_json);
           localStorage.setItem(CUSTOM_THEME_KEY, config.custom_theme_json);
@@ -115,6 +131,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Sync to server
     try {
       await configApi.update({ font_theme: value });
+    } catch {
+      // Ignore sync errors
+    }
+  }, []);
+
+  const setFontSize = useCallback(async (value: FontSize) => {
+    setFontSizeState(value);
+    localStorage.setItem(FONT_SIZE_KEY, value);
+    // Sync to server
+    try {
+      await configApi.update({ font_size: value });
     } catch {
       // Ignore sync errors
     }
@@ -155,6 +182,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [darkMode]);
 
+  // Update document class for font size
+  useEffect(() => {
+    document.documentElement.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+    document.documentElement.classList.add(`font-size-${fontSize}`);
+  }, [fontSize]);
+
   // Apply color theme whenever colorTheme, customThemeJson, or darkMode changes
   useEffect(() => {
     if (colorTheme === 'custom' && customThemeJson) {
@@ -172,6 +205,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setThemeMode,
         fontTheme,
         setFontTheme,
+        fontSize,
+        setFontSize,
         colorTheme,
         setColorTheme,
         customThemeJson,
