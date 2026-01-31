@@ -20,6 +20,9 @@ email-validator>=2.1.0
 # HTTP Client
 httpx>=0.26.0
 
+# AI
+openai>=1.0.0
+
 # RSS
 feedparser>=6.0.10
 feedgenerator>=2.1.0
