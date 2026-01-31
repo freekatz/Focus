@@ -366,7 +366,7 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
           <div className={`transition-all duration-300 overflow-hidden ${
             sourceFilterExpanded ? 'max-h-64 mb-2' : 'max-h-0'
           }`}>
-            <div className="py-2 px-1 space-y-1 bg-theme-surface border border-theme-border rounded-xl shadow-lg max-w-[200px]">
+            <div className="py-2 px-1 space-y-1 bg-theme-surface border border-theme-border rounded-xl shadow-lg max-w-[200px] max-h-60 overflow-y-auto scrollbar-styled">
               <button
                 onClick={() => handleSourceSelect(null)}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
