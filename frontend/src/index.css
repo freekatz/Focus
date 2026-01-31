@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Disable Overscroll Bounce ===== */
+/* Prevent rubber band/bounce effect on mobile browsers */
+html, body {
+  overscroll-behavior: none;
+}
+
 /* ===== CSS Variable Defaults (Cream Light Theme) ===== */
 /* These are set dynamically by applyTheme() in themes.ts */
 :root {
