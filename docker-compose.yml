@@ -1,8 +1,8 @@
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
-    build: ./backend
+    image: ghcr.io/${GITHUB_USERNAME:-freekatz}/focus-backend:latest
     container_name: focus-backend
     restart: unless-stopped
     environment:
@@ -30,11 +30,11 @@ services:
       start_period: 10s
 
   frontend:
-    build: ./frontend
+    image: ghcr.io/${GITHUB_USERNAME:-freekatz}/focus-frontend:latest
     container_name: focus-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       backend:
         condition: service_healthy

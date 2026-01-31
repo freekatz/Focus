@@ -3,8 +3,14 @@ name: CI
 on:
   push:
     branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
   pull_request:
     branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
   workflow_dispatch:
 
 env:
