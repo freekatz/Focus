@@ -340,9 +340,10 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
     fetchEntries(selectedSourceId);
   };
 
-  // Unified icon component for consistent sizing (18px)
+  // Unified icon component for consistent sizing
+  // Mobile: 22px for better touch, Desktop: 18px
   const ActionIcon = ({ children }: { children: React.ReactNode }) => (
-    <span className="w-[18px] h-[18px] flex items-center justify-center">{children}</span>
+    <span className="w-[22px] h-[22px] lg:w-[18px] lg:h-[18px] flex items-center justify-center">{children}</span>
   );
 
   // Render the unified floating action bar via portal
@@ -355,6 +356,8 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
     : t("common.all");
 
   const renderActionBar = () => {
+    // Only render when HomeView is active (handles display:none case where component stays mounted)
+    if (!isActive) return null;
     const actionBarContent = (
       <div className="pointer-events-auto w-full max-w-5xl flex items-center justify-center">
         {/* Main action bar container */}
@@ -386,12 +389,24 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
             </div>
           </div>
 
-          {/* Source indicator / toggle button */}
+          {/* Source indicator / toggle button - above the bar */}
           <button
             onClick={() => setSourceFilterExpanded(!sourceFilterExpanded)}
-            className="flex items-center gap-1 mb-1 px-2 py-0.5 rounded-full text-xs text-theme-text-tertiary hover:text-theme-text-secondary transition-colors"
+            className="flex items-center gap-1 mb-1.5 px-3 py-1 rounded-full text-ui-sm bg-theme-surface border border-theme-border shadow-md text-theme-text-secondary hover:text-theme-text transition-colors"
             aria-label="Toggle source filter"
           >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
             <span className="truncate max-w-[100px]">{currentSourceName}</span>
             <svg
               width="12"
@@ -409,35 +424,34 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
           </button>
 
           {/* Main action bar */}
-          <div className="flex items-center gap-0.5 lg:gap-1.5 px-1.5 lg:px-3 py-1 lg:py-2 rounded-full shadow-lg transition-micro bg-theme-surface border border-theme-border">
+          <div className="flex items-center gap-1 lg:gap-1.5 px-2 lg:px-3 py-1.5 lg:py-2 rounded-full shadow-lg transition-micro bg-theme-surface border border-theme-border">
             {/* Previous */}
             <button
               onClick={goPrev}
               disabled={articles.length === 0 || currentIndex === 0}
-              className={`flex items-center justify-center gap-1 h-8 w-8 lg:h-10 lg:w-auto lg:px-3 rounded-full transition-micro text-ui-sm ${
+              className={`flex items-center justify-center min-h-touch min-w-touch lg:min-h-0 lg:min-w-0 h-10 w-10 lg:h-10 lg:w-10 rounded-full transition-micro text-ui-sm ${
                 articles.length === 0 || currentIndex === 0
                   ? "text-theme-text-muted cursor-not-allowed"
-                  : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+                  : "text-theme-text hover:bg-theme-muted cursor-pointer active:scale-95"
               }`}
               title={t("home.prevArticle")}
             >
               <ActionIcon>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
                   <polyline points="15 18 9 12 15 6" />
                 </svg>
               </ActionIcon>
-              <span className="hidden lg:inline">{t("home.prevArticle")}</span>
             </button>
 
             {/* Divider - large screens only */}
-            <div className="hidden lg:block w-px h-4 bg-theme-border" />
+            <div className="hidden lg:block w-px h-5 bg-theme-border" />
 
             {/* Discard - hidden when no articles */}
             {articles.length > 0 && (
               <button
                 onClick={handleDiscard}
                 disabled={isAnimating}
-                className={`flex items-center justify-center gap-1 h-8 w-8 lg:h-10 lg:w-auto lg:px-3 rounded-full transition-micro text-ui-sm ${
+                className={`flex items-center justify-center min-h-touch min-w-touch lg:min-h-0 lg:min-w-0 h-10 w-10 lg:h-10 lg:w-10 rounded-full transition-micro text-ui-sm ${
                   isAnimating
                     ? "opacity-50 cursor-not-allowed"
                     : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-error cursor-pointer active:scale-95"
@@ -445,11 +459,10 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
                 title={t("home.discard")}
               >
                 <ActionIcon>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
                     <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
                   </svg>
                 </ActionIcon>
-                <span className="hidden lg:inline">{t("home.discard")}</span>
               </button>
             )}
 
@@ -478,7 +491,7 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
             <button
               onClick={handleShuffle}
               disabled={articles.length === 0 || isShuffling || isAnimating}
-              className={`flex items-center justify-center gap-1 h-8 w-8 lg:h-10 lg:w-auto lg:px-3 rounded-full transition-micro text-ui-sm ${
+              className={`flex items-center justify-center min-h-touch min-w-touch lg:min-h-0 lg:min-w-0 h-10 w-10 lg:h-10 lg:w-10 rounded-full transition-micro text-ui-sm ${
                 articles.length === 0 || isShuffling || isAnimating
                   ? "text-theme-text-muted cursor-not-allowed"
                   : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
@@ -486,18 +499,17 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
               title={t("home.shuffle")}
             >
               <ActionIcon>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
                   <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>
                 </svg>
               </ActionIcon>
-              <span className="hidden lg:inline">{t("home.shuffle")}</span>
             </button>
 
             {/* Refresh */}
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className={`flex items-center justify-center gap-1 h-8 w-8 lg:h-10 lg:w-auto lg:px-3 rounded-full transition-micro text-ui-sm ${
+              className={`flex items-center justify-center min-h-touch min-w-touch lg:min-h-0 lg:min-w-0 h-10 w-10 lg:h-10 lg:w-10 rounded-full transition-micro text-ui-sm ${
                 loading
                   ? "opacity-50 cursor-not-allowed"
                   : "text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text cursor-pointer active:scale-95"
@@ -505,21 +517,21 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
               title={t("common.refresh")}
             >
               <ActionIcon>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
                 </svg>
               </ActionIcon>
             </button>
 
             {/* Divider - large screens only */}
-            <div className="hidden lg:block w-px h-4 bg-theme-border" />
+            <div className="hidden lg:block w-px h-5 bg-theme-border" />
 
             {/* Save - hidden when no articles */}
             {articles.length > 0 && (
               <button
                 onClick={handleSave}
                 disabled={isAnimating}
-                className={`flex items-center justify-center gap-1 h-8 w-8 lg:h-10 lg:w-auto lg:px-3 rounded-full transition-micro text-ui-sm ${
+                className={`flex items-center justify-center min-h-touch min-w-touch lg:min-h-0 lg:min-w-0 h-10 w-10 lg:h-10 lg:w-10 rounded-full transition-micro text-ui-sm ${
                   isAnimating
                     ? "opacity-50 cursor-not-allowed"
                     : "text-theme-accent hover:bg-theme-muted cursor-pointer active:scale-95"
@@ -527,11 +539,10 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
                 title={t("home.save")}
               >
                 <ActionIcon>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
                 </ActionIcon>
-                <span className="hidden lg:inline">{t("home.save")}</span>
               </button>
             )}
 
@@ -539,16 +550,15 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
             <button
               onClick={goNext}
               disabled={articles.length === 0 || currentIndex === articles.length - 1}
-              className={`flex items-center justify-center gap-1 h-8 w-8 lg:h-10 lg:w-auto lg:px-3 rounded-full transition-micro text-ui-sm ${
+              className={`flex items-center justify-center min-h-touch min-w-touch lg:min-h-0 lg:min-w-0 h-10 w-10 lg:h-10 lg:w-10 rounded-full transition-micro text-ui-sm ${
                 articles.length === 0 || currentIndex === articles.length - 1
                   ? "text-theme-text-muted cursor-not-allowed"
-                  : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+                  : "text-theme-text hover:bg-theme-muted cursor-pointer active:scale-95"
               }`}
               title={t("home.nextArticle")}
             >
-              <span className="hidden lg:inline">{t("home.nextArticle")}</span>
               <ActionIcon>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </ActionIcon>
