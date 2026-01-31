@@ -316,15 +316,15 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
       </div>
 
       {/* Desktop: Card modal with overlay */}
-      <div className="hidden md:flex fixed inset-0 z-50 items-center justify-center p-6 animate-fade-in">
+      <div className="hidden md:flex fixed inset-0 z-50 items-center justify-center px-6 animate-fade-in">
         {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           onClick={onClose}
         />
 
-        {/* Modal Card - Increased size */}
-        <div className="relative w-full max-w-5xl h-[85vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden bg-theme-surface">
+        {/* Modal Card - Full height, edge to edge vertically */}
+        <div className="relative w-full max-w-5xl h-full flex flex-col rounded-2xl shadow-2xl overflow-hidden bg-theme-surface">
           {/* Desktop Sticky Header */}
           <div className="flex-shrink-0 px-8 py-5 border-b bg-theme-surface border-theme-border">
             {/* Top Row: Source, Trash, Close */}
