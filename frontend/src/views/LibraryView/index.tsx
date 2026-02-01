@@ -730,7 +730,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
         const hasTrashSelected = selectedArticles.some(a => a._entry?.status === 'trash');
 
         return (
-          <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-0.5 md:gap-1 p-1.5 md:p-2 rounded-full shadow-2xl transition-micro-slow max-w-[95vw] backdrop-blur-sm ${selectedIds.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'} ${darkMode ? 'bg-theme-surface/95 border border-theme-border shadow-theme-text/10' : 'bg-theme-surface/95 border border-theme-border shadow-theme-text/10'}`}>
+          <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-0.5 md:gap-1 p-1.5 md:p-2 rounded-full shadow-lg transition-micro-slow max-w-[95vw] ${selectedIds.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'} bg-theme-surface border border-theme-border`}>
             <button
               onClick={() => setSelectedIds(new Set())}
               className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'hover:bg-theme-muted text-theme-text-secondary' : 'hover:bg-theme-muted text-theme-text-secondary'}`}

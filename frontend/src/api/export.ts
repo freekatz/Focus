@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { toAbsoluteUrl } from '../utils/url';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -47,6 +48,8 @@ export const exportApi = {
     }),
 
   // Personal RSS Feed URL (constructs URL directly, no API call)
-  getRssFeedUrl: (type: 'all' | 'interested' | 'favorite' = 'interested', days = 7) =>
-    `${API_BASE_URL}/export/rss?type=${type}&days=${days}`,
+  getRssFeedUrl: (type: 'all' | 'interested' | 'favorite' = 'interested', days = 7) => {
+    const relativePath = `${API_BASE_URL}/export/rss?type=${type}&days=${days}`;
+    return toAbsoluteUrl(relativePath);
+  },
 };
