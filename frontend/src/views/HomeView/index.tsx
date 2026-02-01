@@ -185,9 +185,11 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
   }, [isActive, fetchSubscriptions]);
 
   // Refetch when source filter changes (after initial load)
+  const prevSourceId = useRef<number | null>(selectedSourceId);
   useEffect(() => {
-    if (hasLoaded.current && selectedSourceId !== null) {
+    if (hasLoaded.current && prevSourceId.current !== selectedSourceId) {
       fetchEntries(selectedSourceId);
+      prevSourceId.current = selectedSourceId;
     }
   }, [selectedSourceId, fetchEntries]);
 
