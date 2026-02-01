@@ -8,6 +8,7 @@ import 'katex/dist/katex.min.css';
 interface ArticleContentProps {
   content: string;
   darkMode: boolean;
+  forceMarkdown?: boolean; // Force markdown rendering, skip auto-detection
 }
 
 type ContentType = 'html' | 'markdown' | 'plain';
@@ -215,8 +216,11 @@ function MarkdownContent({
   );
 }
 
-export function ArticleContent({ content, darkMode }: ArticleContentProps) {
-  const contentType = useMemo(() => detectContentType(content), [content]);
+export function ArticleContent({ content, darkMode, forceMarkdown = false }: ArticleContentProps) {
+  const contentType = useMemo(() => {
+    if (forceMarkdown) return 'markdown';
+    return detectContentType(content);
+  }, [content, forceMarkdown]);
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
 
   const openLightbox = useCallback((src: string, alt: string) => {

@@ -86,13 +86,13 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
               {t("home.originalAbstract")}
             </summary>
             <div className="mt-4 pl-6">
-              <ArticleContent content={article.content} darkMode={darkMode} />
+              <ArticleContent content={article.content} darkMode={darkMode} forceMarkdown={true} />
             </div>
           </details>
 
           {/* AI Interpretation */}
           <section>
-            <ArticleContent content={article._entry!.ai_summary!} darkMode={darkMode} />
+            <ArticleContent content={article._entry!.ai_summary!} darkMode={darkMode} forceMarkdown={true} />
           </section>
         </>
       );
@@ -111,7 +111,7 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
                 </p>
               )}
               {translatedAbstract && (
-                <ArticleContent content={translatedAbstract} darkMode={darkMode} />
+                <ArticleContent content={translatedAbstract} darkMode={darkMode} forceMarkdown={true} />
               )}
             </section>
           )}
@@ -125,7 +125,7 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
               {t("home.originalAbstract")}
             </summary>
             <div className="mt-4 pl-6">
-              <ArticleContent content={article.content} darkMode={darkMode} />
+              <ArticleContent content={article.content} darkMode={darkMode} forceMarkdown={true} />
             </div>
           </details>
 
@@ -166,7 +166,7 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
     // Not translated yet or translating: show original content
     return (
       <>
-        <ArticleContent content={article.content} darkMode={darkMode} />
+        <ArticleContent content={article.content} darkMode={darkMode} forceMarkdown={true} />
 
         {/* Translation/Interpretation status indicators */}
         {isTranslating && (
