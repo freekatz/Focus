@@ -60,7 +60,8 @@ async def get_entries(
         )
         query = query.where(Entry.rss_source_id.in_(subscribed_subquery))
 
-    if status:
+    # Filter by status (if not 'all')
+    if status and status != EntryStatus.ALL:
         query = query.where(Entry.status == status)
 
     if rss_source_id:

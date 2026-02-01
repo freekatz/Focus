@@ -16,7 +16,10 @@ interface LibraryViewProps {
 type SortField = 'date' | 'title';
 type SortOrder = 'asc' | 'desc';
 
-const PAGE_SIZE = 20;
+// Page size constants (borrowed from HomeView pattern)
+const INITIAL_PAGE_SIZE = 20;  // Fast first load
+const LOAD_MORE_SIZE = 30;     // Subsequent loads
+const PAGE_SIZE = 20;  // For UI pagination display
 
 export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: LibraryViewProps) {
   const { t } = useTranslation();
@@ -28,9 +31,11 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const hasLoaded = useRef(false);
   const lastRefreshKey = useRef(refreshKey);
+  const isInitialMount = useRef(true);  // Phase 1: Prevent duplicate API calls on mount
 
   // Filter states - multi-select for status, default to saved and favorite
-  const [statusFilters, setStatusFilters] = useState<Set<EntryStatus>>(new Set(['interested', 'favorite']));
+  // Phase 2: Support 'all' status to show all entries
+  const [statusFilters, setStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested', 'favorite']));
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [letterFilter, setLetterFilter] = useState<string>('all');
@@ -39,61 +44,84 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-  // Pagination
+  // Pagination (existing UI pagination)
   const [currentPage, setCurrentPage] = useState(1);
+
+  // API Pagination state (new - for "Load More" functionality)
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Filter dropdown visibility
   const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch all entries with pagination support (API limits page_size to 100)
-  const fetchAllPages = async (status: EntryStatus) => {
-    const allItems: any[] = [];
-    let page = 1;
-    let hasMore = true;
+  // Fetch entries with pagination (optimized - only fetches one page at a time)
+  const fetchEntries = useCallback(async (append = false) => {
+    const currentPage = append ? page + 1 : 1;
+    const pageSize = !append && currentPage === 1 ? INITIAL_PAGE_SIZE : LOAD_MORE_SIZE;
 
-    while (hasMore) {
-      const response = await entriesApi.list({ status, page, page_size: 100 });
-      allItems.push(...response.items);
-      hasMore = response.items.length === 100;
-      page++;
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setPage(1);
+      setSelectedIds(new Set());
     }
 
-    return allItems;
-  };
-
-  const fetchEntries = useCallback(async () => {
-    setLoading(true);
-    setSelectedIds(new Set());
     try {
-      const [unreadItems, interestedItems, favoriteItems, archivedItems, trashItems] = await Promise.all([
-        fetchAllPages('unread'),
-        fetchAllPages('interested'),
-        fetchAllPages('favorite'),
-        fetchAllPages('archived'),
-        fetchAllPages('trash'),
-      ]);
-      const allEntries = [
-        ...unreadItems,
-        ...interestedItems,
-        ...favoriteItems,
-        ...archivedItems,
-        ...trashItems,
-      ];
-      const mappedArticles = allEntries.map(mapEntryToArticle);
-      setArticles(mappedArticles);
+      // Phase 2: Handle 'all' status - call single endpoint instead of parallel requests
+      if (statusFilters.has('all')) {
+        // Call single 'all' endpoint (backend handles fetching all statuses)
+        const response = await entriesApi.list({ status: 'all' as any, page: currentPage, page_size: pageSize });
+        const mappedArticles = response.items.map(mapEntryToArticle);
+
+        if (append) {
+          setArticles(prev => [...prev, ...mappedArticles]);
+        } else {
+          setArticles(mappedArticles);
+        }
+
+        setPage(currentPage);
+        setHasMore(response.has_more);
+      } else {
+        // Multiple statuses selected - fetch each in parallel
+        const statuses: EntryStatus[] = statusFilters.size > 0
+          ? Array.from(statusFilters).filter(s => s !== 'all') as EntryStatus[]
+          : ['interested', 'favorite'];  // Fallback default
+
+        const responses = await Promise.all(
+          statuses.map(status =>
+            entriesApi.list({ status, page: currentPage, page_size: pageSize })
+          )
+        );
+
+        // Merge and sort results
+        const allItems = responses.flatMap(r => r.items);
+        const mappedArticles = allItems.map(mapEntryToArticle);
+
+        if (append) {
+          setArticles(prev => [...prev, ...mappedArticles]);
+        } else {
+          setArticles(mappedArticles);
+        }
+
+        setPage(currentPage);
+        setHasMore(responses.some(r => r.has_more));
+      }
     } catch (error) {
       console.error('Failed to fetch entries:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, []);
+  }, [page, statusFilters]);
 
   // Initial load - only fetch once
   useEffect(() => {
     if (hasLoaded.current) return;
     hasLoaded.current = true;
     fetchEntries();
-  }, [fetchEntries]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Refresh when refreshKey changes (triggered by parent)
   useEffect(() => {
@@ -101,7 +129,22 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
       lastRefreshKey.current = refreshKey;
       fetchEntries();
     }
-  }, [refreshKey, fetchEntries]);
+  }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refetch when status filters change (after initial load)
+  // Phase 1: Skip initial mount to prevent duplicate API calls
+  useEffect(() => {
+    // Skip initial render
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Only refetch when user manually changes filters
+    if (hasLoaded.current) {
+      fetchEntries();
+    }
+  }, [statusFilters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get unique categories and years for filters
   const categories = useMemo(() => {
@@ -128,7 +171,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     let result = articles;
 
     // Multi-select status filter
-    if (statusFilters.size > 0) {
+    // If 'all' is selected, don't filter by status (show all)
+    if (statusFilters.size > 0 && !statusFilters.has('all')) {
       result = result.filter(a => a._entry?.status && statusFilters.has(a._entry.status));
     }
 
@@ -190,25 +234,45 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   }, [statusFilters, categoryFilter, yearFilter, letterFilter, search, sortField, sortOrder]);
 
   // Toggle status in multi-select
-  const toggleStatusFilter = (status: EntryStatus) => {
+  // Phase 2: Handle 'all' status logic
+  const toggleStatusFilter = (status: EntryStatus | 'all') => {
     setStatusFilters(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(status)) {
-        newSet.delete(status);
+
+      if (status === 'all') {
+        // If selecting "all", clear other selections
+        return new Set(['all']);
       } else {
-        newSet.add(status);
+        // If selecting specific status, remove "all"
+        newSet.delete('all');
+
+        if (newSet.has(status)) {
+          newSet.delete(status);
+        } else {
+          newSet.add(status);
+        }
       }
+
       return newSet;
     });
+    // Reset pagination and refetch when filters change
+    setPage(1);
+    setCurrentPage(1);
+    setHasMore(true);
   };
 
   // Clear all filters
+  // Phase 2: Set to 'all' instead of empty to show all statuses
   const clearAllFilters = () => {
-    setStatusFilters(new Set());
+    setStatusFilters(new Set(['all' as const]));
     setCategoryFilter('all');
     setYearFilter('all');
     setLetterFilter('all');
     setSearch('');
+    // Reset pagination when clearing filters
+    setPage(1);
+    setCurrentPage(1);
+    setHasMore(true);
   };
 
   // Check if any filter is active
@@ -433,6 +497,20 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
             <div className="mb-4">
               <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.status')}</label>
               <div className="flex flex-wrap gap-2">
+                {/* Phase 2: Add "All Statuses" button */}
+                <button
+                  onClick={() => toggleStatusFilter('all')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    statusFilters.has('all')
+                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-100 dark:text-purple-700 ring-2 ring-purple-400/50'
+                      : darkMode ? 'bg-theme-muted text-theme-text-secondary hover:text-theme-text' : 'bg-theme-muted text-theme-text-secondary hover:text-theme-text'
+                  }`}
+                >
+                  {statusFilters.has('all') && <Icons.Check />}
+                  {t('library.allStatuses')}
+                </button>
+
+                {/* Individual status buttons */}
                 {(['unread', 'interested', 'favorite', 'archived', 'trash'] as EntryStatus[]).map(status => (
                   <button
                     key={status}
@@ -659,6 +737,30 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Load More Button - for fetching more data from API */}
+      {hasMore && !loading && paginatedArticles.length > 0 && (
+        <div className="flex justify-center py-6">
+          <button
+            onClick={() => fetchEntries(true)}
+            disabled={loadingMore}
+            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              loadingMore
+                ? 'bg-theme-muted text-theme-text-tertiary cursor-not-allowed'
+                : 'bg-theme-accent text-white hover:bg-theme-accent-hover active:scale-95'
+            }`}
+          >
+            {loadingMore ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"/>
+                <span>{t('library.loadingMore')}</span>
+              </div>
+            ) : (
+              t('library.loadMore')
+            )}
+          </button>
         </div>
       )}
 

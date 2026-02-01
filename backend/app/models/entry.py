@@ -19,6 +19,7 @@ class EntryStatus(str, Enum):
     TRASH = "trash"             # 垃圾桶
     FAVORITE = "favorite"       # 收藏
     ARCHIVED = "archived"       # 已归档（感兴趣/收藏超过90天）
+    ALL = "all"                 # 全部状态（不过滤）
 
 
 class TranslationStatus(str, Enum):

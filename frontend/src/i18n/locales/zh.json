@@ -223,7 +223,10 @@
     "failedToSave": "保存文章失败",
     "translating": "翻译中...",
     "translated": "已翻译",
-    "pendingTranslation": "待翻译"
+    "pendingTranslation": "待翻译",
+    "allStatuses": "全部",
+    "loadMore": "加载更多",
+    "loadingMore": "加载中..."
   },
   "entry": {
     "title": "标题",

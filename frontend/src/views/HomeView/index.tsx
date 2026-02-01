@@ -35,17 +35,18 @@ function formatDate(dateString: string | null): string {
   });
 }
 
-// Page size constants
-const INITIAL_PAGE_SIZE = 15;  // Smaller first page for faster initial load
-const NORMAL_PAGE_SIZE = 30;   // Normal page size for subsequent loads
+// Page size constants (borrowed from LibraryView pattern)
+const INITIAL_PAGE_SIZE = 15;  // Fast first load
+const NORMAL_PAGE_SIZE = 30;   // Subsequent loads
 
 export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
   const { t } = useTranslation();
+
   const [articles, setArticles] = useState<Article[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [selectedSourceId, setSelectedSourceId] = useState<number | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [isShuffling, setIsShuffling] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [jumpInput, setJumpInput] = useState("");
@@ -54,14 +55,12 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
   const [sourceFilterExpanded, setSourceFilterExpanded] = useState(false);
   const sourceFilterRef = useRef<HTMLDivElement>(null);
 
-  // Pagination state
+  // Pagination & preload state
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  // Preload state
   const [nextPageData, setNextPageData] = useState<Article[] | null>(null);
   const [isPreloading, setIsPreloading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const hasLoaded = useRef(false);
@@ -129,6 +128,9 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
 
   // Trigger preload when remaining articles <= 10
   useEffect(() => {
+    // Don't preload during initial load or if no articles loaded yet
+    if (!hasLoaded.current || articles.length === 0) return;
+
     const remaining = articles.length - currentIndex;
     if (remaining <= 10 && hasMore && !nextPageData && !isPreloading && !loadingMore) {
       preloadNextPage();
@@ -165,14 +167,14 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [sourceFilterExpanded]);
 
-  // Initial load - only fetch once, then when source changes
+  // Initial load - only fetch once
   useEffect(() => {
     if (!hasLoaded.current) {
       hasLoaded.current = true;
       fetchSubscriptions();
       fetchEntries(selectedSourceId);
     }
-  }, [fetchSubscriptions, fetchEntries, selectedSourceId]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Refresh subscriptions when tab becomes active (to catch subscription changes from SourcesView)
   const wasActive = useRef(isActive);
@@ -182,7 +184,7 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
       fetchSubscriptions();
     }
     wasActive.current = isActive;
-  }, [isActive, fetchSubscriptions]);
+  }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Refetch when source filter changes (after initial load)
   const prevSourceId = useRef<number | null>(selectedSourceId);
@@ -191,7 +193,7 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
       fetchEntries(selectedSourceId);
       prevSourceId.current = selectedSourceId;
     }
-  }, [selectedSourceId, fetchEntries]);
+  }, [selectedSourceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset scroll position on article change
   useEffect(() => {

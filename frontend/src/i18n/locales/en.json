@@ -223,7 +223,10 @@
     "failedToSave": "Failed to save articles",
     "translating": "Translating...",
     "translated": "Translated",
-    "pendingTranslation": "Pending"
+    "pendingTranslation": "Pending",
+    "allStatuses": "All",
+    "loadMore": "Load More",
+    "loadingMore": "Loading..."
   },
   "entry": {
     "title": "Title",
