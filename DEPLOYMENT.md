@@ -19,12 +19,22 @@ mkdir focus && cd focus
 # 下载 docker-compose.yml
 curl -O https://raw.githubusercontent.com/freekatz/Focus/main/docker-compose.yml
 
-# 创建 .env
+# 创建 .env (PostgreSQL 默认配置)
 cat > .env << 'EOF'
 SECRET_KEY=dev-secret-key-change-in-production
 DEFAULT_PASSWORD=focus123
+
+# PostgreSQL 配置
+POSTGRES_DB=focus
+POSTGRES_USER=focus
+POSTGRES_PASSWORD=focus-change-me
+DATABASE_URL=postgresql+asyncpg://focus:focus-change-me@postgres:5432/focus
+
+# 前端配置
 FRONTEND_URL=http://localhost:8080
 CORS_ORIGINS=http://localhost:8080
+
+# AI 配置
 AI_PROVIDER=openai
 AI_MODEL=gpt-4o-mini
 AI_API_KEY=your-api-key
@@ -35,6 +45,11 @@ docker compose up -d
 ```
 
 访问 http://localhost:8080，账号 `admin` / `focus123`
+
+**注意**: 如需使用 SQLite 而非 PostgreSQL，在 `.env` 中添加:
+```bash
+DATABASE_URL=sqlite+aiosqlite:///./data/focus.db
+```
 
 ---
 
@@ -52,17 +67,23 @@ Focus 支持两种数据库后端:
 
 **配置** (在 `.env` 中):
 ```bash
-# 必须修改密码!
-POSTGRES_PASSWORD=your-secure-password-here
-
-# 可选配置 (使用默认值即可)
+# PostgreSQL 凭据
 POSTGRES_USER=focus
 POSTGRES_DB=focus
+POSTGRES_PASSWORD=your-secure-password-here
+
+# ⚠️ CRITICAL: DATABASE_URL 中的密码必须与 POSTGRES_PASSWORD 一致
+DATABASE_URL=postgresql+asyncpg://focus:your-secure-password-here@postgres:5432/focus
 ```
 
 **生成安全密码**:
 ```bash
-openssl rand -base64 32
+# 生成密码
+DB_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=' | cut -c1-32)
+
+# 在 .env 中使用
+echo "POSTGRES_PASSWORD=$DB_PASSWORD"
+echo "DATABASE_URL=postgresql+asyncpg://focus:$DB_PASSWORD@postgres:5432/focus"
 ```
 
 ### SQLite (轻量选择)
@@ -188,16 +209,30 @@ curl -O https://raw.githubusercontent.com/freekatz/Focus/main/docker-compose.yml
 cat > .env << 'EOF'
 SECRET_KEY=替换为随机字符串
 DEFAULT_PASSWORD=替换为你的密码
+
+# PostgreSQL 配置
+POSTGRES_DB=focus
+POSTGRES_USER=focus
+POSTGRES_PASSWORD=替换为数据库密码
+DATABASE_URL=postgresql+asyncpg://focus:替换为数据库密码@postgres:5432/focus
+
+# 前端配置
 FRONTEND_URL=https://your-domain.com
 CORS_ORIGINS=https://your-domain.com
 ALLOWED_HOSTS=localhost,127.0.0.1,your-domain.com
+
+# AI 配置
 AI_PROVIDER=openai
 AI_MODEL=gpt-4o-mini
 AI_API_KEY=your-api-key
 EOF
 
-# 生成 SECRET_KEY
-sed -i "s/替换为随机字符串/$(openssl rand -hex 32)/" .env
+# 生成密钥
+SECRET_KEY=$(openssl rand -hex 32)
+DB_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=' | cut -c1-32)
+
+sed -i "s|替换为随机字符串|$SECRET_KEY|" .env
+sed -i "s|替换为数据库密码|$DB_PASSWORD|g" .env
 
 # 启动
 docker compose up -d
@@ -262,3 +297,152 @@ AI_BASE_URL=https://openrouter.ai/api/v1
 | 日志 | `docker compose logs -f` |
 | 更新 | `docker compose pull && docker compose up -d` |
 | 备份 | `docker cp focus-backend:/app/data ./backup` |
+
+---
+
+## 故障排查
+
+### Backend 容器不健康 (Unhealthy)
+
+**症状**: `docker compose ps` 显示 backend 为 unhealthy，frontend 无法启动
+
+**常见原因 1: PostgreSQL 密码配置错误**
+
+错误信息: `password authentication failed for user`
+
+**根本原因**: `.env` 文件中缺少 `DATABASE_URL` 配置，导致 backend 使用默认密码连接，但与 PostgreSQL 实际密码不匹配。
+
+**解决方案**: 在 `.env` 文件中**显式设置 DATABASE_URL**，确保密码与 `POSTGRES_PASSWORD` 一致:
+
+```bash
+# 在 .env 中添加完整配置
+POSTGRES_DB=focus
+POSTGRES_USER=focus
+POSTGRES_PASSWORD=your-secure-password
+DATABASE_URL=postgresql+asyncpg://focus:your-secure-password@postgres:5432/focus
+```
+
+**⚠️ 关键**: `DATABASE_URL` 中的密码必须与 `POSTGRES_PASSWORD` 完全一致！
+
+**验证步骤**:
+```bash
+# 1. 停止所有服务
+docker compose down
+
+# 2. 检查 .env 文件（确保有 DATABASE_URL）
+cat .env | grep -E "(POSTGRES|DATABASE_URL)"
+
+# 3. 重新启动
+docker compose up -d
+
+# 4. 查看日志
+docker compose logs backend --tail=50
+```
+
+**常见原因 2: PostgreSQL 未就绪**
+
+**解决方案**: 等待 PostgreSQL 完全启动（约 10-15 秒）
+
+```bash
+# 检查 PostgreSQL 状态
+docker compose logs postgres | grep "ready to accept"
+
+# 手动验证连接
+docker exec focus-postgres pg_isready -U focus -d focus
+```
+
+**常见原因 3: 端口冲突**
+
+**解决方案**: 检查端口 5432, 8000, 8080 是否被占用
+
+```bash
+# Linux/Mac
+lsof -i :8000
+lsof -i :8080
+lsof -i :5432
+
+# 修改 docker-compose.yml 中的端口映射
+ports:
+  - "18000:8000"  # 使用其他端口
+```
+
+### 切换数据库后端
+
+**从 PostgreSQL 切换到 SQLite**:
+
+```bash
+# 1. 在 .env 中添加
+DATABASE_URL=sqlite+aiosqlite:///./data/focus.db
+
+# 2. 重启
+docker compose restart backend
+```
+
+**从 SQLite 切换到 PostgreSQL**:
+
+```bash
+# 1. 从 .env 中移除 DATABASE_URL（或注释掉）
+# DATABASE_URL=sqlite+aiosqlite:///./data/focus.db
+
+# 2. 确保 PostgreSQL 配置存在
+POSTGRES_DB=focus
+POSTGRES_USER=focus
+POSTGRES_PASSWORD=your-password
+
+# 3. 重启所有服务
+docker compose down
+docker compose up -d
+```
+
+### 数据库连接测试
+
+**手动测试 PostgreSQL 连接**:
+
+```bash
+# 方法 1: 使用 psql
+docker exec -it focus-postgres psql -U focus -d focus -c "SELECT 1;"
+
+# 方法 2: 从 backend 容器测试
+docker exec -it focus-backend python -c "
+import asyncio
+from sqlalchemy import text
+from app.database import engine
+
+async def test():
+    async with engine.connect() as conn:
+        result = await conn.execute(text('SELECT version()'))
+        print(result.scalar())
+
+asyncio.run(test())
+"
+```
+
+### 查看详细日志
+
+```bash
+# 所有服务日志
+docker compose logs -f
+
+# 特定服务日志
+docker compose logs -f postgres
+docker compose logs -f backend
+docker compose logs -f frontend
+
+# 最近 100 行日志
+docker compose logs --tail=100 backend
+```
+
+### 完全重置
+
+**警告**: 这将删除所有数据!
+
+```bash
+# 1. 停止并删除容器
+docker compose down
+
+# 2. 删除所有卷（包括数据库数据）
+docker volume rm focus-postgres-data focus-data focus-logs
+
+# 3. 重新启动
+docker compose up -d
+```

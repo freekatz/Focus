@@ -15,14 +15,18 @@ services:
     volumes:
       - focus-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-focus} -d ${POSTGRES_DB:-focus}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-focus} -d ${POSTGRES_DB:-focus}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
   backend:
-    image: ghcr.io/${GITHUB_USERNAME:-freekatz}/focus-backend:latest
+    image: ghcr.nju.edu.cn/${GITHUB_USERNAME:-freekatz}/focus-backend:latest
     container_name: focus-backend
     restart: unless-stopped
     networks:
@@ -32,7 +36,10 @@ services:
     environment:
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
       - DEFAULT_PASSWORD=${DEFAULT_PASSWORD:-focus123}
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER:-focus}:${POSTGRES_PASSWORD:-focus-change-me}@postgres:5432/${POSTGRES_DB:-focus}}
+      - POSTGRES_DB=${POSTGRES_DB:-focus}
+      - POSTGRES_USER=${POSTGRES_USER:-focus}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-focus-change-me}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://focus:focus-change-me@postgres:5432/focus}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
@@ -58,7 +65,7 @@ services:
         condition: service_healthy
 
   frontend:
-    image: ghcr.io/${GITHUB_USERNAME:-freekatz}/focus-frontend:latest
+    image: ghcr.nju.edu.cn/${GITHUB_USERNAME:-freekatz}/focus-frontend:latest
     container_name: focus-frontend
     restart: unless-stopped
     networks:
