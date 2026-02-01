@@ -36,8 +36,8 @@ class Settings(BaseSettings):
 
     # 数据库配置
     database_url: str = Field(
-        default="sqlite+aiosqlite:///./focus.db",
-        description="数据库连接URL"
+        default="sqlite+aiosqlite:///./data/focus.db",
+        description="数据库连接URL (支持 SQLite 和 PostgreSQL)"
     )
 
     # JWT 配置

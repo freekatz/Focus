@@ -1,6 +1,26 @@
 version: "3.8"
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: focus-postgres
+    restart: unless-stopped
+    networks:
+      - focus-net
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-focus}
+      - POSTGRES_USER=${POSTGRES_USER:-focus}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-focus-change-me}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - focus-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-focus} -d ${POSTGRES_DB:-focus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   backend:
     image: ghcr.io/${GITHUB_USERNAME:-freekatz}/focus-backend:latest
     container_name: focus-backend
@@ -12,7 +32,7 @@ services:
     environment:
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
       - DEFAULT_PASSWORD=${DEFAULT_PASSWORD:-focus123}
-      - DATABASE_URL=sqlite+aiosqlite:///./data/focus.db
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER:-focus}:${POSTGRES_PASSWORD:-focus-change-me}@postgres:5432/${POSTGRES_DB:-focus}}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
@@ -33,6 +53,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     image: ghcr.io/${GITHUB_USERNAME:-freekatz}/focus-frontend:latest
@@ -55,3 +78,5 @@ volumes:
     name: focus-data
   focus-logs:
     name: focus-logs
+  focus-postgres-data:
+    name: focus-postgres-data
