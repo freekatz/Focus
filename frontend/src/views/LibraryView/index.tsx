@@ -33,12 +33,19 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   const lastRefreshKey = useRef(refreshKey);
   const isInitialMount = useRef(true);  // Phase 1: Prevent duplicate API calls on mount
 
-  // Filter states - multi-select for status, default to saved and favorite
-  // Phase 2: Support 'all' status to show all entries
-  const [statusFilters, setStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested', 'favorite']));
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [yearFilter, setYearFilter] = useState<string>('all');
-  const [letterFilter, setLetterFilter] = useState<string>('all');
+  // Applied filter states - these are used for actual filtering
+  const [appliedStatusFilters, setAppliedStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested', 'favorite']));
+  const [appliedCategoryFilter, setAppliedCategoryFilter] = useState<string>('all');
+  const [appliedYearFilter, setAppliedYearFilter] = useState<string>('all');
+  const [appliedLetterFilter, setAppliedLetterFilter] = useState<string>('all');
+  const [appliedSearch, setAppliedSearch] = useState<string>('');
+
+  // Temporary filter states - these are used for UI interaction before applying
+  const [tempStatusFilters, setTempStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested', 'favorite']));
+  const [tempCategoryFilter, setTempCategoryFilter] = useState<string>('all');
+  const [tempYearFilter, setTempYearFilter] = useState<string>('all');
+  const [tempLetterFilter, setTempLetterFilter] = useState<string>('all');
+  const [tempSearch, setTempSearch] = useState<string>('');
 
   // Sort states
   const [sortField, setSortField] = useState<SortField>('date');
@@ -56,6 +63,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   const [showFilters, setShowFilters] = useState(false);
 
   // Fetch entries with pagination (optimized - only fetches one page at a time)
+  // Uses appliedStatusFilters instead of tempStatusFilters
   const fetchEntries = useCallback(async (append = false) => {
     const currentPage = append ? page + 1 : 1;
     const pageSize = !append && currentPage === 1 ? INITIAL_PAGE_SIZE : LOAD_MORE_SIZE;
@@ -70,7 +78,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
     try {
       // Phase 2: Handle 'all' status - call single endpoint instead of parallel requests
-      if (statusFilters.has('all')) {
+      if (appliedStatusFilters.has('all')) {
         // Call single 'all' endpoint (backend handles fetching all statuses)
         const response = await entriesApi.list({ status: 'all' as any, page: currentPage, page_size: pageSize });
         const mappedArticles = response.items.map(mapEntryToArticle);
@@ -85,8 +93,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
         setHasMore(response.has_more);
       } else {
         // Multiple statuses selected - fetch each in parallel
-        const statuses: EntryStatus[] = statusFilters.size > 0
-          ? Array.from(statusFilters).filter(s => s !== 'all') as EntryStatus[]
+        const statuses: EntryStatus[] = appliedStatusFilters.size > 0
+          ? Array.from(appliedStatusFilters).filter(s => s !== 'all') as EntryStatus[]
           : ['interested', 'favorite'];  // Fallback default
 
         const responses = await Promise.all(
@@ -114,7 +122,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [page, statusFilters]);
+  }, [page, appliedStatusFilters]);
 
   // Initial load - only fetch once
   useEffect(() => {
@@ -131,7 +139,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     }
   }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Refetch when status filters change (after initial load)
+  // Refetch when applied status filters change (after initial load)
   // Phase 1: Skip initial mount to prevent duplicate API calls
   useEffect(() => {
     // Skip initial render
@@ -140,11 +148,11 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
       return;
     }
 
-    // Only refetch when user manually changes filters
+    // Only refetch when applied filters change
     if (hasLoaded.current) {
       fetchEntries();
     }
-  }, [statusFilters]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [appliedStatusFilters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get unique categories and years for filters
   const categories = useMemo(() => {
@@ -166,39 +174,39 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     return Array.from(yrs).sort().reverse();
   }, [articles]);
 
-  // Filter and sort articles
+  // Filter and sort articles - now uses applied states only
   const filteredAndSorted = useMemo(() => {
     let result = articles;
 
     // Multi-select status filter
     // If 'all' is selected, don't filter by status (show all)
-    if (statusFilters.size > 0 && !statusFilters.has('all')) {
-      result = result.filter(a => a._entry?.status && statusFilters.has(a._entry.status));
+    if (appliedStatusFilters.size > 0 && !appliedStatusFilters.has('all')) {
+      result = result.filter(a => a._entry?.status && appliedStatusFilters.has(a._entry.status));
     }
 
-    if (categoryFilter !== 'all') {
-      result = result.filter(a => a._entry?.rss_source_name === categoryFilter);
+    if (appliedCategoryFilter !== 'all') {
+      result = result.filter(a => a._entry?.rss_source_name === appliedCategoryFilter);
     }
 
-    if (yearFilter !== 'all') {
+    if (appliedYearFilter !== 'all') {
       result = result.filter(a => {
         if (!a._entry?.published_at) return false;
-        return new Date(a._entry.published_at).getFullYear().toString() === yearFilter;
+        return new Date(a._entry.published_at).getFullYear().toString() === appliedYearFilter;
       });
     }
 
-    if (letterFilter !== 'all') {
+    if (appliedLetterFilter !== 'all') {
       result = result.filter(a => {
         const firstChar = a.title.charAt(0).toUpperCase();
-        if (letterFilter === '#') {
+        if (appliedLetterFilter === '#') {
           return !/[A-Z]/.test(firstChar);
         }
-        return firstChar === letterFilter;
+        return firstChar === appliedLetterFilter;
       });
     }
 
-    if (search) {
-      const searchLower = search.toLowerCase();
+    if (appliedSearch) {
+      const searchLower = appliedSearch.toLowerCase();
       result = result.filter(a =>
         a.title.toLowerCase().includes(searchLower) ||
         a.author.toLowerCase().includes(searchLower) ||
@@ -220,7 +228,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     });
 
     return result;
-  }, [articles, statusFilters, categoryFilter, yearFilter, letterFilter, search, sortField, sortOrder]);
+  }, [articles, appliedStatusFilters, appliedCategoryFilter, appliedYearFilter, appliedLetterFilter, appliedSearch, sortField, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSorted.length / PAGE_SIZE);
@@ -231,12 +239,84 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilters, categoryFilter, yearFilter, letterFilter, search, sortField, sortOrder]);
+  }, [appliedStatusFilters, appliedCategoryFilter, appliedYearFilter, appliedLetterFilter, appliedSearch, sortField, sortOrder]);
 
-  // Toggle status in multi-select
-  // Phase 2: Handle 'all' status logic
-  const toggleStatusFilter = (status: EntryStatus | 'all') => {
-    setStatusFilters(prev => {
+  // Utility function to compare Sets for equality
+  const areSetsEqual = (set1: Set<any>, set2: Set<any>) => {
+    if (set1.size !== set2.size) return false;
+    for (const item of set1) {
+      if (!set2.has(item)) return false;
+    }
+    return true;
+  };
+
+  // Check if temporary filters have changes compared to applied filters
+  const hasFilterChanges = () => {
+    return (
+      !areSetsEqual(tempStatusFilters, appliedStatusFilters) ||
+      tempCategoryFilter !== appliedCategoryFilter ||
+      tempYearFilter !== appliedYearFilter ||
+      tempLetterFilter !== appliedLetterFilter ||
+      tempSearch !== appliedSearch
+    );
+  };
+
+  // Apply temporary filters to applied state
+  const applyFilters = () => {
+    if (!hasFilterChanges()) {
+      return; // No changes, do nothing
+    }
+
+    setAppliedStatusFilters(new Set(tempStatusFilters));
+    setAppliedCategoryFilter(tempCategoryFilter);
+    setAppliedYearFilter(tempYearFilter);
+    setAppliedLetterFilter(tempLetterFilter);
+    setAppliedSearch(tempSearch);
+
+    // Reset pagination
+    setPage(1);
+    setCurrentPage(1);
+    setHasMore(true);
+
+    // Close filter panel
+    setShowFilters(false);
+  };
+
+  // Reset all filters to default
+  const resetFilters = () => {
+    const defaultStatusFilters = new Set<EntryStatus | 'all'>(['interested', 'favorite']);
+
+    setTempStatusFilters(defaultStatusFilters);
+    setTempCategoryFilter('all');
+    setTempYearFilter('all');
+    setTempLetterFilter('all');
+    setTempSearch('');
+
+    setAppliedStatusFilters(defaultStatusFilters);
+    setAppliedCategoryFilter('all');
+    setAppliedYearFilter('all');
+    setAppliedLetterFilter('all');
+    setAppliedSearch('');
+
+    setPage(1);
+    setCurrentPage(1);
+    setHasMore(true);
+  };
+
+  // Cancel changes and restore to applied state
+  const cancelFilters = () => {
+    setTempStatusFilters(new Set(appliedStatusFilters));
+    setTempCategoryFilter(appliedCategoryFilter);
+    setTempYearFilter(appliedYearFilter);
+    setTempLetterFilter(appliedLetterFilter);
+    setTempSearch(appliedSearch);
+
+    setShowFilters(false);
+  };
+
+  // Toggle status in temporary filter (not applied yet)
+  const toggleTempStatusFilter = (status: EntryStatus | 'all') => {
+    setTempStatusFilters(prev => {
       const newSet = new Set(prev);
 
       if (status === 'all') {
@@ -255,28 +335,27 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
       return newSet;
     });
-    // Reset pagination and refetch when filters change
-    setPage(1);
-    setCurrentPage(1);
-    setHasMore(true);
+    // Note: Don't reset pagination here - not applied yet
   };
 
-  // Clear all filters
-  // Phase 2: Set to 'all' instead of empty to show all statuses
-  const clearAllFilters = () => {
-    setStatusFilters(new Set(['all' as const]));
-    setCategoryFilter('all');
-    setYearFilter('all');
-    setLetterFilter('all');
-    setSearch('');
-    // Reset pagination when clearing filters
-    setPage(1);
-    setCurrentPage(1);
-    setHasMore(true);
-  };
+  // Check if any applied filter is active
+  const hasActiveFilters = appliedStatusFilters.size > 0 || appliedCategoryFilter !== 'all' || appliedYearFilter !== 'all' || appliedLetterFilter !== 'all' || appliedSearch !== '';
 
-  // Check if any filter is active
-  const hasActiveFilters = statusFilters.size > 0 || categoryFilter !== 'all' || yearFilter !== 'all' || letterFilter !== 'all' || search !== '';
+  // Count active filters for display
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+
+    if (!appliedStatusFilters.has('all') && appliedStatusFilters.size > 0) {
+      count += appliedStatusFilters.size;
+    }
+
+    if (appliedCategoryFilter !== 'all') count++;
+    if (appliedYearFilter !== 'all') count++;
+    if (appliedLetterFilter !== 'all') count++;
+    if (appliedSearch.trim()) count++;
+
+    return count;
+  }, [appliedStatusFilters, appliedCategoryFilter, appliedYearFilter, appliedLetterFilter, appliedSearch]);
 
   const toggleSelect = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -411,8 +490,16 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
           <input
             type="text"
             placeholder={t('library.searchArticles')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={appliedSearch}
+            onChange={(e) => {
+              setAppliedSearch(e.target.value);
+              setTempSearch(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                applyFilters();
+              }
+            }}
             className={`w-full min-h-touch pl-10 pr-4 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${darkMode ? 'bg-theme-muted border-theme-border focus:ring-theme-accent text-theme-text placeholder-theme-text-tertiary' : 'bg-theme-surface border-theme-border focus:ring-theme-accent/30 text-theme-text placeholder-theme-text-tertiary'}`}
           />
           <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
@@ -430,16 +517,20 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
         >
           <Icons.Filter />
           <span className="text-ui-sm font-medium">{t('library.filter')}</span>
-          {hasActiveFilters && (
+          {activeFiltersCount > 0 && (
             <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${darkMode ? 'bg-theme-accent-light' : 'bg-theme-accent/100'}`}>
-              {statusFilters.size + (categoryFilter !== 'all' ? 1 : 0) + (yearFilter !== 'all' ? 1 : 0) + (letterFilter !== 'all' ? 1 : 0)}
+              {activeFiltersCount}
             </span>
+          )}
+          {/* Change indicator when temp filters differ from applied */}
+          {hasFilterChanges() && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse" />
           )}
         </button>
 
-        {hasActiveFilters && (
+        {activeFiltersCount > 0 && (
           <button
-            onClick={clearAllFilters}
+            onClick={resetFilters}
             className={`flex items-center gap-1.5 min-h-touch px-3 rounded-xl border transition-micro cursor-pointer active:scale-[0.98] text-ui-sm font-medium ${
               darkMode ? 'border-theme-border text-theme-text-secondary hover:text-theme-text hover:border-theme-text-tertiary' : 'border-theme-border text-theme-text-secondary hover:text-theme-text hover:border-theme-text-tertiary'
             }`}
@@ -481,32 +572,45 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
           {/* Backdrop to close on click outside */}
           <div
             className="fixed inset-0 z-10"
-            onClick={() => setShowFilters(false)}
+            onClick={cancelFilters}
           />
-          <div className={`absolute left-4 right-4 md:left-auto md:right-8 md:w-[500px] z-20 p-4 rounded-xl border shadow-xl space-y-4 ${darkMode ? 'bg-theme-surface border-theme-border' : 'bg-theme-surface border-theme-border'}`}>
+          <div
+            className={`absolute left-4 right-4 md:left-auto md:right-8 md:w-[500px] z-20 p-4 rounded-xl border shadow-xl space-y-4 ${darkMode ? 'bg-theme-surface border-theme-border' : 'bg-theme-surface border-theme-border'}`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                applyFilters();
+              } else if (e.key === 'Escape') {
+                cancelFilters();
+              } else if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+                e.preventDefault();
+                resetFilters();
+              }
+            }}
+            tabIndex={0}
+          >
             <div className="flex items-center justify-between mb-2">
               <span className={`text-sm font-semibold ${darkMode ? 'text-theme-text' : 'text-theme-text'}`}>{t('library.filters')}</span>
               <button
-                onClick={() => setShowFilters(false)}
+                onClick={cancelFilters}
                 className={`p-1 rounded-lg transition-colors ${darkMode ? 'hover:bg-theme-muted text-theme-text-secondary' : 'hover:bg-theme-muted text-theme-text-secondary'}`}
               >
                 <Icons.X />
               </button>
             </div>
-            {/* Status multi-select */}
+            {/* Status multi-select - using temporary state */}
             <div className="mb-4">
               <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.status')}</label>
               <div className="flex flex-wrap gap-2">
                 {/* Phase 2: Add "All Statuses" button */}
                 <button
-                  onClick={() => toggleStatusFilter('all')}
+                  onClick={() => toggleTempStatusFilter('all')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    statusFilters.has('all')
+                    tempStatusFilters.has('all')
                       ? 'bg-purple-100 text-purple-700 dark:bg-purple-100 dark:text-purple-700 ring-2 ring-purple-400/50'
                       : darkMode ? 'bg-theme-muted text-theme-text-secondary hover:text-theme-text' : 'bg-theme-muted text-theme-text-secondary hover:text-theme-text'
                   }`}
                 >
-                  {statusFilters.has('all') && <Icons.Check />}
+                  {tempStatusFilters.has('all') && <Icons.Check />}
                   {t('library.allStatuses')}
                 </button>
 
@@ -514,9 +618,9 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
                 {(['unread', 'interested', 'favorite', 'archived', 'trash'] as EntryStatus[]).map(status => (
                   <button
                     key={status}
-                    onClick={() => toggleStatusFilter(status)}
+                    onClick={() => toggleTempStatusFilter(status)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      statusFilters.has(status)
+                      tempStatusFilters.has(status)
                         ? status === 'favorite' ? 'bg-amber-100 text-amber-700 dark:bg-amber-100 dark:text-amber-700 ring-2 ring-amber-400/50' :
                           status === 'interested' ? 'bg-green-100 text-green-700 dark:bg-green-100 dark:text-green-700 ring-2 ring-green-400/50' :
                           status === 'unread' ? 'bg-blue-100 text-blue-700 dark:bg-blue-100 dark:text-blue-700 ring-2 ring-blue-400/50' :
@@ -525,7 +629,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
                         : darkMode ? 'bg-theme-muted text-theme-text-secondary hover:text-theme-text' : 'bg-theme-muted text-theme-text-secondary hover:text-theme-text'
                     }`}
                   >
-                    {statusFilters.has(status) && <Icons.Check />}
+                    {tempStatusFilters.has(status) && <Icons.Check />}
                     {getStatusLabel(status)}
                   </button>
                 ))}
@@ -536,8 +640,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
               <div>
                 <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.source')}</label>
                 <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  value={tempCategoryFilter}
+                  onChange={(e) => setTempCategoryFilter(e.target.value)}
                   className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-surface border-theme-border text-theme-text'}`}
                 >
                   <option value="all">{t('library.allSources')}</option>
@@ -550,8 +654,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
               <div>
                 <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.year')}</label>
                 <select
-                  value={yearFilter}
-                  onChange={(e) => setYearFilter(e.target.value)}
+                  value={tempYearFilter}
+                  onChange={(e) => setTempYearFilter(e.target.value)}
                   className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-surface border-theme-border text-theme-text'}`}
                 >
                   <option value="all">{t('library.allYears')}</option>
@@ -564,8 +668,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
               <div>
                 <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.firstLetter')}</label>
                 <select
-                  value={letterFilter}
-                  onChange={(e) => setLetterFilter(e.target.value)}
+                  value={tempLetterFilter}
+                  onChange={(e) => setTempLetterFilter(e.target.value)}
                   className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-surface border-theme-border text-theme-text'}`}
                 >
                   <option value="all">{t('common.all')}</option>
@@ -576,14 +680,36 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
               </div>
             </div>
 
-            {hasActiveFilters && (
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4 border-t border-theme-border">
               <button
-                onClick={clearAllFilters}
-                className={`text-sm font-medium ${darkMode ? 'text-theme-accent hover:text-theme-accent-hover' : 'text-theme-accent hover:text-theme-accent-hover'}`}
+                onClick={applyFilters}
+                disabled={!hasFilterChanges()}
+                className={`
+                  flex-1 py-2.5 rounded-lg font-medium transition-all
+                  ${hasFilterChanges()
+                    ? 'bg-theme-accent text-white hover:bg-theme-accent/90 cursor-pointer'
+                    : 'bg-theme-muted text-theme-text-tertiary cursor-not-allowed'
+                  }
+                `}
               >
-                {t('library.clearAllFilters')}
+                {t('common.apply')}
               </button>
-            )}
+
+              <button
+                onClick={resetFilters}
+                className={`px-4 py-2.5 rounded-lg border font-medium transition-colors ${darkMode ? 'border-theme-border text-theme-text-secondary hover:bg-theme-muted' : 'border-theme-border text-theme-text-secondary hover:bg-theme-muted'}`}
+              >
+                {t('common.reset')}
+              </button>
+
+              <button
+                onClick={cancelFilters}
+                className={`px-4 py-2.5 rounded-lg border font-medium transition-colors ${darkMode ? 'border-theme-border text-theme-text-secondary hover:bg-theme-muted' : 'border-theme-border text-theme-text-secondary hover:bg-theme-muted'}`}
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
           </div>
         </>
       )}

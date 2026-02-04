@@ -115,6 +115,66 @@ def extract_arxiv_id(url: str) -> Optional[str]:
     return None
 
 
+def normalize_markdown_emphasis(text: str) -> str:
+    """
+    规范化 Markdown 文本中的连续强调标记
+
+    将 **text1**向**text2** 改为 **text1** 向 **text2**
+    确保加粗标记后面的中文连接词、字母、数字前有适当间距
+
+    Args:
+        text: 需要规范化的 Markdown 文本
+
+    Returns:
+        规范化后的文本
+
+    注意:
+        只处理 **text** 后面紧跟的字符，不处理前面的字符
+        这样可以避免破坏已有的正确格式
+    """
+    if not text:
+        return text
+
+    # 模式 1: **text** 后紧跟中文连接词时添加空格
+    # **text**和 -> **text** 和
+    # **text** 和 -> 保持不变（negative lookahead 检查后面不是空格）
+    text = re.sub(
+        r'\*\*([^*]+)\*\*(?!\s)([和、与及或向至对于关于从到])',
+        r'**\1** \2',
+        text
+    )
+
+    # 模式 2: **text** 后紧跟英文字母时添加空格（避免粘连）
+    # **text**A -> **text** A
+    # **text** A -> 保持不变
+    # 但排除紧跟 ** 的情况（那是另一个加粗的开始）
+    text = re.sub(
+        r'\*\*([^*]+)\*\*(?!\s)(?!\*)([A-Za-z])',
+        r'**\1** \2',
+        text
+    )
+
+    # 模式 3: **text** 后紧跟数字时添加空格
+    # **text**123 -> **text** 123
+    # **text** 123 -> 保持不变
+    text = re.sub(
+        r'\*\*([^*]+)\*\*(?!\s)(\d)',
+        r'**\1** \2',
+        text
+    )
+
+    # 模式 4: **text** 后紧跟左括号时添加空格
+    # **text**（ -> **text** （
+    # **text** （ -> 保持不变
+    text = re.sub(
+        r'\*\*([^*]+)\*\*(?!\s)([（\(])',
+        r'**\1** \2',
+        text
+    )
+
+    return text
+
+
 class ArxivTranslator:
     """ArXiv 摘要翻译器 - 一次 LLM 调用完成翻译和总结"""
 
@@ -174,6 +234,10 @@ class ArxivTranslator:
             content = response.choices[0].message.content
             summary = self._extract_tag(content, "summary")
             translation = self._extract_tag(content, "translation")
+
+            # 规范化 Markdown 格式
+            summary = normalize_markdown_emphasis(summary)
+            translation = normalize_markdown_emphasis(translation)
 
             return translation, summary
 
@@ -248,6 +312,9 @@ class ArxivInterpreter:
 
         # 4. 合并结果（Markdown 拼接）- 与 refer/arxiv_reader.py 一致
         combined = result_1 + "\n\n" + result_2
+
+        # 规范化 Markdown 格式
+        combined = normalize_markdown_emphasis(combined)
 
         logger.info(f"[ArXiv Interpreter] Completed interpretation for '{entry.title[:50]}...'")
 

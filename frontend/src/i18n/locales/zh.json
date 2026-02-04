@@ -23,7 +23,10 @@
     "left": "剩余",
     "adding": "添加中...",
     "parsing": "解析中...",
-    "refresh": "刷新"
+    "refresh": "刷新",
+    "apply": "应用",
+    "reset": "重置",
+    "applying": "应用中..."
   },
   "nav": {
     "home": "首页",

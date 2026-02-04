@@ -1,7 +1,13 @@
 // Color Theme System for Focus
 // Each theme has light and dark variants with consistent color semantics
 
-export type ColorThemeId = 'cream' | 'ocean' | 'forest' | 'lavender' | 'graphite' | 'custom';
+export type ColorThemeId =
+  | "cream"
+  | "ocean"
+  | "forest"
+  | "lavender"
+  | "graphite"
+  | "custom";
 
 export interface ColorPalette {
   base: string;
@@ -32,230 +38,243 @@ export interface ColorTheme {
 
 export const colorThemes: ColorTheme[] = [
   {
-    id: 'cream',
-    name: 'Cream',
-    nameZh: '奶油',
+    id: "cream",
+    name: "Cream",
+    nameZh: "奶油",
+    // 设计语言：温暖、阅读感、纸质纹理。
+    // Light: 类似 Apple Books 的暖光。
+    // Dark: 深褐色/黑巧色，比纯黑更护眼 (Material "Surface Tint")。
     light: {
-      base: '#FDF8F3',
-      surface: '#FFFCF7',
-      muted: '#F7F3ED',
-      border: '#E8E2DA',
-      selected: '#F0EBE4',
-      text: '#2D2926',
-      textSecondary: '#5C534A',
-      textTertiary: '#8B8178',
-      textMuted: '#A8A29E',
-      accent: '#C2410C',
-      accentHover: '#9A3412',
-      accentSoft: '#EA580C',
-      success: '#059669',
-      warning: '#D97706',
-      error: '#DC2626',
-      favorite: '#F59E0B',
+      base: "#F9F6F2", // 极淡的暖米色，比纯白更柔和
+      surface: "#FFFFFF", // 纯白卡片，保持清爽
+      muted: "#F0EBE5", // 柔和的分割块
+      border: "#E6E0D6", // 暖灰色边框
+      selected: "#EFE6DB", // 选中态
+      text: "#3C3836", // 深暖灰，非纯黑，阅读体验极佳
+      textSecondary: "#665C54",
+      textTertiary: "#928374",
+      textMuted: "#BDAE93",
+      accent: "#D97706", // 琥珀色/焦糖色
+      accentHover: "#B45309",
+      accentSoft: "#FEF3C7", // 极浅的琥珀背景
+      success: "#059669",
+      warning: "#D97706",
+      error: "#DC2626",
+      favorite: "#F59E0B",
     },
     dark: {
-      base: '#D9CFC3',
-      surface: '#E5DDD2',
-      muted: '#CCC2B5',
-      border: '#B8ADA0',
-      selected: '#C5BAA9',
-      text: '#2D2926',
-      textSecondary: '#44403C',
-      textTertiary: '#78716C',
-      textMuted: '#A8A29E',
-      accent: '#C2410C',
-      accentHover: '#9A3412',
-      accentSoft: '#EA580C',
-      success: '#059669',
-      warning: '#D97706',
-      error: '#DC2626',
-      favorite: '#F59E0B',
+      base: "#1C1917", // Stone 900，深暖炭黑
+      surface: "#292524", // Stone 800，提升层级
+      muted: "#44403C",
+      border: "#57534E",
+      selected: "#44403C",
+      text: "#E7E5E4", // 暖白
+      textSecondary: "#A8A29E",
+      textTertiary: "#78716C",
+      textMuted: "#57534E",
+      accent: "#F59E0B", // 暗模式下提亮 Accent，保证可见度
+      accentHover: "#D97706",
+      accentSoft: "#78350F", // 深色背景下的强调色块
+      success: "#10B981",
+      warning: "#FBBF24",
+      error: "#F87171",
+      favorite: "#FCD34D",
     },
   },
   {
-    id: 'ocean',
-    name: 'Ocean',
-    nameZh: '海洋',
+    id: "ocean",
+    name: "Ocean",
+    nameZh: "海洋",
+    // 设计语言：科技、冷静、通透。
+    // Light: 类似 macOS Big Sur 风格，高饱和强调色 + 极淡蓝背景。
+    // Dark: 深海蓝黑，Material You 风格。
     light: {
-      base: '#F0F9FF',
-      surface: '#FFFFFF',
-      muted: '#E0F2FE',
-      border: '#BAE6FD',
-      selected: '#E0F2FE',
-      text: '#0C4A6E',
-      textSecondary: '#075985',
-      textTertiary: '#0369A1',
-      textMuted: '#7DD3FC',
-      accent: '#0EA5E9',
-      accentHover: '#0284C7',
-      accentSoft: '#38BDF8',
-      success: '#10B981',
-      warning: '#F59E0B',
-      error: '#EF4444',
-      favorite: '#FBBF24',
+      base: "#F0F7FF", // 极淡的爱丽丝蓝
+      surface: "#FFFFFF",
+      muted: "#E0F2FE",
+      border: "#CCE5FF", // 通透的蓝调边框
+      selected: "#D6EFFF",
+      text: "#0F172A", // Slate 900，接近黑色的深蓝，对比度极高
+      textSecondary: "#334155",
+      textTertiary: "#64748B",
+      textMuted: "#94A3B8",
+      accent: "#007AFF", // Apple System Blue
+      accentHover: "#0056B3",
+      accentSoft: "#D1E9FF",
+      success: "#10B981",
+      warning: "#F59E0B",
+      error: "#EF4444",
+      favorite: "#FBBF24",
     },
     dark: {
-      base: '#0F172A',
-      surface: '#1E293B',
-      muted: '#334155',
-      border: '#475569',
-      selected: '#334155',
-      text: '#F1F5F9',
-      textSecondary: '#CBD5E1',
-      textTertiary: '#94A3B8',
-      textMuted: '#64748B',
-      accent: '#38BDF8',
-      accentHover: '#0EA5E9',
-      accentSoft: '#7DD3FC',
-      success: '#34D399',
-      warning: '#FBBF24',
-      error: '#F87171',
-      favorite: '#FCD34D',
+      base: "#020617", // Slate 950，极深的蓝黑
+      surface: "#0F172A", // Slate 900
+      muted: "#1E293B",
+      border: "#334155",
+      selected: "#1E293B",
+      text: "#F8FAFC", // 冷白
+      textSecondary: "#CBD5E1",
+      textTertiary: "#94A3B8",
+      textMuted: "#475569",
+      accent: "#38BDF8", // Sky 400，暗模式下的霓虹感
+      accentHover: "#0EA5E9",
+      accentSoft: "#0C4A6E",
+      success: "#34D399",
+      warning: "#FBBF24",
+      error: "#F87171",
+      favorite: "#FCD34D",
     },
   },
   {
-    id: 'forest',
-    name: 'Forest',
-    nameZh: '森林',
+    id: "forest",
+    name: "Forest",
+    nameZh: "森林",
+    // 设计语言：自然、治愈、稳重。
+    // 修正了原版文字过绿的问题，改为深灰绿，更具可读性。
     light: {
-      base: '#F5FBF7',
-      surface: '#FAFCFB',
-      muted: '#EDF5F0',
-      border: '#D4E5DA',
-      selected: '#E5F0E9',
-      text: '#2D4A3E',
-      textSecondary: '#4A6B5D',
-      textTertiary: '#6B8F7D',
-      textMuted: '#9BB5A6',
-      accent: '#10B981',
-      accentHover: '#059669',
-      accentSoft: '#34D399',
-      success: '#10B981',
-      warning: '#D97706',
-      error: '#DC2626',
-      favorite: '#F59E0B',
+      base: "#F2F7F4", // 极淡的薄荷灰
+      surface: "#FFFFFF",
+      muted: "#E6F0EA",
+      border: "#D1E0D6",
+      selected: "#DEF7EC",
+      text: "#111827", // 接近黑色的灰，略带绿感
+      textSecondary: "#374151",
+      textTertiary: "#6B7280",
+      textMuted: "#9CA3AF",
+      accent: "#059669", // Emerald 600
+      accentHover: "#047857",
+      accentSoft: "#D1FAE5",
+      success: "#059669",
+      warning: "#D97706",
+      error: "#DC2626",
+      favorite: "#F59E0B",
     },
     dark: {
-      base: '#1A2F23',
-      surface: '#243D2E',
-      muted: '#2D4A3A',
-      border: '#3D6B52',
-      selected: '#2D4A3A',
-      text: '#E8F0EA',
-      textSecondary: '#C8D9CC',
-      textTertiary: '#9BB5A6',
-      textMuted: '#6B8F7D',
-      accent: '#4ADE80',
-      accentHover: '#22C55E',
-      accentSoft: '#86EFAC',
-      success: '#4ADE80',
-      warning: '#FBBF24',
-      error: '#F87171',
-      favorite: '#FCD34D',
+      base: "#062C21", // 极深的丛林绿 (接近黑)
+      surface: "#064E3B", // 深绿表面
+      muted: "#065F46",
+      border: "#047857",
+      selected: "#065F46",
+      text: "#ECFDF5",
+      textSecondary: "#A7F3D0",
+      textTertiary: "#6EE7B7",
+      textMuted: "#34D399",
+      accent: "#34D399", // Emerald 400
+      accentHover: "#10B981",
+      accentSoft: "#022C22",
+      success: "#4ADE80",
+      warning: "#FBBF24",
+      error: "#F87171",
+      favorite: "#FCD34D",
     },
   },
   {
-    id: 'lavender',
-    name: 'Lavender',
-    nameZh: '薰衣草',
+    id: "lavender",
+    name: "Lavender",
+    nameZh: "薰衣草",
+    // 设计语言：优雅、艺术、梦幻。
+    // 采用了 iOS Focus Mode 的紫色调。
     light: {
-      base: '#F8F6FA',
-      surface: '#FDFCFE',
-      muted: '#F0EDF5',
-      border: '#DED8E8',
-      selected: '#EBE6F2',
-      text: '#4A3B5C',
-      textSecondary: '#5E4A6E',
-      textTertiary: '#8B7A9E',
-      textMuted: '#B5A8C4',
-      accent: '#8B5CF6',
-      accentHover: '#7C3AED',
-      accentSoft: '#A78BFA',
-      success: '#10B981',
-      warning: '#D97706',
-      error: '#DC2626',
-      favorite: '#F59E0B',
+      base: "#FBFBFE", // 几乎白色的淡紫
+      surface: "#FFFFFF",
+      muted: "#F3F0FF",
+      border: "#E9E5F5",
+      selected: "#F3E8FF",
+      text: "#2E1065", // 极深的紫黑
+      textSecondary: "#5B21B6",
+      textTertiary: "#7C3AED",
+      textMuted: "#A78BFA",
+      accent: "#7C3AED", // Violet 600
+      accentHover: "#6D28D9",
+      accentSoft: "#EDE9FE",
+      success: "#10B981",
+      warning: "#D97706",
+      error: "#DC2626",
+      favorite: "#F59E0B",
     },
     dark: {
-      base: '#1F1D2B',
-      surface: '#2A2838',
-      muted: '#363347',
-      border: '#4D4A5E',
-      selected: '#363347',
-      text: '#EAE8F0',
-      textSecondary: '#D4D1DE',
-      textTertiary: '#A9A4B8',
-      textMuted: '#7A7590',
-      accent: '#A78BFA',
-      accentHover: '#8B5CF6',
-      accentSoft: '#C4B5FD',
-      success: '#34D399',
-      warning: '#FBBF24',
-      error: '#F87171',
-      favorite: '#FCD34D',
+      base: "#170E25", // 深邃的夜紫
+      surface: "#25163E", // 稍亮的表面
+      muted: "#362259",
+      border: "#4C3075",
+      selected: "#362259",
+      text: "#FAF5FF",
+      textSecondary: "#E9D5FF",
+      textTertiary: "#C4B5FD",
+      textMuted: "#8B5CF6",
+      accent: "#A78BFA", // Violet 400
+      accentHover: "#8B5CF6",
+      accentSoft: "#2E1065",
+      success: "#34D399",
+      warning: "#FBBF24",
+      error: "#F87171",
+      favorite: "#FCD34D",
     },
   },
   {
-    id: 'graphite',
-    name: 'Graphite',
-    nameZh: '石墨',
+    id: "graphite",
+    name: "Graphite",
+    nameZh: "石墨",
+    // 设计语言：专业、极简、中性。
+    // Light: 对标 Apple 默认界面 (#F5F5F7 + #FFFFFF)。
+    // Dark: 对标 Apple OLED Dark Mode (纯黑 + 深灰卡片)。
     light: {
-      base: '#FAFAFA',
-      surface: '#FFFFFF',
-      muted: '#F4F4F5',
-      border: '#E4E4E7',
-      selected: '#F4F4F5',
-      text: '#18181B',
-      textSecondary: '#3F3F46',
-      textTertiary: '#71717A',
-      textMuted: '#A1A1AA',
-      accent: '#F97316',
-      accentHover: '#EA580C',
-      accentSoft: '#FB923C',
-      success: '#10B981',
-      warning: '#F59E0B',
-      error: '#EF4444',
-      favorite: '#FBBF24',
+      base: "#F5F5F7", // Apple System Gray 6 (Grouped Background)
+      surface: "#FFFFFF",
+      muted: "#E5E5EA", // Apple System Gray 5
+      border: "#D1D1D6", // Apple System Gray 4
+      selected: "#E5E5EA",
+      text: "#000000", // 纯黑
+      textSecondary: "#3C3C43", // 60% Black (Apple Standard)
+      textTertiary: "#3C3C43", // 30% Black
+      textMuted: "#8E8E93", // Apple System Gray
+      accent: "#F97316", // Orange (保持原有色调，但更鲜活)
+      accentHover: "#EA580C",
+      accentSoft: "#FFEDD5",
+      success: "#34C759", // Apple System Green
+      warning: "#FF9500", // Apple System Orange
+      error: "#FF3B30", // Apple System Red
+      favorite: "#FFCC00", // Apple System Yellow
     },
     dark: {
-      base: '#18181B',
-      surface: '#27272A',
-      muted: '#3F3F46',
-      border: '#52525B',
-      selected: '#3F3F46',
-      text: '#FAFAFA',
-      textSecondary: '#E4E4E7',
-      textTertiary: '#A1A1AA',
-      textMuted: '#71717A',
-      accent: '#FB923C',
-      accentHover: '#F97316',
-      accentSoft: '#FDBA74',
-      success: '#34D399',
-      warning: '#FBBF24',
-      error: '#F87171',
-      favorite: '#FCD34D',
+      base: "#000000", // OLED Pure Black
+      surface: "#1C1C1E", // Apple System Gray 6 (Dark)
+      muted: "#2C2C2E", // Apple System Gray 5 (Dark)
+      border: "#3A3A3C", // Apple System Gray 4 (Dark)
+      selected: "#2C2C2E",
+      text: "#FFFFFF",
+      textSecondary: "#EBEBF5", // 60% White
+      textTertiary: "#EBEBF5", // 30% White
+      textMuted: "#98989D",
+      accent: "#FB923C", // Orange 400
+      accentHover: "#F97316",
+      accentSoft: "#331B08", // 极低透明度的橙色背景
+      success: "#30D158",
+      warning: "#FF9F0A",
+      error: "#FF453A",
+      favorite: "#FFD60A",
     },
   },
 ];
 
 // CSS variable name mapping
 const cssVarMap: Record<keyof ColorPalette, string> = {
-  base: '--color-base',
-  surface: '--color-surface',
-  muted: '--color-muted',
-  border: '--color-border',
-  selected: '--color-selected',
-  text: '--color-text',
-  textSecondary: '--color-text-secondary',
-  textTertiary: '--color-text-tertiary',
-  textMuted: '--color-text-muted',
-  accent: '--color-accent',
-  accentHover: '--color-accent-hover',
-  accentSoft: '--color-accent-soft',
-  success: '--color-success',
-  warning: '--color-warning',
-  error: '--color-error',
-  favorite: '--color-favorite',
+  base: "--color-base",
+  surface: "--color-surface",
+  muted: "--color-muted",
+  border: "--color-border",
+  selected: "--color-selected",
+  text: "--color-text",
+  textSecondary: "--color-text-secondary",
+  textTertiary: "--color-text-tertiary",
+  textMuted: "--color-text-muted",
+  accent: "--color-accent",
+  accentHover: "--color-accent-hover",
+  accentSoft: "--color-accent-soft",
+  success: "--color-success",
+  warning: "--color-warning",
+  error: "--color-error",
+  favorite: "--color-favorite",
 };
 
 /**
@@ -290,7 +309,7 @@ export function getTheme(themeId: ColorThemeId): ColorTheme | undefined {
  * Check if a theme ID is valid
  */
 export function isValidThemeId(id: string): id is ColorThemeId {
-  return colorThemes.some((t) => t.id === id) || id === 'custom';
+  return colorThemes.some((t) => t.id === id) || id === "custom";
 }
 
 /**
@@ -305,35 +324,42 @@ export interface CustomThemeJson {
 /**
  * Validate custom theme JSON
  */
-export function validateCustomTheme(json: string): { valid: boolean; error?: string; theme?: CustomThemeJson } {
+export function validateCustomTheme(json: string): {
+  valid: boolean;
+  error?: string;
+  theme?: CustomThemeJson;
+} {
   try {
     const parsed = JSON.parse(json);
 
-    if (typeof parsed !== 'object' || parsed === null) {
-      return { valid: false, error: 'Must be a JSON object' };
+    if (typeof parsed !== "object" || parsed === null) {
+      return { valid: false, error: "Must be a JSON object" };
     }
 
-    if (!parsed.light || typeof parsed.light !== 'object') {
+    if (!parsed.light || typeof parsed.light !== "object") {
       return { valid: false, error: 'Missing "light" palette object' };
     }
 
-    if (!parsed.dark || typeof parsed.dark !== 'object') {
+    if (!parsed.dark || typeof parsed.dark !== "object") {
       return { valid: false, error: 'Missing "dark" palette object' };
     }
 
     // Validate color values (should be hex colors)
     const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-    for (const mode of ['light', 'dark'] as const) {
+    for (const mode of ["light", "dark"] as const) {
       for (const [key, value] of Object.entries(parsed[mode])) {
-        if (typeof value !== 'string' || !hexColorRegex.test(value)) {
-          return { valid: false, error: `Invalid color value for ${mode}.${key}: "${value}"` };
+        if (typeof value !== "string" || !hexColorRegex.test(value)) {
+          return {
+            valid: false,
+            error: `Invalid color value for ${mode}.${key}: "${value}"`,
+          };
         }
       }
     }
 
     return { valid: true, theme: parsed as CustomThemeJson };
   } catch (e) {
-    return { valid: false, error: 'Invalid JSON format' };
+    return { valid: false, error: "Invalid JSON format" };
   }
 }
 
@@ -347,7 +373,7 @@ export function applyCustomTheme(customJson: string, isDark: boolean): boolean {
   }
 
   // Start with cream theme as base
-  const baseTheme = colorThemes.find((t) => t.id === 'cream')!;
+  const baseTheme = colorThemes.find((t) => t.id === "cream")!;
   const basePalette = isDark ? baseTheme.dark : baseTheme.light;
   const customPalette = isDark ? validation.theme.dark : validation.theme.light;
 

@@ -23,7 +23,10 @@
     "left": "Left",
     "adding": "Adding...",
     "parsing": "Parsing...",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "apply": "Apply",
+    "reset": "Reset",
+    "applying": "Applying..."
   },
   "nav": {
     "home": "Home",
