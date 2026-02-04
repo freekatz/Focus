@@ -694,6 +694,7 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
                   <ArticleContent
                     content={translatedAbstract}
                     darkMode={darkMode}
+                    forceMarkdown={true}
                   />
                 )}
               </section>
@@ -708,7 +709,7 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
                 {t("home.originalAbstract")}
               </summary>
               <div className="mt-4 pl-6">
-                <ArticleContent content={current.content} darkMode={darkMode} />
+                <ArticleContent content={current.content} darkMode={darkMode} forceMarkdown={true} />
               </div>
             </details>
 
@@ -718,6 +719,7 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
                 <ArticleContent
                   content={current._entry!.ai_summary!}
                   darkMode={darkMode}
+                  forceMarkdown={true}
                 />
               </section>
             ) : isNoHtml ? (

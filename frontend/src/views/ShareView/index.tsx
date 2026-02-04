@@ -65,13 +65,13 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
               {t("home.originalAbstract")}
             </summary>
             <div className="mt-4 pl-6">
-              <ArticleContent content={entry.content || ''} darkMode={darkMode} />
+              <ArticleContent content={entry.content || ''} darkMode={darkMode} forceMarkdown={true} />
             </div>
           </details>
 
           {/* AI Interpretation */}
           <section>
-            <ArticleContent content={entry.ai_summary!} darkMode={darkMode} />
+            <ArticleContent content={entry.ai_summary!} darkMode={darkMode} forceMarkdown={true} />
           </section>
         </>
       );
@@ -90,7 +90,7 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
                 </p>
               )}
               {translatedAbstract && (
-                <ArticleContent content={translatedAbstract} darkMode={darkMode} />
+                <ArticleContent content={translatedAbstract} darkMode={darkMode} forceMarkdown={true} />
               )}
             </section>
           )}
@@ -106,7 +106,7 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
               {t("home.originalAbstract")}
             </summary>
             <div className="mt-4 pl-6">
-              <ArticleContent content={entry.content || ''} darkMode={darkMode} />
+              <ArticleContent content={entry.content || ''} darkMode={darkMode} forceMarkdown={true} />
             </div>
           </details>
         </>
@@ -114,7 +114,7 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
     }
 
     // ArXiv article not translated yet: show original content
-    return <ArticleContent content={entry.content || ''} darkMode={darkMode} />;
+    return <ArticleContent content={entry.content || ''} darkMode={darkMode} forceMarkdown={true} />;
   };
 
   useEffect(() => {
