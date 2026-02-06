@@ -9,7 +9,7 @@ import {
   type ColorThemeId,
   validateCustomTheme,
 } from "../../themes";
-import type { UserConfig, AIModelConfig, TaskAIConfig } from "../../types";
+import type { UserConfig, AIModelConfig, AIModelsConfig } from "../../types";
 
 type FontTheme = "sans" | "serif" | "mono";
 type ThemeMode = "light" | "dark" | "system";
@@ -96,88 +96,19 @@ function Row({
   );
 }
 
-// Model Card Component
-function ModelCard({
-  model,
-  isPrimary,
-  onEdit,
-  onDelete,
-  darkMode,
-  t,
-}: {
-  model: AIModelConfig;
-  isPrimary: boolean;
-  onEdit: () => void;
-  onDelete?: () => void;
-  darkMode: boolean;
-  t: (key: string) => string;
-}) {
-  return (
-    <div
-      className={`flex items-center justify-between py-2 px-3 rounded-lg ${
-        darkMode ? "bg-theme-muted" : "bg-theme-muted"
-      }`}
-    >
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <span
-          className={`w-2 h-2 rounded-full flex-shrink-0 ${
-            isPrimary ? "bg-green-500" : "bg-blue-400"
-          }`}
-        />
-        <span className="font-medium text-sm text-theme-text truncate">
-          {model.name}
-        </span>
-        <span className="text-xs text-theme-text-tertiary truncate hidden sm:inline">
-          {model.model}
-        </span>
-      </div>
-      <div className="flex items-center gap-1 flex-shrink-0">
-        <button
-          type="button"
-          onClick={onEdit}
-          onMouseDown={(e) => e.preventDefault()}
-          className={`p-1.5 rounded transition-colors cursor-pointer ${
-            darkMode
-              ? "hover:bg-theme-border text-theme-text-secondary"
-              : "hover:bg-theme-border text-theme-text-secondary"
-          }`}
-          title={t("common.edit")}
-        >
-          <Icons.Edit />
-        </button>
-        {!isPrimary && onDelete && (
-          <button
-            type="button"
-            onClick={onDelete}
-            onMouseDown={(e) => e.preventDefault()}
-            className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded transition-colors cursor-pointer"
-            title={t("common.delete")}
-          >
-            <Icons.Trash />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // Model Edit Modal Component
 function ModelEditModal({
   isOpen,
   model,
-  isPrimary,
   onSave,
   onClose,
-  onDelete,
   darkMode,
   t,
 }: {
   isOpen: boolean;
   model: AIModelConfig | null;
-  isPrimary: boolean;
   onSave: (model: AIModelConfig) => void;
   onClose: () => void;
-  onDelete?: () => void;
   darkMode: boolean;
   t: (key: string) => string;
 }) {
@@ -360,20 +291,6 @@ function ModelEditModal({
           </div>
 
           <div className="flex gap-3 pt-2">
-            {!isPrimary && onDelete && (
-              <button
-                type="button"
-                onClick={onDelete}
-                onMouseDown={(e) => e.preventDefault()}
-                className={`flex-1 min-h-touch py-3 rounded-xl text-ui font-medium border transition-colors ${
-                  darkMode
-                    ? "border-red-500/50 text-red-400 hover:bg-red-900/30"
-                    : "border-red-300 text-red-600 hover:bg-red-50"
-                }`}
-              >
-                {t("settings.deleteModel")}
-              </button>
-            )}
             <button
               type="submit"
               className={`flex-1 min-h-touch py-3 rounded-xl text-ui font-medium transition-colors ${
@@ -391,80 +308,33 @@ function ModelEditModal({
   );
 }
 
-// Task Model Section Component
-function TaskModelSection({
-  title,
-  config,
-  onChange,
+// Model Pool Section - manages the global model pool
+function ModelPoolSection({
+  models,
+  tasks,
+  onEditModel,
+  onDeleteModel,
+  onAddModel,
   darkMode,
   t,
 }: {
-  title: string;
-  config: TaskAIConfig | null;
-  onChange: (config: TaskAIConfig) => void;
+  models: AIModelConfig[];
+  tasks: Record<string, { model_ids: string[]; enabled: boolean }>;
+  onEditModel: (model: AIModelConfig) => void;
+  onDeleteModel: (modelId: string) => void;
+  onAddModel: () => void;
   darkMode: boolean;
   t: (key: string) => string;
 }) {
-  const [editingModel, setEditingModel] = useState<AIModelConfig | null>(null);
-  const [editingIndex, setEditingIndex] = useState<number>(-1); // -1 for primary, 0+ for fallbacks
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleEditPrimary = () => {
-    if (config?.primary) {
-      setEditingModel(config.primary);
-      setEditingIndex(-1);
-      setIsModalOpen(true);
+  const handleDelete = (model: AIModelConfig) => {
+    const isUsed = Object.values(tasks).some((task) => task.model_ids.includes(model.id));
+    if (isUsed) {
+      alert(t("settings.modelInUse"));
+      return;
     }
-  };
-
-  const handleEditFallback = (index: number) => {
-    if (config?.fallbacks[index]) {
-      setEditingModel(config.fallbacks[index]);
-      setEditingIndex(index);
-      setIsModalOpen(true);
+    if (confirm(t("settings.confirmDeleteModel"))) {
+      onDeleteModel(model.id);
     }
-  };
-
-  const handleAddFallback = () => {
-    setEditingModel(null);
-    setEditingIndex(config?.fallbacks.length ?? 0);
-    setIsModalOpen(true);
-  };
-
-  const handleDeleteFallback = (index: number) => {
-    if (!config) return;
-    const newFallbacks = [...config.fallbacks];
-    newFallbacks.splice(index, 1);
-    onChange({ ...config, fallbacks: newFallbacks });
-  };
-
-  const handleSaveModel = (model: AIModelConfig) => {
-    if (!config) {
-      // Create new config with this as primary
-      onChange({
-        primary: model,
-        fallbacks: [],
-      });
-    } else if (editingIndex === -1) {
-      // Update primary
-      onChange({ ...config, primary: model });
-    } else if (editingModel) {
-      // Update existing fallback
-      const newFallbacks = [...config.fallbacks];
-      newFallbacks[editingIndex] = model;
-      onChange({ ...config, fallbacks: newFallbacks });
-    } else {
-      // Add new fallback
-      onChange({ ...config, fallbacks: [...config.fallbacks, model] });
-    }
-    setIsModalOpen(false);
-  };
-
-  const handleDeleteFromModal = () => {
-    if (editingIndex >= 0 && config) {
-      handleDeleteFallback(editingIndex);
-    }
-    setIsModalOpen(false);
   };
 
   return (
@@ -474,36 +344,57 @@ function TaskModelSection({
           darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
         }`}
       >
-        {title}
+        {t("settings.myModels")}
       </div>
       <div
         className={`rounded-xl border p-2 space-y-2 ${
           darkMode ? "border-theme-border" : "border-theme-border"
         }`}
       >
-        {config?.primary && (
-          <ModelCard
-            model={config.primary}
-            isPrimary={true}
-            onEdit={handleEditPrimary}
-            darkMode={darkMode}
-            t={t}
-          />
-        )}
-        {config?.fallbacks.map((fb, index) => (
-          <ModelCard
-            key={fb.id}
-            model={fb}
-            isPrimary={false}
-            onEdit={() => handleEditFallback(index)}
-            onDelete={() => handleDeleteFallback(index)}
-            darkMode={darkMode}
-            t={t}
-          />
+        {models.map((model) => (
+          <div
+            key={model.id}
+            className={`flex items-center justify-between py-2 px-3 rounded-lg ${
+              darkMode ? "bg-theme-muted" : "bg-theme-muted"
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="font-medium text-sm text-theme-text truncate">
+                {model.name}
+              </span>
+              <span className="text-xs text-theme-text-tertiary truncate hidden sm:inline">
+                {model.model}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => onEditModel(model)}
+                onMouseDown={(e) => e.preventDefault()}
+                className={`p-1.5 rounded transition-colors cursor-pointer ${
+                  darkMode
+                    ? "hover:bg-theme-border text-theme-text-secondary"
+                    : "hover:bg-theme-border text-theme-text-secondary"
+                }`}
+                title={t("common.edit")}
+              >
+                <Icons.Edit />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(model)}
+                onMouseDown={(e) => e.preventDefault()}
+                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded transition-colors cursor-pointer"
+                title={t("common.delete")}
+              >
+                <Icons.Trash />
+              </button>
+            </div>
+          </div>
         ))}
         <button
           type="button"
-          onClick={handleAddFallback}
+          onClick={onAddModel}
           onMouseDown={(e) => e.preventDefault()}
           className={`w-full py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
             darkMode
@@ -511,20 +402,218 @@ function TaskModelSection({
               : "text-theme-accent hover:bg-theme-muted"
           }`}
         >
-          {t("settings.addFallback")}
+          {t("settings.addModel")}
         </button>
       </div>
+    </div>
+  );
+}
 
-      <ModelEditModal
-        isOpen={isModalOpen}
-        model={editingModel}
-        isPrimary={editingIndex === -1}
-        onSave={handleSaveModel}
-        onClose={() => setIsModalOpen(false)}
-        onDelete={editingIndex >= 0 ? handleDeleteFromModal : undefined}
-        darkMode={darkMode}
-        t={t}
-      />
+// Task Assignment Section - manages model references and auto-run toggle for a specific task
+function TaskAssignmentSection({
+  title,
+  description,
+  taskConfig,
+  models,
+  onChangeConfig,
+  darkMode,
+  t,
+}: {
+  title: string;
+  description?: string;
+  taskConfig: { model_ids: string[]; enabled: boolean };
+  models: AIModelConfig[];
+  onChangeConfig: (config: { model_ids: string[]; enabled: boolean }) => void;
+  darkMode: boolean;
+  t: (key: string) => string;
+}) {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const taskIds = taskConfig.model_ids;
+
+  // Get model by ID from the pool
+  const getModel = (id: string) => models.find((m) => m.id === id);
+
+  // Available models (not yet added to this task)
+  const availableModels = models.filter((m) => !taskIds.includes(m.id));
+
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return;
+    const newIds = [...taskIds];
+    [newIds[index - 1], newIds[index]] = [newIds[index], newIds[index - 1]];
+    onChangeConfig({ ...taskConfig, model_ids: newIds });
+  };
+
+  const handleRemove = (index: number) => {
+    const newIds = [...taskIds];
+    newIds.splice(index, 1);
+    onChangeConfig({ ...taskConfig, model_ids: newIds });
+  };
+
+  const handleAdd = (modelId: string) => {
+    onChangeConfig({ ...taskConfig, model_ids: [...taskIds, modelId] });
+    setDropdownOpen(false);
+  };
+
+  const handleToggleEnabled = () => {
+    onChangeConfig({ ...taskConfig, enabled: !taskConfig.enabled });
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <div
+            className={`text-body-sm font-medium ${
+              darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
+            }`}
+          >
+            {title}
+          </div>
+          {description && (
+            <div className="text-xs text-theme-text-tertiary mt-0.5">
+              {description}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-xs text-theme-text-tertiary">
+            {t("settings.autoRun")}
+          </span>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleToggleEnabled}
+            className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${
+              taskConfig.enabled
+                ? "bg-theme-accent"
+                : darkMode
+                  ? "bg-theme-border"
+                  : "bg-zinc-300"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                taskConfig.enabled ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+      <div
+        className={`rounded-xl border p-2 space-y-2 ${
+          darkMode ? "border-theme-border" : "border-theme-border"
+        }`}
+      >
+        {taskIds.map((id, index) => {
+          const model = getModel(id);
+          if (!model) return null;
+          const isPrimary = index === 0;
+          return (
+            <div
+              key={id}
+              className={`flex items-center justify-between py-2 px-3 rounded-lg ${
+                darkMode ? "bg-theme-muted" : "bg-theme-muted"
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span
+                  className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    isPrimary ? "bg-green-500" : "bg-blue-400"
+                  }`}
+                />
+                <span className="font-medium text-sm text-theme-text truncate">
+                  {model.name}
+                </span>
+                <span className="text-xs text-theme-text-tertiary truncate hidden sm:inline">
+                  {model.model}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {!isPrimary && (
+                  <button
+                    type="button"
+                    onClick={() => handleMoveUp(index)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    className={`p-1.5 rounded transition-colors cursor-pointer ${
+                      darkMode
+                        ? "hover:bg-theme-border text-theme-text-secondary"
+                        : "hover:bg-theme-border text-theme-text-secondary"
+                    }`}
+                    title={t("settings.moveUp")}
+                  >
+                    <Icons.ChevronUp />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleRemove(index)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded transition-colors cursor-pointer"
+                  title={t("settings.removeFromTask")}
+                >
+                  <Icons.X />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Add to task dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              if (availableModels.length === 0) return;
+              setDropdownOpen(!dropdownOpen);
+            }}
+            onMouseDown={(e) => e.preventDefault()}
+            className={`w-full py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+              availableModels.length === 0
+                ? "text-theme-text-tertiary cursor-not-allowed"
+                : darkMode
+                  ? "text-theme-accent hover:bg-theme-muted"
+                  : "text-theme-accent hover:bg-theme-muted"
+            }`}
+          >
+            {t("settings.addToTask")}
+          </button>
+          {dropdownOpen && availableModels.length > 0 && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setDropdownOpen(false)}
+              />
+              <div
+                className={`absolute bottom-full left-0 right-0 mb-1 z-20 rounded-xl border shadow-lg overflow-hidden ${
+                  darkMode
+                    ? "bg-theme-surface border-theme-border"
+                    : "bg-theme-surface border-theme-border"
+                }`}
+              >
+                {availableModels.map((model) => (
+                  <button
+                    key={model.id}
+                    type="button"
+                    onClick={() => handleAdd(model.id)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                      darkMode
+                        ? "hover:bg-theme-muted text-theme-text"
+                        : "hover:bg-theme-muted text-theme-text"
+                    }`}
+                  >
+                    <span className="font-medium">{model.name}</span>
+                    <span className="text-xs text-theme-text-tertiary ml-2">
+                      {model.model}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -775,16 +864,24 @@ export function SettingsView({
     ai_model: "",
     ai_api_key: "",
     ai_base_url: "",
-    auto_translate_abstract: true,
-    auto_interpret_arxiv: true,
     zotero_api_key: "",
     zotero_library_id: "",
     zotero_collection: "",
   });
-  // New multi-model AI config state
-  const [aiConfigTranslation, setAiConfigTranslation] = useState<TaskAIConfig | null>(null);
-  const [aiConfigInterpret, setAiConfigInterpret] = useState<TaskAIConfig | null>(null);
+
+  // Unified AI models config state
+  const [aiModelsConfig, setAiModelsConfig] = useState<AIModelsConfig>({
+    models: [],
+    tasks: {
+      translation: { model_ids: [], enabled: true },
+      interpret: { model_ids: [], enabled: true },
+    },
+  });
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Model edit modal state
+  const [editingModel, setEditingModel] = useState<AIModelConfig | null>(null);
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
 
   const fontOptions: { value: FontTheme; label: string }[] = [
     { value: "sans", label: "Sans" },
@@ -805,15 +902,23 @@ export function SettingsView({
           ai_model: configData.ai_model ?? "",
           ai_api_key: "",
           ai_base_url: configData.ai_base_url ?? "",
-          auto_translate_abstract: configData.auto_translate_abstract ?? true,
-          auto_interpret_arxiv: configData.auto_interpret_arxiv ?? true,
           zotero_api_key: "",
           zotero_library_id: configData.zotero_library_id ?? "",
           zotero_collection: configData.zotero_collection ?? "",
         });
-        // Load new multi-model AI config
-        setAiConfigTranslation(configData.ai_config_translation ?? null);
-        setAiConfigInterpret(configData.ai_config_interpret ?? null);
+        // Load unified AI models config
+        if (configData.ai_models_config) {
+          // Ensure tasks structure exists with defaults
+          const loadedConfig = configData.ai_models_config;
+          const tasks = loadedConfig.tasks ?? {};
+          if (!tasks.translation) {
+            tasks.translation = { model_ids: [], enabled: configData.auto_translate_abstract ?? true };
+          }
+          if (!tasks.interpret) {
+            tasks.interpret = { model_ids: [], enabled: configData.auto_interpret_arxiv ?? true };
+          }
+          setAiModelsConfig({ ...loadedConfig, tasks });
+        }
       } catch (error) {
         console.error("Failed to load config:", error);
       } finally {
@@ -831,6 +936,58 @@ export function SettingsView({
     setHasChanges(true);
   };
 
+  const updateAiModelsConfig = (newConfig: AIModelsConfig) => {
+    setAiModelsConfig(newConfig);
+    setHasChanges(true);
+  };
+
+  // Model pool handlers
+  const handleAddModel = () => {
+    setEditingModel(null);
+    setIsModelModalOpen(true);
+  };
+
+  const handleEditModel = (model: AIModelConfig) => {
+    setEditingModel(model);
+    setIsModelModalOpen(true);
+  };
+
+  const handleSaveModel = (model: AIModelConfig) => {
+    const existingIndex = aiModelsConfig.models.findIndex((m) => m.id === model.id);
+    let newModels: AIModelConfig[];
+    if (existingIndex >= 0) {
+      // Update existing
+      newModels = [...aiModelsConfig.models];
+      newModels[existingIndex] = {
+        ...model,
+        // Preserve api_key_configured if no new key provided
+        api_key_configured: model.api_key ? true : aiModelsConfig.models[existingIndex].api_key_configured,
+      };
+    } else {
+      // Add new
+      newModels = [...aiModelsConfig.models, { ...model, api_key_configured: !!model.api_key }];
+    }
+    updateAiModelsConfig({ ...aiModelsConfig, models: newModels });
+    setIsModelModalOpen(false);
+  };
+
+  const handleDeleteModel = (modelId: string) => {
+    const newModels = aiModelsConfig.models.filter((m) => m.id !== modelId);
+    // Also remove from all task references
+    const newTasks = { ...aiModelsConfig.tasks };
+    for (const taskName of Object.keys(newTasks)) {
+      const task = newTasks[taskName];
+      newTasks[taskName] = {
+        ...task,
+        model_ids: task.model_ids.filter((id) => id !== modelId),
+      };
+    }
+    updateAiModelsConfig({
+      models: newModels,
+      tasks: newTasks,
+    });
+  };
+
   const handleSaveAll = async () => {
     setSaving(true);
     try {
@@ -842,8 +999,6 @@ export function SettingsView({
         ai_provider: formData.ai_provider,
         ai_model: formData.ai_model,
         ai_base_url: formData.ai_base_url || undefined,
-        auto_translate_abstract: formData.auto_translate_abstract,
-        auto_interpret_arxiv: formData.auto_interpret_arxiv,
         zotero_library_id: formData.zotero_library_id || undefined,
         zotero_collection: formData.zotero_collection || undefined,
       };
@@ -856,13 +1011,18 @@ export function SettingsView({
         updates.zotero_api_key = formData.zotero_api_key;
       }
 
-      // Include new multi-model AI config
-      if (aiConfigTranslation) {
-        updates.ai_config_translation = aiConfigTranslation;
-      }
-      if (aiConfigInterpret) {
-        updates.ai_config_interpret = aiConfigInterpret;
-      }
+      // Include unified AI models config with tasks
+      updates.ai_models_config = {
+        models: aiModelsConfig.models.map((m) => ({
+          id: m.id,
+          name: m.name,
+          provider: m.provider,
+          model: m.model,
+          api_key: m.api_key || undefined,
+          base_url: m.base_url || undefined,
+        })),
+        tasks: aiModelsConfig.tasks,
+      };
 
       await configApi.update(updates);
 
@@ -1235,87 +1395,48 @@ export function SettingsView({
         darkMode={darkMode}
       >
         <div className="space-y-5">
-          {/* Translation/Summary Model */}
-          <TaskModelSection
-            title={t("settings.translationModel")}
-            config={aiConfigTranslation}
-            onChange={(cfg) => {
-              setAiConfigTranslation(cfg);
-              setHasChanges(true);
-            }}
+          {/* Model Pool */}
+          <ModelPoolSection
+            models={aiModelsConfig.models}
+            tasks={aiModelsConfig.tasks}
+            onEditModel={handleEditModel}
+            onDeleteModel={handleDeleteModel}
+            onAddModel={handleAddModel}
             darkMode={darkMode}
             t={t}
           />
 
-          {/* Interpretation Model */}
-          <TaskModelSection
-            title={t("settings.interpretModel")}
-            config={aiConfigInterpret}
-            onChange={(cfg) => {
-              setAiConfigInterpret(cfg);
-              setHasChanges(true);
-            }}
+          {/* Translation Task */}
+          <TaskAssignmentSection
+            title={t("settings.translationTask")}
+            description={t("settings.translationTaskDesc")}
+            taskConfig={aiModelsConfig.tasks.translation ?? { model_ids: [], enabled: true }}
+            models={aiModelsConfig.models}
+            onChangeConfig={(config) =>
+              updateAiModelsConfig({
+                ...aiModelsConfig,
+                tasks: { ...aiModelsConfig.tasks, translation: config },
+              })
+            }
             darkMode={darkMode}
             t={t}
           />
 
-          {/* Auto-translate toggle */}
-          <Row label={t("settings.autoTranslateAbstract")} darkMode={darkMode}>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() =>
-                updateFormField(
-                  "auto_translate_abstract",
-                  !formData.auto_translate_abstract,
-                )
-              }
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                formData.auto_translate_abstract
-                  ? darkMode
-                    ? "bg-theme-accent"
-                    : "bg-theme-accent"
-                  : darkMode
-                    ? "bg-theme-border"
-                    : "bg-zinc-300"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  formData.auto_translate_abstract ? "translate-x-6" : ""
-                }`}
-              />
-            </button>
-          </Row>
-
-          {/* Auto-interpret toggle */}
-          <Row label={t("settings.autoInterpretArxiv")} darkMode={darkMode}>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() =>
-                updateFormField(
-                  "auto_interpret_arxiv",
-                  !formData.auto_interpret_arxiv,
-                )
-              }
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                formData.auto_interpret_arxiv
-                  ? darkMode
-                    ? "bg-theme-accent"
-                    : "bg-theme-accent"
-                  : darkMode
-                    ? "bg-theme-border"
-                    : "bg-zinc-300"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  formData.auto_interpret_arxiv ? "translate-x-6" : ""
-                }`}
-              />
-            </button>
-          </Row>
+          {/* Interpretation Task */}
+          <TaskAssignmentSection
+            title={t("settings.interpretTask")}
+            description={t("settings.interpretTaskDesc")}
+            taskConfig={aiModelsConfig.tasks.interpret ?? { model_ids: [], enabled: true }}
+            models={aiModelsConfig.models}
+            onChangeConfig={(config) =>
+              updateAiModelsConfig({
+                ...aiModelsConfig,
+                tasks: { ...aiModelsConfig.tasks, interpret: config },
+              })
+            }
+            darkMode={darkMode}
+            t={t}
+          />
         </div>
       </Section>
 
@@ -1541,6 +1662,15 @@ export function SettingsView({
         isOpen={passwordModalOpen}
         onClose={() => setPasswordModalOpen(false)}
         darkMode={darkMode}
+      />
+
+      <ModelEditModal
+        isOpen={isModelModalOpen}
+        model={editingModel}
+        onSave={handleSaveModel}
+        onClose={() => setIsModelModalOpen(false)}
+        darkMode={darkMode}
+        t={t}
       />
 
       {/* Custom Theme Editor Modal */}

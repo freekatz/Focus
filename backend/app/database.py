@@ -83,6 +83,7 @@ async def run_migrations() -> None:
         ("user_configs", "auto_interpret_arxiv", "BOOLEAN DEFAULT 1", "BOOLEAN DEFAULT TRUE"),
         ("user_configs", "ai_models_translation", "TEXT", "TEXT"),
         ("user_configs", "ai_models_interpret", "TEXT", "TEXT"),
+        ("user_configs", "ai_models", "TEXT", "TEXT"),
     ]
 
     async with engine.begin() as conn:
@@ -111,6 +112,12 @@ async def run_migrations() -> None:
 
     # 运行 AI 配置数据迁移
     await migrate_ai_configs()
+
+    # 运行统一模型池迁移
+    await migrate_to_unified_ai_models()
+
+    # 运行任务结构迁移（flat list -> {model_ids, enabled}）
+    await migrate_tasks_to_abstract_format()
 
 
 async def migrate_ai_configs() -> None:
@@ -160,6 +167,222 @@ async def migrate_ai_configs() -> None:
         await db.commit()
         if configs:
             print(f"Migration: migrated AI configs for {len(configs)} user(s) to new JSON format")
+
+
+async def migrate_to_unified_ai_models() -> None:
+    """
+    将 ai_models_translation + ai_models_interpret 迁移到统一的 ai_models 格式
+
+    新格式:
+    {
+        "models": { "id": { "name", "provider", "model", "api_key", "base_url" } },
+        "tasks": { "translation": [id1, id2], "interpret": [id1, id2] }
+    }
+    """
+    import json
+    from sqlalchemy import text
+
+    async with async_session_maker() as db:
+        result = await db.execute(text(
+            "SELECT id, ai_models_translation, ai_models_interpret, ai_models, "
+            "ai_provider, ai_model, ai_api_key, ai_base_url FROM user_configs"
+        ))
+        configs = result.fetchall()
+
+        migrated_count = 0
+        for config in configs:
+            (config_id, ai_models_translation, ai_models_interpret, ai_models,
+             ai_provider, ai_model, ai_api_key, ai_base_url) = config
+
+            # 跳过已迁移的配置
+            if ai_models:
+                continue
+
+            models = {}
+            translation_ids = []
+            interpret_ids = []
+
+            # 解析翻译配置
+            if ai_models_translation:
+                try:
+                    trans_config = json.loads(ai_models_translation)
+                    primary = trans_config.get("primary")
+                    if primary and primary.get("api_key"):
+                        mid = primary.get("id", "")
+                        models[mid] = {
+                            "name": primary.get("name", ""),
+                            "provider": primary.get("provider", "openai"),
+                            "model": primary.get("model", ""),
+                            "api_key": primary.get("api_key", ""),
+                            "base_url": primary.get("base_url"),
+                        }
+                        translation_ids.append(mid)
+                    for fb in trans_config.get("fallbacks", []):
+                        if fb.get("api_key"):
+                            fid = fb.get("id", "")
+                            models[fid] = {
+                                "name": fb.get("name", ""),
+                                "provider": fb.get("provider", "openai"),
+                                "model": fb.get("model", ""),
+                                "api_key": fb.get("api_key", ""),
+                                "base_url": fb.get("base_url"),
+                            }
+                            translation_ids.append(fid)
+                except json.JSONDecodeError:
+                    pass
+
+            # 解析解读配置
+            if ai_models_interpret:
+                try:
+                    interp_config = json.loads(ai_models_interpret)
+                    primary = interp_config.get("primary")
+                    if primary and primary.get("api_key"):
+                        mid = primary.get("id", "")
+                        # 检查是否已存在相同模型（按全部字段匹配）
+                        existing_id = None
+                        for eid, emodel in models.items():
+                            if (emodel["provider"] == primary.get("provider", "openai")
+                                    and emodel["model"] == primary.get("model", "")
+                                    and emodel["api_key"] == primary.get("api_key", "")
+                                    and emodel["base_url"] == primary.get("base_url")):
+                                existing_id = eid
+                                break
+                        if existing_id:
+                            interpret_ids.append(existing_id)
+                        else:
+                            models[mid] = {
+                                "name": primary.get("name", ""),
+                                "provider": primary.get("provider", "openai"),
+                                "model": primary.get("model", ""),
+                                "api_key": primary.get("api_key", ""),
+                                "base_url": primary.get("base_url"),
+                            }
+                            interpret_ids.append(mid)
+                    for fb in interp_config.get("fallbacks", []):
+                        if fb.get("api_key"):
+                            fid = fb.get("id", "")
+                            existing_id = None
+                            for eid, emodel in models.items():
+                                if (emodel["provider"] == fb.get("provider", "openai")
+                                        and emodel["model"] == fb.get("model", "")
+                                        and emodel["api_key"] == fb.get("api_key", "")
+                                        and emodel["base_url"] == fb.get("base_url")):
+                                    existing_id = eid
+                                    break
+                            if existing_id:
+                                interpret_ids.append(existing_id)
+                            else:
+                                models[fid] = {
+                                    "name": fb.get("name", ""),
+                                    "provider": fb.get("provider", "openai"),
+                                    "model": fb.get("model", ""),
+                                    "api_key": fb.get("api_key", ""),
+                                    "base_url": fb.get("base_url"),
+                                }
+                                interpret_ids.append(fid)
+                except json.JSONDecodeError:
+                    pass
+
+            # 如果没有任何模型且有旧配置，从 legacy 字段创建
+            if not models and ai_api_key:
+                import uuid
+                mid = str(uuid.uuid4())[:8]
+                models[mid] = {
+                    "name": "默认模型",
+                    "provider": ai_provider or "openai",
+                    "model": ai_model or "gpt-4o-mini",
+                    "api_key": ai_api_key,
+                    "base_url": ai_base_url,
+                }
+                translation_ids = [mid]
+                interpret_ids = [mid]
+
+            if models:
+                unified = {
+                    "models": models,
+                    "tasks": {
+                        "translation": {
+                            "model_ids": translation_ids,
+                            "enabled": True,
+                        },
+                        "interpret": {
+                            "model_ids": interpret_ids,
+                            "enabled": True,
+                        },
+                    }
+                }
+                unified_json = json.dumps(unified, ensure_ascii=False)
+                await db.execute(
+                    text("UPDATE user_configs SET ai_models = :config WHERE id = :id"),
+                    {"config": unified_json, "id": config_id}
+                )
+                migrated_count += 1
+
+        await db.commit()
+        if migrated_count > 0:
+            print(f"Migration: migrated {migrated_count} user(s) to unified ai_models format")
+
+
+async def migrate_tasks_to_abstract_format() -> None:
+    """
+    将 ai_models JSON 中的任务从平面列表格式迁移到抽象格式
+
+    旧格式: tasks: { "translation": ["id1", "id2"], "interpret": ["id1"] }
+    新格式: tasks: { "translation": { "model_ids": ["id1", "id2"], "enabled": true }, ... }
+
+    同时将 auto_translate_abstract 和 auto_interpret_arxiv 的值迁移到新格式的 enabled 字段
+    """
+    import json
+    from sqlalchemy import text
+
+    async with async_session_maker() as db:
+        result = await db.execute(text(
+            "SELECT id, ai_models, auto_translate_abstract, auto_interpret_arxiv FROM user_configs"
+        ))
+        configs = result.fetchall()
+
+        migrated_count = 0
+        for config in configs:
+            config_id, ai_models, auto_translate, auto_interpret = config
+
+            if not ai_models:
+                continue
+
+            try:
+                data = json.loads(ai_models)
+            except json.JSONDecodeError:
+                continue
+
+            tasks = data.get("tasks", {})
+            needs_migration = False
+
+            for task_name in list(tasks.keys()):
+                task_data = tasks[task_name]
+                if isinstance(task_data, list):
+                    # Old flat format — migrate
+                    enabled = True
+                    if task_name == "translation" and auto_translate is not None:
+                        enabled = bool(auto_translate)
+                    elif task_name == "interpret" and auto_interpret is not None:
+                        enabled = bool(auto_interpret)
+                    tasks[task_name] = {
+                        "model_ids": task_data,
+                        "enabled": enabled,
+                    }
+                    needs_migration = True
+
+            if needs_migration:
+                data["tasks"] = tasks
+                updated_json = json.dumps(data, ensure_ascii=False)
+                await db.execute(
+                    text("UPDATE user_configs SET ai_models = :config WHERE id = :id"),
+                    {"config": updated_json, "id": config_id}
+                )
+                migrated_count += 1
+
+        await db.commit()
+        if migrated_count > 0:
+            print(f"Migration: migrated {migrated_count} user(s) to abstract task format")
 
 
 async def close_db() -> None:

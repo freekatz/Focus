@@ -37,24 +37,28 @@ class UserResponse(BaseModel):
 
 
 class AIModelConfigSchema(BaseModel):
-    """单个 AI 模型配置"""
-    id: str = ""  # 唯一标识（用于编辑/删除）
-    name: str  # 显示名称
+    """单个 AI 模型配置（响应）"""
+    id: str
+    name: str
     provider: str  # "openai" | "openai_compatible"
-    model: str  # 模型名称
-    api_key: Optional[str] = None  # 仅提交时使用
-    api_key_configured: bool = False  # 响应中标识是否已配置
+    model: str
+    api_key_configured: bool = False  # 响应中不返回实际 key
     base_url: Optional[str] = None
 
 
-class TaskAIConfigSchema(BaseModel):
-    """任务 AI 配置（主模型 + 备用模型列表）"""
-    primary: AIModelConfigSchema
-    fallbacks: List[AIModelConfigSchema] = []
+class AITaskConfigSchema(BaseModel):
+    """单个 AI 任务配置（响应）"""
+    model_ids: List[str] = []   # 有序模型 ID 列表（第一个为主模型）
+    enabled: bool = True        # 是否启用自动执行
+
+class AIModelsConfigSchema(BaseModel):
+    """统一 AI 模型配置（响应）"""
+    models: List[AIModelConfigSchema] = []                     # 全局模型池
+    tasks: dict[str, AITaskConfigSchema] = {}                  # 任务配置 {"translation": {...}, "interpret": {...}}
 
 
 class AIModelConfigUpdateSchema(BaseModel):
-    """AI 模型更新请求"""
+    """单个 AI 模型更新请求"""
     id: str = ""
     name: str
     provider: str
@@ -63,8 +67,26 @@ class AIModelConfigUpdateSchema(BaseModel):
     base_url: Optional[str] = None
 
 
+class AITaskConfigUpdateSchema(BaseModel):
+    """单个 AI 任务配置更新请求"""
+    model_ids: List[str] = []
+    enabled: bool = True
+
+class AIModelsConfigUpdateSchema(BaseModel):
+    """统一 AI 模型配置更新请求"""
+    models: List[AIModelConfigUpdateSchema] = []       # 全局模型池
+    tasks: dict[str, AITaskConfigUpdateSchema] = {}    # 任务配置
+
+
+# Legacy schemas kept for backward compatibility during migration
+class TaskAIConfigSchema(BaseModel):
+    """任务 AI 配置（主模型 + 备用模型列表）- legacy"""
+    primary: AIModelConfigSchema
+    fallbacks: List[AIModelConfigSchema] = []
+
+
 class TaskAIConfigUpdateSchema(BaseModel):
-    """任务 AI 配置更新请求"""
+    """任务 AI 配置更新请求 - legacy"""
     primary: AIModelConfigUpdateSchema
     fallbacks: List[AIModelConfigUpdateSchema] = []
 
@@ -79,17 +101,17 @@ class UserConfigResponse(BaseModel):
     ai_provider: str
     ai_model: str
     ai_base_url: Optional[str]
-    ai_api_key_configured: bool = False  # 标识 AI API Key 是否已配置
+    ai_api_key_configured: bool = False
     sage_prompt: Optional[str]
-    # New multi-model AI config
-    ai_config_translation: Optional[TaskAIConfigSchema] = None  # 翻译/总结模型配置
-    ai_config_interpret: Optional[TaskAIConfigSchema] = None  # 解读模型配置
-    auto_translate_abstract: bool = True  # 是否自动翻译 ArXiv 摘要
-    auto_interpret_arxiv: bool = True  # 是否自动解读 ArXiv 论文
+    # Unified AI models config
+    ai_models_config: Optional[AIModelsConfigSchema] = None
+    # Legacy: kept in response for backward compatibility, derived from ai_models_config.tasks
+    auto_translate_abstract: bool = True
+    auto_interpret_arxiv: bool = True
     zotero_library_id: Optional[str]
     zotero_library_type: str
     zotero_collection: Optional[str]
-    zotero_api_key_configured: bool = False  # 标识 Zotero API Key 是否已配置
+    zotero_api_key_configured: bool = False
     theme: str
     color_theme: str
     font_theme: str
@@ -110,11 +132,10 @@ class UserConfigUpdateRequest(BaseModel):
     ai_api_key: Optional[str] = None
     ai_base_url: Optional[str] = None
     sage_prompt: Optional[str] = None
-    # New multi-model AI config
-    ai_config_translation: Optional[TaskAIConfigUpdateSchema] = None
-    ai_config_interpret: Optional[TaskAIConfigUpdateSchema] = None
-    auto_translate_abstract: Optional[bool] = None  # 是否自动翻译 ArXiv 摘要
-    auto_interpret_arxiv: Optional[bool] = None  # 是否自动解读 ArXiv 论文
+    # Unified AI models config
+    ai_models_config: Optional[AIModelsConfigUpdateSchema] = None
+    auto_translate_abstract: Optional[bool] = None
+    auto_interpret_arxiv: Optional[bool] = None
     zotero_library_id: Optional[str] = None
     zotero_library_type: Optional[str] = None
     zotero_api_key: Optional[str] = None

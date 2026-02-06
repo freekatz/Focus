@@ -15,50 +15,67 @@ from app.schemas.user import (
     UserConfigResponse,
     UserConfigUpdateRequest,
     AIModelConfigSchema,
-    TaskAIConfigSchema,
+    AIModelsConfigSchema,
+    AITaskConfigSchema,
 )
 
 router = APIRouter()
 
 
-def parse_ai_config_to_schema(config_json: Optional[str]) -> Optional[TaskAIConfigSchema]:
-    """将 JSON 配置解析为 Schema（不返回 API Key）"""
+def parse_ai_models_config(config_json: Optional[str], user_config=None) -> Optional[AIModelsConfigSchema]:
+    """将统一 AI 模型 JSON 解析为 Schema（不返回 API Key）"""
     if not config_json:
         return None
 
     try:
-        config = json.loads(config_json)
-        primary_data = config.get("primary")
-        if not primary_data:
-            return None
+        data = json.loads(config_json)
+        models_dict = data.get("models", {})
+        tasks_data = data.get("tasks", {})
 
-        primary = AIModelConfigSchema(
-            id=primary_data.get("id", ""),
-            name=primary_data.get("name", ""),
-            provider=primary_data.get("provider", "openai"),
-            model=primary_data.get("model", ""),
-            api_key_configured=bool(primary_data.get("api_key")),
-            base_url=primary_data.get("base_url"),
-        )
-
-        fallbacks = []
-        for fb_data in config.get("fallbacks", []):
-            fallbacks.append(AIModelConfigSchema(
-                id=fb_data.get("id", ""),
-                name=fb_data.get("name", ""),
-                provider=fb_data.get("provider", "openai"),
-                model=fb_data.get("model", ""),
-                api_key_configured=bool(fb_data.get("api_key")),
-                base_url=fb_data.get("base_url"),
+        models = []
+        for model_id, model_data in models_dict.items():
+            models.append(AIModelConfigSchema(
+                id=model_id,
+                name=model_data.get("name", ""),
+                provider=model_data.get("provider", "openai"),
+                model=model_data.get("model", ""),
+                api_key_configured=bool(model_data.get("api_key")),
+                base_url=model_data.get("base_url"),
             ))
 
-        return TaskAIConfigSchema(primary=primary, fallbacks=fallbacks)
+        # Parse tasks with enabled flags
+        tasks = {}
+        for task_name, task_data in tasks_data.items():
+            if isinstance(task_data, dict):
+                # New format: {model_ids: [...], enabled: bool}
+                tasks[task_name] = AITaskConfigSchema(
+                    model_ids=task_data.get("model_ids", []),
+                    enabled=task_data.get("enabled", True),
+                )
+            elif isinstance(task_data, list):
+                # Legacy format: [id1, id2, ...] — migrate to new format
+                # Use DB column values for enabled flags during migration
+                enabled = True
+                if user_config:
+                    if task_name == "translation":
+                        enabled = getattr(user_config, 'auto_translate_abstract', True)
+                    elif task_name == "interpret":
+                        enabled = getattr(user_config, 'auto_interpret_arxiv', True)
+                tasks[task_name] = AITaskConfigSchema(
+                    model_ids=task_data,
+                    enabled=enabled,
+                )
+
+        return AIModelsConfigSchema(
+            models=models,
+            tasks=tasks,
+        )
     except json.JSONDecodeError:
         return None
 
 
-def update_ai_config_json(existing_json: Optional[str], update_data) -> str:
-    """更新 AI 配置 JSON，保留未更改的 API Key"""
+def update_ai_models_config_json(existing_json: Optional[str], update_data) -> str:
+    """更新统一 AI 模型配置 JSON，保留未更改的 API Key"""
     existing = {}
     if existing_json:
         try:
@@ -66,34 +83,36 @@ def update_ai_config_json(existing_json: Optional[str], update_data) -> str:
         except json.JSONDecodeError:
             pass
 
-    existing_primary = existing.get("primary", {})
-    existing_fallbacks = {fb.get("id"): fb for fb in existing.get("fallbacks", [])}
+    existing_models = existing.get("models", {})
 
-    # 更新主模型
-    primary_update = update_data.primary
-    new_primary = {
-        "id": primary_update.id or existing_primary.get("id") or str(uuid.uuid4())[:8],
-        "name": primary_update.name,
-        "provider": primary_update.provider,
-        "model": primary_update.model,
-        "api_key": primary_update.api_key if primary_update.api_key else existing_primary.get("api_key", ""),
-        "base_url": primary_update.base_url,
+    # 构建新的模型池
+    new_models = {}
+    for model_update in update_data.models:
+        model_id = model_update.id or str(uuid.uuid4())[:8]
+        existing_model = existing_models.get(model_id, {})
+
+        new_models[model_id] = {
+            "name": model_update.name,
+            "provider": model_update.provider,
+            "model": model_update.model,
+            "api_key": model_update.api_key if model_update.api_key else existing_model.get("api_key", ""),
+            "base_url": model_update.base_url,
+        }
+
+    # 构建任务配置（只保留模型池中存在的 ID）
+    valid_ids = set(new_models.keys())
+    tasks = {}
+    for task_name, task_config in update_data.tasks.items():
+        tasks[task_name] = {
+            "model_ids": [mid for mid in task_config.model_ids if mid in valid_ids],
+            "enabled": task_config.enabled,
+        }
+
+    result = {
+        "models": new_models,
+        "tasks": tasks,
     }
-
-    # 更新备用模型
-    new_fallbacks = []
-    for fb_update in update_data.fallbacks:
-        existing_fb = existing_fallbacks.get(fb_update.id, {})
-        new_fallbacks.append({
-            "id": fb_update.id or str(uuid.uuid4())[:8],
-            "name": fb_update.name,
-            "provider": fb_update.provider,
-            "model": fb_update.model,
-            "api_key": fb_update.api_key if fb_update.api_key else existing_fb.get("api_key", ""),
-            "base_url": fb_update.base_url,
-        })
-
-    return json.dumps({"primary": new_primary, "fallbacks": new_fallbacks}, ensure_ascii=False)
+    return json.dumps(result, ensure_ascii=False)
 
 
 class AIValidateRequest(BaseModel):
@@ -121,20 +140,24 @@ async def get_user_config(db: AsyncSession, user_id: int) -> UserConfig:
     return config
 
 
-@router.get("", response_model=UserConfigResponse)
-async def get_config(db: DbSession, current_user: CurrentUser):
-    """获取用户配置"""
-    config = await get_user_config(db, current_user.id)
-
-    # 解析新的 AI 配置
-    ai_config_translation = parse_ai_config_to_schema(
-        getattr(config, 'ai_models_translation', None)
-    )
-    ai_config_interpret = parse_ai_config_to_schema(
-        getattr(config, 'ai_models_interpret', None)
+def build_config_response(config: UserConfig) -> UserConfigResponse:
+    """构建用户配置响应"""
+    ai_models_config = parse_ai_models_config(
+        getattr(config, 'ai_models', None),
+        user_config=config,
     )
 
-    # 构建响应，添加 API Key 配置状态标识
+    # Derive auto flags from tasks config (with fallback to DB columns for legacy)
+    auto_translate = getattr(config, 'auto_translate_abstract', True)
+    auto_interpret = getattr(config, 'auto_interpret_arxiv', True)
+    if ai_models_config and ai_models_config.tasks:
+        trans_task = ai_models_config.tasks.get("translation")
+        if trans_task is not None:
+            auto_translate = trans_task.enabled
+        interp_task = ai_models_config.tasks.get("interpret")
+        if interp_task is not None:
+            auto_interpret = interp_task.enabled
+
     return UserConfigResponse(
         id=config.id,
         unmarked_retention_days=config.unmarked_retention_days,
@@ -143,22 +166,28 @@ async def get_config(db: DbSession, current_user: CurrentUser):
         ai_provider=config.ai_provider,
         ai_model=config.ai_model,
         ai_base_url=config.ai_base_url,
-        ai_api_key_configured=bool(config.ai_api_key),  # 不返回实际 key，只返回是否已配置
+        ai_api_key_configured=bool(config.ai_api_key),
         sage_prompt=config.sage_prompt,
-        ai_config_translation=ai_config_translation,
-        ai_config_interpret=ai_config_interpret,
-        auto_translate_abstract=getattr(config, 'auto_translate_abstract', True),
-        auto_interpret_arxiv=getattr(config, 'auto_interpret_arxiv', True),
+        ai_models_config=ai_models_config,
+        auto_translate_abstract=auto_translate,
+        auto_interpret_arxiv=auto_interpret,
         zotero_library_id=config.zotero_library_id,
         zotero_library_type=config.zotero_library_type,
         zotero_collection=config.zotero_collection,
-        zotero_api_key_configured=bool(config.zotero_api_key),  # 不返回实际 key，只返回是否已配置
+        zotero_api_key_configured=bool(config.zotero_api_key),
         theme=config.theme,
         color_theme=getattr(config, 'color_theme', 'cream'),
         font_theme=getattr(config, 'font_theme', 'sans'),
         custom_theme_json=getattr(config, 'custom_theme_json', None),
         entries_per_page=config.entries_per_page,
     )
+
+
+@router.get("", response_model=UserConfigResponse)
+async def get_config(db: DbSession, current_user: CurrentUser):
+    """获取用户配置"""
+    config = await get_user_config(db, current_user.id)
+    return build_config_response(config)
 
 
 @router.put("", response_model=UserConfigResponse)
@@ -172,20 +201,19 @@ async def update_config(
 
     update_data = data.model_dump(exclude_unset=True)
 
-    # 特殊处理 AI 配置更新
-    if 'ai_config_translation' in update_data and update_data['ai_config_translation']:
-        config.ai_models_translation = update_ai_config_json(
-            config.ai_models_translation,
-            data.ai_config_translation
+    # 特殊处理统一 AI 模型配置更新
+    if 'ai_models_config' in update_data and update_data['ai_models_config']:
+        config.ai_models = update_ai_models_config_json(
+            config.ai_models,
+            data.ai_models_config
         )
-        del update_data['ai_config_translation']
-
-    if 'ai_config_interpret' in update_data and update_data['ai_config_interpret']:
-        config.ai_models_interpret = update_ai_config_json(
-            config.ai_models_interpret,
-            data.ai_config_interpret
-        )
-        del update_data['ai_config_interpret']
+        # Sync enabled flags to legacy DB columns for backward compatibility
+        for task_name, task_config in data.ai_models_config.tasks.items():
+            if task_name == "translation":
+                config.auto_translate_abstract = task_config.enabled
+            elif task_name == "interpret":
+                config.auto_interpret_arxiv = task_config.enabled
+        del update_data['ai_models_config']
 
     # 更新其他字段
     for field, value in update_data.items():
@@ -194,39 +222,7 @@ async def update_config(
     await db.commit()
     await db.refresh(config)
 
-    # 解析新的 AI 配置
-    ai_config_translation = parse_ai_config_to_schema(
-        getattr(config, 'ai_models_translation', None)
-    )
-    ai_config_interpret = parse_ai_config_to_schema(
-        getattr(config, 'ai_models_interpret', None)
-    )
-
-    # 返回响应，添加 API Key 配置状态标识
-    return UserConfigResponse(
-        id=config.id,
-        unmarked_retention_days=config.unmarked_retention_days,
-        trash_retention_days=config.trash_retention_days,
-        archive_after_days=config.archive_after_days,
-        ai_provider=config.ai_provider,
-        ai_model=config.ai_model,
-        ai_base_url=config.ai_base_url,
-        ai_api_key_configured=bool(config.ai_api_key),
-        sage_prompt=config.sage_prompt,
-        ai_config_translation=ai_config_translation,
-        ai_config_interpret=ai_config_interpret,
-        auto_translate_abstract=getattr(config, 'auto_translate_abstract', True),
-        auto_interpret_arxiv=getattr(config, 'auto_interpret_arxiv', True),
-        zotero_library_id=config.zotero_library_id,
-        zotero_library_type=config.zotero_library_type,
-        zotero_collection=config.zotero_collection,
-        zotero_api_key_configured=bool(config.zotero_api_key),
-        theme=config.theme,
-        color_theme=getattr(config, 'color_theme', 'cream'),
-        font_theme=getattr(config, 'font_theme', 'sans'),
-        custom_theme_json=getattr(config, 'custom_theme_json', None),
-        entries_per_page=config.entries_per_page,
-    )
+    return build_config_response(config)
 
 
 @router.post("/ai/validate", response_model=AIValidateResponse)

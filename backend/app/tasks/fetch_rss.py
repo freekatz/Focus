@@ -120,8 +120,10 @@ async def trigger_arxiv_translation(db, source_id: int):
 
     config = user.config
 
-    # 检查是否开启自动翻译（默认开启）
-    auto_translate = getattr(config, 'auto_translate_abstract', True)
+    # 检查是否开启自动翻译（优先从统一配置读取，回退到旧字段）
+    from app.services.ai_executor import is_task_enabled
+    ai_models_json = getattr(config, 'ai_models', None)
+    auto_translate = is_task_enabled(ai_models_json, "translation") if ai_models_json else getattr(config, 'auto_translate_abstract', True)
     if not auto_translate:
         logger.info("Auto translate is disabled, skipping ArXiv translation")
         return
@@ -338,8 +340,8 @@ async def scan_pending_arxiv_tasks():
             asyncio.create_task(batch_translate_abstracts(untranslated, config))
 
         # 2. 扫描已保存但未解读的 ArXiv 文章（包括解读失败需要重试的）
-        # 检查是否开启自动解读（默认开启）
-        auto_interpret = getattr(config, 'auto_interpret_arxiv', True)
+        # 检查是否开启自动解读（优先从统一配置读取，回退到旧字段）
+        auto_interpret = is_task_enabled(ai_models_json, "interpret") if ai_models_json else getattr(config, 'auto_interpret_arxiv', True)
         if not auto_interpret:
             logger.info("Auto ArXiv interpretation disabled, skipping interpretation scan")
             uninterpreted = []

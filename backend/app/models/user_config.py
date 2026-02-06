@@ -35,9 +35,12 @@ class UserConfig(Base):
     ai_base_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     sage_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 智者提示词
 
-    # AI 多模型配置 (JSON format with primary + fallbacks)
-    ai_models_translation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 翻译/总结模型配置
-    ai_models_interpret: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 解读模型配置
+    # AI 多模型配置 (JSON format with primary + fallbacks) - legacy fields
+    ai_models_translation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 翻译/总结模型配置 (legacy)
+    ai_models_interpret: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 解读模型配置 (legacy)
+
+    # AI 统一模型池配置 (JSON: {models: {id: config}, tasks: {translation: [ids], interpret: [ids]}})
+    ai_models: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Zotero 配置
     zotero_library_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)

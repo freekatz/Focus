@@ -9,9 +9,16 @@ export interface AIModelConfig {
   base_url?: string | null;
 }
 
-export interface TaskAIConfig {
-  primary: AIModelConfig;
-  fallbacks: AIModelConfig[];
+// Single AI task config
+export interface AITaskConfig {
+  model_ids: string[];    // Ordered model ID list (first = primary)
+  enabled: boolean;       // Whether this task auto-runs
+}
+
+// Unified AI models config (model pool + abstract tasks)
+export interface AIModelsConfig {
+  models: AIModelConfig[];                    // Global model pool
+  tasks: Record<string, AITaskConfig>;        // Task configs keyed by task type
 }
 
 export interface UserConfig {
@@ -28,9 +35,8 @@ export interface UserConfig {
   ai_api_key_configured: boolean;
   ai_base_url: string | null;
   sage_prompt: string | null;
-  // New multi-model AI config
-  ai_config_translation?: TaskAIConfig | null;
-  ai_config_interpret?: TaskAIConfig | null;
+  // Unified AI models config
+  ai_models_config?: AIModelsConfig | null;
   // ArXiv config
   auto_translate_abstract: boolean;
   auto_interpret_arxiv: boolean;
@@ -58,9 +64,14 @@ export interface AIModelConfigUpdate {
   base_url?: string | null;
 }
 
-export interface TaskAIConfigUpdate {
-  primary: AIModelConfigUpdate;
-  fallbacks: AIModelConfigUpdate[];
+export interface AITaskConfigUpdate {
+  model_ids: string[];
+  enabled: boolean;
+}
+
+export interface AIModelsConfigUpdate {
+  models: AIModelConfigUpdate[];
+  tasks: Record<string, AITaskConfigUpdate>;
 }
 
 export interface UserConfigUpdateRequest {
@@ -70,9 +81,8 @@ export interface UserConfigUpdateRequest {
   ai_api_key?: string;
   ai_base_url?: string;
   sage_prompt?: string;
-  // New multi-model AI config
-  ai_config_translation?: TaskAIConfigUpdate;
-  ai_config_interpret?: TaskAIConfigUpdate;
+  // Unified AI models config
+  ai_models_config?: AIModelsConfigUpdate;
   auto_translate_abstract?: boolean;
   auto_interpret_arxiv?: boolean;
   zotero_library_id?: string;
