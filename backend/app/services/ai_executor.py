@@ -34,6 +34,10 @@ def parse_unified_ai_config(config_json: Optional[str], task_type: str) -> List[
     """
     从统一 AI 模型 JSON 中解析指定任务的模型列表
 
+    支持两种存储格式:
+    1. 新格式 (provider-grouped): {providers: {pid: {..., models: {mid: {...}}}}, tasks: {...}}
+    2. 旧格式 (flat models): {models: {id: {...}}, tasks: {...}}
+
     Args:
         config_json: 统一格式的 JSON 配置字符串
         task_type: 任务类型 ("translation" 或 "interpret")
@@ -46,11 +50,11 @@ def parse_unified_ai_config(config_json: Optional[str], task_type: str) -> List[
 
     try:
         data = json.loads(config_json)
+        providers_data = data.get("providers", {})
         models_dict = data.get("models", {})
         task_data = data.get("tasks", {}).get(task_type, {})
 
-        # Support both new format {model_ids: [...], enabled: bool}
-        # and legacy format [id1, id2, ...]
+        # Extract task IDs
         if isinstance(task_data, dict):
             task_ids = task_data.get("model_ids", [])
         elif isinstance(task_data, list):
@@ -59,17 +63,40 @@ def parse_unified_ai_config(config_json: Optional[str], task_type: str) -> List[
             task_ids = []
 
         result = []
-        for model_id in task_ids:
-            model_data = models_dict.get(model_id)
-            if model_data and model_data.get("api_key"):
+
+        if providers_data:
+            # New provider-grouped format: compound IDs "pid:mid"
+            for compound_id in task_ids:
+                if ":" not in compound_id:
+                    continue
+                pid, mid = compound_id.split(":", 1)
+                provider = providers_data.get(pid)
+                if not provider or not provider.get("api_key"):
+                    continue
+                model_entry = provider.get("models", {}).get(mid)
+                if not model_entry:
+                    continue
                 result.append(AIModelConfig(
-                    id=model_id,
-                    name=model_data.get("name", ""),
-                    provider=model_data.get("provider", "openai"),
-                    model=model_data.get("model", ""),
-                    api_key=model_data.get("api_key", ""),
-                    base_url=model_data.get("base_url"),
+                    id=compound_id,
+                    name=model_entry.get("name", ""),
+                    provider=provider.get("provider", "openai"),
+                    model=model_entry.get("model", ""),
+                    api_key=provider.get("api_key", ""),
+                    base_url=provider.get("base_url"),
                 ))
+        else:
+            # Legacy flat format: plain model IDs
+            for model_id in task_ids:
+                model_data = models_dict.get(model_id)
+                if model_data and model_data.get("api_key"):
+                    result.append(AIModelConfig(
+                        id=model_id,
+                        name=model_data.get("name", ""),
+                        provider=model_data.get("provider", "openai"),
+                        model=model_data.get("model", ""),
+                        api_key=model_data.get("api_key", ""),
+                        base_url=model_data.get("base_url"),
+                    ))
 
         return result
     except json.JSONDecodeError:

@@ -14,7 +14,8 @@ from app.models.user_config import UserConfig
 from app.schemas.user import (
     UserConfigResponse,
     UserConfigUpdateRequest,
-    AIModelConfigSchema,
+    AIProviderSchema,
+    AIModelEntrySchema,
     AIModelsConfigSchema,
     AITaskConfigSchema,
 )
@@ -23,55 +24,95 @@ router = APIRouter()
 
 
 def parse_ai_models_config(config_json: Optional[str], user_config=None) -> Optional[AIModelsConfigSchema]:
-    """将统一 AI 模型 JSON 解析为 Schema（不返回 API Key）"""
+    """将统一 AI 模型 JSON 解析为 Schema（不返回 API Key）
+
+    支持两种存储格式:
+    1. 新格式 (provider-grouped): {providers: {pid: {name, provider, api_key, base_url, models: {mid: {name, model}}}}, tasks: {...}}
+    2. 旧格式 (flat models): {models: {id: {...}}, tasks: {...}}
+    """
     if not config_json:
         return None
 
     try:
         data = json.loads(config_json)
-        models_dict = data.get("models", {})
-        tasks_data = data.get("tasks", {})
-
-        models = []
-        for model_id, model_data in models_dict.items():
-            models.append(AIModelConfigSchema(
-                id=model_id,
-                name=model_data.get("name", ""),
-                provider=model_data.get("provider", "openai"),
-                model=model_data.get("model", ""),
-                api_key_configured=bool(model_data.get("api_key")),
-                base_url=model_data.get("base_url"),
-            ))
-
-        # Parse tasks with enabled flags
-        tasks = {}
-        for task_name, task_data in tasks_data.items():
-            if isinstance(task_data, dict):
-                # New format: {model_ids: [...], enabled: bool}
-                tasks[task_name] = AITaskConfigSchema(
-                    model_ids=task_data.get("model_ids", []),
-                    enabled=task_data.get("enabled", True),
-                )
-            elif isinstance(task_data, list):
-                # Legacy format: [id1, id2, ...] — migrate to new format
-                # Use DB column values for enabled flags during migration
-                enabled = True
-                if user_config:
-                    if task_name == "translation":
-                        enabled = getattr(user_config, 'auto_translate_abstract', True)
-                    elif task_name == "interpret":
-                        enabled = getattr(user_config, 'auto_interpret_arxiv', True)
-                tasks[task_name] = AITaskConfigSchema(
-                    model_ids=task_data,
-                    enabled=enabled,
-                )
-
-        return AIModelsConfigSchema(
-            models=models,
-            tasks=tasks,
-        )
     except json.JSONDecodeError:
         return None
+
+    # --- Parse providers ---
+    providers_data = data.get("providers", {})
+    tasks_data = data.get("tasks", {})
+
+    if providers_data:
+        # New provider-grouped format
+        providers = []
+        for pid, pdata in providers_data.items():
+            models = []
+            for mid, mdata in pdata.get("models", {}).items():
+                models.append(AIModelEntrySchema(
+                    id=mid,
+                    name=mdata.get("name", ""),
+                    model=mdata.get("model", ""),
+                ))
+            providers.append(AIProviderSchema(
+                id=pid,
+                name=pdata.get("name", ""),
+                provider=pdata.get("provider", "openai_compatible"),
+                api_key_configured=bool(pdata.get("api_key")),
+                base_url=pdata.get("base_url"),
+                models=models,
+            ))
+    else:
+        # Legacy flat format — convert models to single-model providers
+        models_dict = data.get("models", {})
+        providers = []
+        for model_id, model_data in models_dict.items():
+            # Each old model becomes a provider with one model
+            providers.append(AIProviderSchema(
+                id=model_id,
+                name=model_data.get("name", ""),
+                provider=model_data.get("provider", "openai_compatible"),
+                api_key_configured=bool(model_data.get("api_key")),
+                base_url=model_data.get("base_url"),
+                models=[AIModelEntrySchema(
+                    id="default",
+                    name=model_data.get("name", ""),
+                    model=model_data.get("model", ""),
+                )],
+            ))
+
+    # --- Parse tasks ---
+    tasks = {}
+    for task_name, task_data in tasks_data.items():
+        if isinstance(task_data, dict):
+            raw_ids = task_data.get("model_ids", [])
+            enabled = task_data.get("enabled", True)
+        elif isinstance(task_data, list):
+            # Legacy flat list — convert old IDs to compound "pid:default"
+            raw_ids = task_data
+            enabled = True
+            if user_config:
+                if task_name == "translation":
+                    enabled = getattr(user_config, 'auto_translate_abstract', True)
+                elif task_name == "interpret":
+                    enabled = getattr(user_config, 'auto_interpret_arxiv', True)
+        else:
+            raw_ids = []
+            enabled = True
+
+        # Normalize IDs: old flat IDs (no ":") become "pid:default"
+        model_ids = []
+        for mid in raw_ids:
+            if ":" not in mid and not providers_data:
+                model_ids.append(f"{mid}:default")
+            else:
+                model_ids.append(mid)
+
+        tasks[task_name] = AITaskConfigSchema(
+            model_ids=model_ids,
+            enabled=enabled,
+        )
+
+    return AIModelsConfigSchema(providers=providers, tasks=tasks)
 
 
 def update_ai_models_config_json(existing_json: Optional[str], update_data) -> str:
@@ -83,33 +124,43 @@ def update_ai_models_config_json(existing_json: Optional[str], update_data) -> s
         except json.JSONDecodeError:
             pass
 
-    existing_models = existing.get("models", {})
+    existing_providers = existing.get("providers", {})
 
-    # 构建新的模型池
-    new_models = {}
-    for model_update in update_data.models:
-        model_id = model_update.id or str(uuid.uuid4())[:8]
-        existing_model = existing_models.get(model_id, {})
+    # 构建新的 providers
+    new_providers = {}
+    all_compound_ids = set()
 
-        new_models[model_id] = {
-            "name": model_update.name,
-            "provider": model_update.provider,
-            "model": model_update.model,
-            "api_key": model_update.api_key if model_update.api_key else existing_model.get("api_key", ""),
-            "base_url": model_update.base_url,
+    for provider_update in update_data.providers:
+        pid = provider_update.id or str(uuid.uuid4())[:8]
+        existing_provider = existing_providers.get(pid, {})
+
+        models = {}
+        for model_update in provider_update.models:
+            mid = model_update.id or str(uuid.uuid4())[:6]
+            models[mid] = {
+                "name": model_update.name,
+                "model": model_update.model,
+            }
+            all_compound_ids.add(f"{pid}:{mid}")
+
+        new_providers[pid] = {
+            "name": provider_update.name,
+            "provider": provider_update.provider,
+            "api_key": provider_update.api_key if provider_update.api_key else existing_provider.get("api_key", ""),
+            "base_url": provider_update.base_url,
+            "models": models,
         }
 
-    # 构建任务配置（只保留模型池中存在的 ID）
-    valid_ids = set(new_models.keys())
+    # 构建任务配置（只保留有效的复合 ID）
     tasks = {}
     for task_name, task_config in update_data.tasks.items():
         tasks[task_name] = {
-            "model_ids": [mid for mid in task_config.model_ids if mid in valid_ids],
+            "model_ids": [mid for mid in task_config.model_ids if mid in all_compound_ids],
             "enabled": task_config.enabled,
         }
 
     result = {
-        "models": new_models,
+        "providers": new_providers,
         "tasks": tasks,
     }
     return json.dumps(result, ensure_ascii=False)
@@ -230,11 +281,7 @@ async def validate_ai_api_key_endpoint(
     data: AIValidateRequest,
     current_user: CurrentUser,
 ):
-    """验证 AI API Key 是否有效
-
-    发送一个简单的测试请求来验证 API Key 的有效性。
-    可用于在保存配置前先验证 API Key。
-    """
+    """验证 AI API Key 是否有效"""
     from app.services.arxiv_service import validate_ai_api_key
 
     result = await validate_ai_api_key(

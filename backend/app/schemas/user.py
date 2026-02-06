@@ -36,35 +36,54 @@ class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class AIModelConfigSchema(BaseModel):
-    """单个 AI 模型配置（响应）"""
+# --- AI Model Config Schemas (provider-grouped) ---
+
+class AIModelEntrySchema(BaseModel):
+    """单个模型条目（响应）"""
+    id: str
+    name: str
+    model: str  # 发送给 API 的 model ID
+
+
+class AIProviderSchema(BaseModel):
+    """AI 服务商配置（响应）"""
     id: str
     name: str
     provider: str  # "openai" | "openai_compatible"
-    model: str
-    api_key_configured: bool = False  # 响应中不返回实际 key
+    api_key_configured: bool = False
     base_url: Optional[str] = None
+    models: List[AIModelEntrySchema] = []
 
 
 class AITaskConfigSchema(BaseModel):
     """单个 AI 任务配置（响应）"""
-    model_ids: List[str] = []   # 有序模型 ID 列表（第一个为主模型）
-    enabled: bool = True        # 是否启用自动执行
+    model_ids: List[str] = []   # 有序复合 ID 列表 "provider_id:model_id"
+    enabled: bool = True
+
 
 class AIModelsConfigSchema(BaseModel):
     """统一 AI 模型配置（响应）"""
-    models: List[AIModelConfigSchema] = []                     # 全局模型池
-    tasks: dict[str, AITaskConfigSchema] = {}                  # 任务配置 {"translation": {...}, "interpret": {...}}
+    providers: List[AIProviderSchema] = []
+    tasks: dict[str, AITaskConfigSchema] = {}
 
 
-class AIModelConfigUpdateSchema(BaseModel):
-    """单个 AI 模型更新请求"""
+# Update schemas
+
+class AIModelEntryUpdateSchema(BaseModel):
+    """单个模型条目更新请求"""
+    id: str = ""
+    name: str
+    model: str
+
+
+class AIProviderUpdateSchema(BaseModel):
+    """AI 服务商更新请求"""
     id: str = ""
     name: str
     provider: str
-    model: str
     api_key: Optional[str] = None
     base_url: Optional[str] = None
+    models: List[AIModelEntryUpdateSchema] = []
 
 
 class AITaskConfigUpdateSchema(BaseModel):
@@ -72,23 +91,22 @@ class AITaskConfigUpdateSchema(BaseModel):
     model_ids: List[str] = []
     enabled: bool = True
 
+
 class AIModelsConfigUpdateSchema(BaseModel):
     """统一 AI 模型配置更新请求"""
-    models: List[AIModelConfigUpdateSchema] = []       # 全局模型池
-    tasks: dict[str, AITaskConfigUpdateSchema] = {}    # 任务配置
+    providers: List[AIProviderUpdateSchema] = []
+    tasks: dict[str, AITaskConfigUpdateSchema] = {}
 
 
-# Legacy schemas kept for backward compatibility during migration
-class TaskAIConfigSchema(BaseModel):
-    """任务 AI 配置（主模型 + 备用模型列表）- legacy"""
-    primary: AIModelConfigSchema
-    fallbacks: List[AIModelConfigSchema] = []
-
-
-class TaskAIConfigUpdateSchema(BaseModel):
-    """任务 AI 配置更新请求 - legacy"""
-    primary: AIModelConfigUpdateSchema
-    fallbacks: List[AIModelConfigUpdateSchema] = []
+# Legacy flat model schema — kept for backward compatibility
+class AIModelConfigSchema(BaseModel):
+    """单个 AI 模型配置（响应）- legacy flat format"""
+    id: str
+    name: str
+    provider: str
+    model: str
+    api_key_configured: bool = False
+    base_url: Optional[str] = None
 
 
 class UserConfigResponse(BaseModel):
@@ -105,7 +123,7 @@ class UserConfigResponse(BaseModel):
     sage_prompt: Optional[str]
     # Unified AI models config
     ai_models_config: Optional[AIModelsConfigSchema] = None
-    # Legacy: kept in response for backward compatibility, derived from ai_models_config.tasks
+    # Legacy: kept in response for backward compatibility, derived from tasks
     auto_translate_abstract: bool = True
     auto_interpret_arxiv: bool = True
     zotero_library_id: Optional[str]

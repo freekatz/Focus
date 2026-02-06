@@ -9,7 +9,7 @@ import {
   type ColorThemeId,
   validateCustomTheme,
 } from "../../themes";
-import type { UserConfig, AIModelConfig, AIModelsConfig } from "../../types";
+import type { UserConfig, AIProvider, AIModelEntry, AIModelsConfig, AITaskConfig } from "../../types";
 
 type FontTheme = "sans" | "serif" | "mono";
 type ThemeMode = "light" | "dark" | "system";
@@ -96,35 +96,35 @@ function Row({
   );
 }
 
-// Model Edit Modal Component
-function ModelEditModal({
+// Provider Edit Modal Component — edits provider credentials + inline model list
+function ProviderEditModal({
   isOpen,
-  model,
+  provider,
   onSave,
   onClose,
   darkMode,
   t,
 }: {
   isOpen: boolean;
-  model: AIModelConfig | null;
-  onSave: (model: AIModelConfig) => void;
+  provider: AIProvider | null;
+  onSave: (provider: AIProvider) => void;
   onClose: () => void;
   darkMode: boolean;
   t: (key: string) => string;
 }) {
-  const [formData, setFormData] = useState<AIModelConfig>({
+  const [formData, setFormData] = useState<AIProvider>({
     id: "",
     name: "",
     provider: "openai_compatible",
-    model: "",
     api_key: "",
     base_url: "",
+    models: [],
   });
 
   useEffect(() => {
-    if (model) {
+    if (provider) {
       setFormData({
-        ...model,
+        ...provider,
         api_key: "", // Don't show existing API key
       });
     } else {
@@ -132,19 +132,46 @@ function ModelEditModal({
         id: crypto.randomUUID().slice(0, 8),
         name: "",
         provider: "openai_compatible",
-        model: "",
         api_key: "",
         base_url: "",
+        models: [{ id: crypto.randomUUID().slice(0, 6), name: "", model: "" }],
       });
     }
-  }, [model, isOpen]);
+  }, [provider, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    // Filter out models with empty model ID
+    const validModels = formData.models.filter((m) => m.model.trim());
+    onSave({ ...formData, models: validModels });
   };
+
+  const addModelEntry = () => {
+    setFormData({
+      ...formData,
+      models: [...formData.models, { id: crypto.randomUUID().slice(0, 6), name: "", model: "" }],
+    });
+  };
+
+  const updateModelEntry = (index: number, field: keyof AIModelEntry, value: string) => {
+    const newModels = [...formData.models];
+    newModels[index] = { ...newModels[index], [field]: value };
+    // Auto-fill name from model ID if name is empty
+    if (field === "model" && !newModels[index].name) {
+      newModels[index].name = value;
+    }
+    setFormData({ ...formData, models: newModels });
+  };
+
+  const removeModelEntry = (index: number) => {
+    const newModels = formData.models.filter((_, i) => i !== index);
+    setFormData({ ...formData, models: newModels });
+  };
+
+  const inputCls = "w-full min-h-touch p-3 rounded-xl border text-body-sm bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary focus:outline-none focus:ring-1 focus:ring-theme-accent";
+  const labelCls = "block text-caption font-medium uppercase tracking-wider mb-2 text-theme-text-tertiary";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -152,154 +179,122 @@ function ModelEditModal({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div
-        className={`relative w-full max-w-md rounded-2xl shadow-xl ${
-          darkMode ? "bg-theme-surface" : "bg-theme-surface"
-        }`}
-      >
-        <div
-          className={`flex items-center justify-between p-4 border-b ${
-            darkMode ? "border-theme-border" : "border-theme-border"
-          }`}
-        >
-          <h3
-            className={`text-h3 font-bold ${darkMode ? "text-theme-text" : "text-theme-text"}`}
-          >
-            {t("settings.editModel")}
+      <div className="relative w-full max-w-md max-h-[90vh] rounded-2xl shadow-xl bg-theme-surface flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-theme-border flex-shrink-0">
+          <h3 className="text-h3 font-bold text-theme-text">
+            {provider ? t("settings.editProvider") : t("settings.addProvider")}
           </h3>
           <button
             type="button"
             onClick={onClose}
             onMouseDown={(e) => e.preventDefault()}
-            className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${
-              darkMode
-                ? "hover:bg-theme-muted text-theme-text-secondary"
-                : "hover:bg-theme-muted text-theme-text-secondary"
-            }`}
+            className="min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors hover:bg-theme-muted text-theme-text-secondary"
           >
             <Icons.X />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-5 py-4 md:px-6 space-y-4">
+        <form onSubmit={handleSubmit} className="px-5 py-4 md:px-6 space-y-4 overflow-y-auto flex-1">
+          {/* Provider Name */}
           <div>
-            <label
-              className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
-                darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
-              }`}
-            >
-              {t("settings.modelName")}
-            </label>
+            <label className={labelCls}>{t("settings.providerName")}</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              placeholder="Gemini Flash"
-              className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${
-                darkMode
-                  ? "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
-                  : "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
-              } focus:outline-none focus:ring-1 focus:ring-theme-accent`}
+              placeholder="Google AI"
+              className={inputCls}
             />
           </div>
 
+          {/* Provider Type */}
           <div>
-            <label
-              className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
-                darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
-              }`}
-            >
-              {t("settings.modelProvider")}
-            </label>
+            <label className={labelCls}>{t("settings.providerType")}</label>
             <select
               value={formData.provider}
               onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-              className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${
-                darkMode
-                  ? "bg-theme-muted border-theme-border text-theme-text"
-                  : "bg-theme-muted border-theme-border text-theme-text"
-              } focus:outline-none focus:ring-1 focus:ring-theme-accent`}
+              className={inputCls}
             >
               <option value="openai">{t("settings.openai")}</option>
               <option value="openai_compatible">{t("settings.openaiCompatible")}</option>
             </select>
           </div>
 
+          {/* API Key */}
           <div>
-            <label
-              className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
-                darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
-              }`}
-            >
-              {t("settings.modelId")}
-            </label>
-            <input
-              type="text"
-              value={formData.model}
-              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-              required
-              placeholder="gemini-2.0-flash"
-              className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${
-                darkMode
-                  ? "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
-                  : "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
-              } focus:outline-none focus:ring-1 focus:ring-theme-accent`}
-            />
-          </div>
-
-          <div>
-            <label
-              className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
-                darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
-              }`}
-            >
-              {t("settings.apiKey")}
-            </label>
+            <label className={labelCls}>{t("settings.apiKey")}</label>
             <input
               type="password"
               value={formData.api_key || ""}
               onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
-              placeholder={model?.api_key_configured ? "••••••••" : t("settings.enterApiKey")}
-              className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${
-                darkMode
-                  ? "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
-                  : "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
-              } focus:outline-none focus:ring-1 focus:ring-theme-accent`}
+              placeholder={provider?.api_key_configured ? "••••••••" : t("settings.enterApiKey")}
+              className={inputCls}
             />
           </div>
 
+          {/* Base URL */}
           <div>
-            <label
-              className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
-                darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
-              }`}
-            >
-              {t("settings.apiBaseUrl")}
-            </label>
+            <label className={labelCls}>{t("settings.apiBaseUrl")}</label>
             <input
               type="text"
               value={formData.base_url || ""}
               onChange={(e) => setFormData({ ...formData, base_url: e.target.value || undefined })}
               placeholder="https://api.openai.com/v1"
-              className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${
-                darkMode
-                  ? "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
-                  : "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
-              } focus:outline-none focus:ring-1 focus:ring-theme-accent`}
+              className={inputCls}
             />
+          </div>
+
+          {/* Models list */}
+          <div>
+            <label className={labelCls}>
+              {t("settings.modelCount", { count: formData.models.length })}
+            </label>
+            <div className="space-y-2">
+              {formData.models.map((model, index) => (
+                <div key={model.id} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={model.name}
+                    onChange={(e) => updateModelEntry(index, "name", e.target.value)}
+                    placeholder={t("settings.modelName")}
+                    className="flex-1 min-h-touch p-2 rounded-lg border text-body-sm bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:outline-none focus:ring-1 focus:ring-theme-accent"
+                  />
+                  <input
+                    type="text"
+                    value={model.model}
+                    onChange={(e) => updateModelEntry(index, "model", e.target.value)}
+                    placeholder={t("settings.modelId")}
+                    required
+                    className="flex-1 min-h-touch p-2 rounded-lg border text-body-sm bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:outline-none focus:ring-1 focus:ring-theme-accent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeModelEntry(index)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded transition-colors cursor-pointer flex-shrink-0"
+                  >
+                    <Icons.X />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addModelEntry}
+                onMouseDown={(e) => e.preventDefault()}
+                className="w-full py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer text-theme-accent hover:bg-theme-muted"
+              >
+                {t("settings.addModelToProvider")}
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              className={`flex-1 min-h-touch py-3 rounded-xl text-ui font-medium transition-colors ${
-                darkMode
-                  ? "bg-theme-accent hover:bg-theme-accent-hover text-white"
-                  : "bg-theme-accent hover:bg-theme-accent-hover text-white"
-              }`}
+              className="flex-1 min-h-touch py-3 rounded-xl text-ui font-medium transition-colors bg-theme-accent hover:bg-theme-accent-hover text-white"
             >
-              {t("settings.saveModel")}
+              {t("settings.saveProvider")}
             </button>
           </div>
         </form>
@@ -308,122 +303,149 @@ function ModelEditModal({
   );
 }
 
-// Model Pool Section - manages the global model pool
-function ModelPoolSection({
-  models,
+// Provider List Section - collapsible provider cards with nested models
+function ProviderListSection({
+  providers,
   tasks,
-  onEditModel,
-  onDeleteModel,
-  onAddModel,
+  onEditProvider,
+  onDeleteProvider,
+  onAddProvider,
   darkMode,
   t,
 }: {
-  models: AIModelConfig[];
-  tasks: Record<string, { model_ids: string[]; enabled: boolean }>;
-  onEditModel: (model: AIModelConfig) => void;
-  onDeleteModel: (modelId: string) => void;
-  onAddModel: () => void;
+  providers: AIProvider[];
+  tasks: Record<string, AITaskConfig>;
+  onEditProvider: (provider: AIProvider) => void;
+  onDeleteProvider: (providerId: string) => void;
+  onAddProvider: () => void;
   darkMode: boolean;
-  t: (key: string) => string;
+  t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
-  const handleDelete = (model: AIModelConfig) => {
-    const isUsed = Object.values(tasks).some((task) => task.model_ids.includes(model.id));
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleDelete = (provider: AIProvider) => {
+    // Check if any model in this provider is used by tasks
+    const isUsed = Object.values(tasks).some((task) =>
+      task.model_ids.some((cid) => cid.startsWith(provider.id + ":"))
+    );
     if (isUsed) {
-      alert(t("settings.modelInUse"));
+      alert(t("settings.providerInUse"));
       return;
     }
-    if (confirm(t("settings.confirmDeleteModel"))) {
-      onDeleteModel(model.id);
+    if (confirm(t("settings.confirmDeleteProvider"))) {
+      onDeleteProvider(provider.id);
     }
   };
 
   return (
     <div className="space-y-2">
-      <div
-        className={`text-body-sm font-medium ${
-          darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
-        }`}
-      >
-        {t("settings.myModels")}
+      <div className="text-body-sm font-medium text-theme-text-secondary">
+        {t("settings.myProviders")}
       </div>
-      <div
-        className={`rounded-xl border p-2 space-y-2 ${
-          darkMode ? "border-theme-border" : "border-theme-border"
-        }`}
-      >
-        {models.map((model) => (
-          <div
-            key={model.id}
-            className={`flex items-center justify-between py-2 px-3 rounded-lg ${
-              darkMode ? "bg-theme-muted" : "bg-theme-muted"
-            }`}
-          >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="font-medium text-sm text-theme-text truncate">
-                {model.name}
-              </span>
-              <span className="text-xs text-theme-text-tertiary truncate hidden sm:inline">
-                {model.model}
-              </span>
+      <div className="rounded-xl border border-theme-border p-2 space-y-2">
+        {providers.map((provider) => {
+          const isExpanded = expandedIds.has(provider.id);
+          return (
+            <div
+              key={provider.id}
+              className="rounded-lg bg-theme-muted overflow-hidden"
+            >
+              {/* Collapsed header */}
+              <div className="flex items-center justify-between py-2 px-3">
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(provider.id)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                >
+                  <span className="w-4 h-4 flex-shrink-0 text-theme-text-tertiary transition-transform" style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)" }}>
+                    <Icons.ChevronDown />
+                  </span>
+                  <span className="font-medium text-sm text-theme-text truncate">
+                    {provider.name}
+                  </span>
+                  <span className="text-xs text-theme-text-tertiary flex-shrink-0">
+                    {t("settings.modelCount", { count: provider.models.length })}
+                  </span>
+                </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onEditProvider(provider)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    className="p-1.5 rounded transition-colors cursor-pointer hover:bg-theme-border text-theme-text-secondary"
+                    title={t("common.edit")}
+                  >
+                    <Icons.Edit />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(provider)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded transition-colors cursor-pointer"
+                    title={t("common.delete")}
+                  >
+                    <Icons.Trash />
+                  </button>
+                </div>
+              </div>
+              {/* Expanded model list */}
+              {isExpanded && provider.models.length > 0 && (
+                <div className="px-3 pb-2 pt-0 ml-6 space-y-1">
+                  {provider.models.map((model) => (
+                    <div
+                      key={model.id}
+                      className="flex items-center gap-2 py-1 text-xs text-theme-text-secondary"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-theme-accent flex-shrink-0" />
+                      <span className="truncate">{model.name || model.model}</span>
+                      <span className="text-theme-text-tertiary truncate hidden sm:inline">
+                        {model.model}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => onEditModel(model)}
-                onMouseDown={(e) => e.preventDefault()}
-                className={`p-1.5 rounded transition-colors cursor-pointer ${
-                  darkMode
-                    ? "hover:bg-theme-border text-theme-text-secondary"
-                    : "hover:bg-theme-border text-theme-text-secondary"
-                }`}
-                title={t("common.edit")}
-              >
-                <Icons.Edit />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(model)}
-                onMouseDown={(e) => e.preventDefault()}
-                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded transition-colors cursor-pointer"
-                title={t("common.delete")}
-              >
-                <Icons.Trash />
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         <button
           type="button"
-          onClick={onAddModel}
+          onClick={onAddProvider}
           onMouseDown={(e) => e.preventDefault()}
-          className={`w-full py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
-            darkMode
-              ? "text-theme-accent hover:bg-theme-muted"
-              : "text-theme-accent hover:bg-theme-muted"
-          }`}
+          className="w-full py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer text-theme-accent hover:bg-theme-muted"
         >
-          {t("settings.addModel")}
+          {t("settings.addProvider")}
         </button>
       </div>
     </div>
   );
 }
 
-// Task Assignment Section - manages model references and auto-run toggle for a specific task
+// Task Assignment Section - manages compound model references (pid:mid) and auto-run toggle
 function TaskAssignmentSection({
   title,
   description,
   taskConfig,
-  models,
+  providers,
   onChangeConfig,
   darkMode,
   t,
 }: {
   title: string;
   description?: string;
-  taskConfig: { model_ids: string[]; enabled: boolean };
-  models: AIModelConfig[];
-  onChangeConfig: (config: { model_ids: string[]; enabled: boolean }) => void;
+  taskConfig: AITaskConfig;
+  providers: AIProvider[];
+  onChangeConfig: (config: AITaskConfig) => void;
   darkMode: boolean;
   t: (key: string) => string;
 }) {
@@ -431,11 +453,31 @@ function TaskAssignmentSection({
 
   const taskIds = taskConfig.model_ids;
 
-  // Get model by ID from the pool
-  const getModel = (id: string) => models.find((m) => m.id === id);
+  // Resolve compound ID "pid:mid" to display info
+  const resolveModel = (compoundId: string): { providerName: string; modelName: string; modelId: string } | null => {
+    const [pid, mid] = compoundId.split(":", 2);
+    const provider = providers.find((p) => p.id === pid);
+    if (!provider) return null;
+    const model = provider.models.find((m) => m.id === mid);
+    if (!model) return null;
+    return { providerName: provider.name, modelName: model.name || model.model, modelId: model.model };
+  };
 
-  // Available models (not yet added to this task)
-  const availableModels = models.filter((m) => !taskIds.includes(m.id));
+  // Build flat list of all available compound IDs not yet in this task
+  const availableModels: { compoundId: string; providerName: string; modelName: string; modelId: string }[] = [];
+  for (const provider of providers) {
+    for (const model of provider.models) {
+      const cid = `${provider.id}:${model.id}`;
+      if (!taskIds.includes(cid)) {
+        availableModels.push({
+          compoundId: cid,
+          providerName: provider.name,
+          modelName: model.name || model.model,
+          modelId: model.model,
+        });
+      }
+    }
+  }
 
   const handleMoveUp = (index: number) => {
     if (index <= 0) return;
@@ -450,8 +492,8 @@ function TaskAssignmentSection({
     onChangeConfig({ ...taskConfig, model_ids: newIds });
   };
 
-  const handleAdd = (modelId: string) => {
-    onChangeConfig({ ...taskConfig, model_ids: [...taskIds, modelId] });
+  const handleAdd = (compoundId: string) => {
+    onChangeConfig({ ...taskConfig, model_ids: [...taskIds, compoundId] });
     setDropdownOpen(false);
   };
 
@@ -463,11 +505,7 @@ function TaskAssignmentSection({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div>
-          <div
-            className={`text-body-sm font-medium ${
-              darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
-            }`}
-          >
+          <div className="text-body-sm font-medium text-theme-text-secondary">
             {title}
           </div>
           {description && (
@@ -500,33 +538,25 @@ function TaskAssignmentSection({
           </button>
         </div>
       </div>
-      <div
-        className={`rounded-xl border p-2 space-y-2 ${
-          darkMode ? "border-theme-border" : "border-theme-border"
-        }`}
-      >
-        {taskIds.map((id, index) => {
-          const model = getModel(id);
-          if (!model) return null;
+      <div className="rounded-xl border border-theme-border p-2 space-y-2">
+        {taskIds.map((cid, index) => {
+          const resolved = resolveModel(cid);
+          if (!resolved) return null;
           const isPrimary = index === 0;
           return (
             <div
-              key={id}
-              className={`flex items-center justify-between py-2 px-3 rounded-lg ${
-                darkMode ? "bg-theme-muted" : "bg-theme-muted"
-              }`}
+              key={cid}
+              className="flex items-center justify-between py-2 px-3 rounded-lg bg-theme-muted"
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span
-                  className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    isPrimary ? "bg-green-500" : "bg-blue-400"
-                  }`}
-                />
+                <span className="text-xs text-theme-text-tertiary flex-shrink-0">
+                  {isPrimary ? t("settings.primaryModel") : t("settings.backupModel")}
+                </span>
                 <span className="font-medium text-sm text-theme-text truncate">
-                  {model.name}
+                  {resolved.modelName}
                 </span>
                 <span className="text-xs text-theme-text-tertiary truncate hidden sm:inline">
-                  {model.model}
+                  {resolved.providerName}
                 </span>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
@@ -535,11 +565,7 @@ function TaskAssignmentSection({
                     type="button"
                     onClick={() => handleMoveUp(index)}
                     onMouseDown={(e) => e.preventDefault()}
-                    className={`p-1.5 rounded transition-colors cursor-pointer ${
-                      darkMode
-                        ? "hover:bg-theme-border text-theme-text-secondary"
-                        : "hover:bg-theme-border text-theme-text-secondary"
-                    }`}
+                    className="p-1.5 rounded transition-colors cursor-pointer hover:bg-theme-border text-theme-text-secondary"
                     title={t("settings.moveUp")}
                   >
                     <Icons.ChevronUp />
@@ -571,12 +597,10 @@ function TaskAssignmentSection({
             className={`w-full py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
               availableModels.length === 0
                 ? "text-theme-text-tertiary cursor-not-allowed"
-                : darkMode
-                  ? "text-theme-accent hover:bg-theme-muted"
-                  : "text-theme-accent hover:bg-theme-muted"
+                : "text-theme-accent hover:bg-theme-muted"
             }`}
           >
-            {t("settings.addToTask")}
+            {availableModels.length === 0 ? t("settings.noModelsAvailable") : t("settings.addToTask")}
           </button>
           {dropdownOpen && availableModels.length > 0 && (
             <>
@@ -584,28 +608,18 @@ function TaskAssignmentSection({
                 className="fixed inset-0 z-10"
                 onClick={() => setDropdownOpen(false)}
               />
-              <div
-                className={`absolute bottom-full left-0 right-0 mb-1 z-20 rounded-xl border shadow-lg overflow-hidden ${
-                  darkMode
-                    ? "bg-theme-surface border-theme-border"
-                    : "bg-theme-surface border-theme-border"
-                }`}
-              >
-                {availableModels.map((model) => (
+              <div className="absolute bottom-full left-0 right-0 mb-1 z-20 rounded-xl border shadow-lg overflow-hidden bg-theme-surface border-theme-border max-h-48 overflow-y-auto">
+                {availableModels.map((item) => (
                   <button
-                    key={model.id}
+                    key={item.compoundId}
                     type="button"
-                    onClick={() => handleAdd(model.id)}
+                    onClick={() => handleAdd(item.compoundId)}
                     onMouseDown={(e) => e.preventDefault()}
-                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                      darkMode
-                        ? "hover:bg-theme-muted text-theme-text"
-                        : "hover:bg-theme-muted text-theme-text"
-                    }`}
+                    className="w-full text-left px-3 py-2 text-sm transition-colors hover:bg-theme-muted text-theme-text"
                   >
-                    <span className="font-medium">{model.name}</span>
+                    <span className="font-medium">{item.modelName}</span>
                     <span className="text-xs text-theme-text-tertiary ml-2">
-                      {model.model}
+                      {item.providerName}
                     </span>
                   </button>
                 ))}
@@ -869,9 +883,9 @@ export function SettingsView({
     zotero_collection: "",
   });
 
-  // Unified AI models config state
+  // Unified AI models config state (provider-grouped)
   const [aiModelsConfig, setAiModelsConfig] = useState<AIModelsConfig>({
-    models: [],
+    providers: [],
     tasks: {
       translation: { model_ids: [], enabled: true },
       interpret: { model_ids: [], enabled: true },
@@ -879,9 +893,9 @@ export function SettingsView({
   });
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Model edit modal state
-  const [editingModel, setEditingModel] = useState<AIModelConfig | null>(null);
-  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+  // Provider edit modal state
+  const [editingProvider, setEditingProvider] = useState<AIProvider | null>(null);
+  const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
 
   const fontOptions: { value: FontTheme; label: string }[] = [
     { value: "sans", label: "Sans" },
@@ -906,9 +920,8 @@ export function SettingsView({
           zotero_library_id: configData.zotero_library_id ?? "",
           zotero_collection: configData.zotero_collection ?? "",
         });
-        // Load unified AI models config
+        // Load unified AI models config (provider-grouped)
         if (configData.ai_models_config) {
-          // Ensure tasks structure exists with defaults
           const loadedConfig = configData.ai_models_config;
           const tasks = loadedConfig.tasks ?? {};
           if (!tasks.translation) {
@@ -917,7 +930,10 @@ export function SettingsView({
           if (!tasks.interpret) {
             tasks.interpret = { model_ids: [], enabled: configData.auto_interpret_arxiv ?? true };
           }
-          setAiModelsConfig({ ...loadedConfig, tasks });
+          setAiModelsConfig({
+            providers: loadedConfig.providers ?? [],
+            tasks,
+          });
         }
       } catch (error) {
         console.error("Failed to load config:", error);
@@ -941,51 +957,45 @@ export function SettingsView({
     setHasChanges(true);
   };
 
-  // Model pool handlers
-  const handleAddModel = () => {
-    setEditingModel(null);
-    setIsModelModalOpen(true);
+  // Provider handlers
+  const handleAddProvider = () => {
+    setEditingProvider(null);
+    setIsProviderModalOpen(true);
   };
 
-  const handleEditModel = (model: AIModelConfig) => {
-    setEditingModel(model);
-    setIsModelModalOpen(true);
+  const handleEditProvider = (provider: AIProvider) => {
+    setEditingProvider(provider);
+    setIsProviderModalOpen(true);
   };
 
-  const handleSaveModel = (model: AIModelConfig) => {
-    const existingIndex = aiModelsConfig.models.findIndex((m) => m.id === model.id);
-    let newModels: AIModelConfig[];
+  const handleSaveProvider = (provider: AIProvider) => {
+    const existingIndex = aiModelsConfig.providers.findIndex((p) => p.id === provider.id);
+    let newProviders: AIProvider[];
     if (existingIndex >= 0) {
-      // Update existing
-      newModels = [...aiModelsConfig.models];
-      newModels[existingIndex] = {
-        ...model,
-        // Preserve api_key_configured if no new key provided
-        api_key_configured: model.api_key ? true : aiModelsConfig.models[existingIndex].api_key_configured,
+      newProviders = [...aiModelsConfig.providers];
+      newProviders[existingIndex] = {
+        ...provider,
+        api_key_configured: provider.api_key ? true : aiModelsConfig.providers[existingIndex].api_key_configured,
       };
     } else {
-      // Add new
-      newModels = [...aiModelsConfig.models, { ...model, api_key_configured: !!model.api_key }];
+      newProviders = [...aiModelsConfig.providers, { ...provider, api_key_configured: !!provider.api_key }];
     }
-    updateAiModelsConfig({ ...aiModelsConfig, models: newModels });
-    setIsModelModalOpen(false);
+    updateAiModelsConfig({ ...aiModelsConfig, providers: newProviders });
+    setIsProviderModalOpen(false);
   };
 
-  const handleDeleteModel = (modelId: string) => {
-    const newModels = aiModelsConfig.models.filter((m) => m.id !== modelId);
-    // Also remove from all task references
+  const handleDeleteProvider = (providerId: string) => {
+    const newProviders = aiModelsConfig.providers.filter((p) => p.id !== providerId);
+    // Also remove all compound IDs for this provider from tasks
     const newTasks = { ...aiModelsConfig.tasks };
     for (const taskName of Object.keys(newTasks)) {
       const task = newTasks[taskName];
       newTasks[taskName] = {
         ...task,
-        model_ids: task.model_ids.filter((id) => id !== modelId),
+        model_ids: task.model_ids.filter((cid) => !cid.startsWith(providerId + ":")),
       };
     }
-    updateAiModelsConfig({
-      models: newModels,
-      tasks: newTasks,
-    });
+    updateAiModelsConfig({ providers: newProviders, tasks: newTasks });
   };
 
   const handleSaveAll = async () => {
@@ -1011,15 +1021,19 @@ export function SettingsView({
         updates.zotero_api_key = formData.zotero_api_key;
       }
 
-      // Include unified AI models config with tasks
+      // Include unified AI models config (provider-grouped) with tasks
       updates.ai_models_config = {
-        models: aiModelsConfig.models.map((m) => ({
-          id: m.id,
-          name: m.name,
-          provider: m.provider,
-          model: m.model,
-          api_key: m.api_key || undefined,
-          base_url: m.base_url || undefined,
+        providers: aiModelsConfig.providers.map((p) => ({
+          id: p.id,
+          name: p.name,
+          provider: p.provider,
+          api_key: p.api_key || undefined,
+          base_url: p.base_url || undefined,
+          models: p.models.map((m) => ({
+            id: m.id,
+            name: m.name,
+            model: m.model,
+          })),
         })),
         tasks: aiModelsConfig.tasks,
       };
@@ -1395,13 +1409,13 @@ export function SettingsView({
         darkMode={darkMode}
       >
         <div className="space-y-5">
-          {/* Model Pool */}
-          <ModelPoolSection
-            models={aiModelsConfig.models}
+          {/* Provider List */}
+          <ProviderListSection
+            providers={aiModelsConfig.providers}
             tasks={aiModelsConfig.tasks}
-            onEditModel={handleEditModel}
-            onDeleteModel={handleDeleteModel}
-            onAddModel={handleAddModel}
+            onEditProvider={handleEditProvider}
+            onDeleteProvider={handleDeleteProvider}
+            onAddProvider={handleAddProvider}
             darkMode={darkMode}
             t={t}
           />
@@ -1411,7 +1425,7 @@ export function SettingsView({
             title={t("settings.translationTask")}
             description={t("settings.translationTaskDesc")}
             taskConfig={aiModelsConfig.tasks.translation ?? { model_ids: [], enabled: true }}
-            models={aiModelsConfig.models}
+            providers={aiModelsConfig.providers}
             onChangeConfig={(config) =>
               updateAiModelsConfig({
                 ...aiModelsConfig,
@@ -1427,7 +1441,7 @@ export function SettingsView({
             title={t("settings.interpretTask")}
             description={t("settings.interpretTaskDesc")}
             taskConfig={aiModelsConfig.tasks.interpret ?? { model_ids: [], enabled: true }}
-            models={aiModelsConfig.models}
+            providers={aiModelsConfig.providers}
             onChangeConfig={(config) =>
               updateAiModelsConfig({
                 ...aiModelsConfig,
@@ -1664,11 +1678,11 @@ export function SettingsView({
         darkMode={darkMode}
       />
 
-      <ModelEditModal
-        isOpen={isModelModalOpen}
-        model={editingModel}
-        onSave={handleSaveModel}
-        onClose={() => setIsModelModalOpen(false)}
+      <ProviderEditModal
+        isOpen={isProviderModalOpen}
+        provider={editingProvider}
+        onSave={handleSaveProvider}
+        onClose={() => setIsProviderModalOpen(false)}
         darkMode={darkMode}
         t={t}
       />
