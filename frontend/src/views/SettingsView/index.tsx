@@ -9,7 +9,7 @@ import {
   type ColorThemeId,
   validateCustomTheme,
 } from "../../themes";
-import type { UserConfig } from "../../types";
+import type { UserConfig, AIModelConfig, TaskAIConfig } from "../../types";
 
 type FontTheme = "sans" | "serif" | "mono";
 type ThemeMode = "light" | "dark" | "system";
@@ -92,6 +92,439 @@ function Row({
         {label}
       </span>
       <div className="flex-shrink-0">{children}</div>
+    </div>
+  );
+}
+
+// Model Card Component
+function ModelCard({
+  model,
+  isPrimary,
+  onEdit,
+  onDelete,
+  darkMode,
+  t,
+}: {
+  model: AIModelConfig;
+  isPrimary: boolean;
+  onEdit: () => void;
+  onDelete?: () => void;
+  darkMode: boolean;
+  t: (key: string) => string;
+}) {
+  return (
+    <div
+      className={`flex items-center justify-between py-2 px-3 rounded-lg ${
+        darkMode ? "bg-theme-muted" : "bg-theme-muted"
+      }`}
+    >
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <span
+          className={`w-2 h-2 rounded-full flex-shrink-0 ${
+            isPrimary ? "bg-green-500" : "bg-blue-400"
+          }`}
+        />
+        <span className="font-medium text-sm text-theme-text truncate">
+          {model.name}
+        </span>
+        <span className="text-xs text-theme-text-tertiary truncate hidden sm:inline">
+          {model.model}
+        </span>
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <button
+          type="button"
+          onClick={onEdit}
+          onMouseDown={(e) => e.preventDefault()}
+          className={`p-1.5 rounded transition-colors cursor-pointer ${
+            darkMode
+              ? "hover:bg-theme-border text-theme-text-secondary"
+              : "hover:bg-theme-border text-theme-text-secondary"
+          }`}
+          title={t("common.edit")}
+        >
+          <Icons.Edit />
+        </button>
+        {!isPrimary && onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            onMouseDown={(e) => e.preventDefault()}
+            className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded transition-colors cursor-pointer"
+            title={t("common.delete")}
+          >
+            <Icons.Trash />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Model Edit Modal Component
+function ModelEditModal({
+  isOpen,
+  model,
+  isPrimary,
+  onSave,
+  onClose,
+  onDelete,
+  darkMode,
+  t,
+}: {
+  isOpen: boolean;
+  model: AIModelConfig | null;
+  isPrimary: boolean;
+  onSave: (model: AIModelConfig) => void;
+  onClose: () => void;
+  onDelete?: () => void;
+  darkMode: boolean;
+  t: (key: string) => string;
+}) {
+  const [formData, setFormData] = useState<AIModelConfig>({
+    id: "",
+    name: "",
+    provider: "openai_compatible",
+    model: "",
+    api_key: "",
+    base_url: "",
+  });
+
+  useEffect(() => {
+    if (model) {
+      setFormData({
+        ...model,
+        api_key: "", // Don't show existing API key
+      });
+    } else {
+      setFormData({
+        id: crypto.randomUUID().slice(0, 8),
+        name: "",
+        provider: "openai_compatible",
+        model: "",
+        api_key: "",
+        base_url: "",
+      });
+    }
+  }, [model, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div
+        className={`relative w-full max-w-md rounded-2xl shadow-xl ${
+          darkMode ? "bg-theme-surface" : "bg-theme-surface"
+        }`}
+      >
+        <div
+          className={`flex items-center justify-between p-4 border-b ${
+            darkMode ? "border-theme-border" : "border-theme-border"
+          }`}
+        >
+          <h3
+            className={`text-h3 font-bold ${darkMode ? "text-theme-text" : "text-theme-text"}`}
+          >
+            {t("settings.editModel")}
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            onMouseDown={(e) => e.preventDefault()}
+            className={`min-h-touch min-w-touch flex items-center justify-center rounded-full transition-colors ${
+              darkMode
+                ? "hover:bg-theme-muted text-theme-text-secondary"
+                : "hover:bg-theme-muted text-theme-text-secondary"
+            }`}
+          >
+            <Icons.X />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-5 py-4 md:px-6 space-y-4">
+          <div>
+            <label
+              className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
+                darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
+              }`}
+            >
+              {t("settings.modelName")}
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              placeholder="Gemini Flash"
+              className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${
+                darkMode
+                  ? "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
+                  : "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
+              } focus:outline-none focus:ring-1 focus:ring-theme-accent`}
+            />
+          </div>
+
+          <div>
+            <label
+              className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
+                darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
+              }`}
+            >
+              {t("settings.modelProvider")}
+            </label>
+            <select
+              value={formData.provider}
+              onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
+              className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${
+                darkMode
+                  ? "bg-theme-muted border-theme-border text-theme-text"
+                  : "bg-theme-muted border-theme-border text-theme-text"
+              } focus:outline-none focus:ring-1 focus:ring-theme-accent`}
+            >
+              <option value="openai">{t("settings.openai")}</option>
+              <option value="openai_compatible">{t("settings.openaiCompatible")}</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
+                darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
+              }`}
+            >
+              {t("settings.modelId")}
+            </label>
+            <input
+              type="text"
+              value={formData.model}
+              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+              required
+              placeholder="gemini-2.0-flash"
+              className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${
+                darkMode
+                  ? "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
+                  : "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
+              } focus:outline-none focus:ring-1 focus:ring-theme-accent`}
+            />
+          </div>
+
+          <div>
+            <label
+              className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
+                darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
+              }`}
+            >
+              {t("settings.apiKey")}
+            </label>
+            <input
+              type="password"
+              value={formData.api_key || ""}
+              onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+              placeholder={model?.api_key_configured ? "••••••••" : t("settings.enterApiKey")}
+              className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${
+                darkMode
+                  ? "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
+                  : "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
+              } focus:outline-none focus:ring-1 focus:ring-theme-accent`}
+            />
+          </div>
+
+          <div>
+            <label
+              className={`block text-caption font-medium uppercase tracking-wider mb-2 ${
+                darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"
+              }`}
+            >
+              {t("settings.apiBaseUrl")}
+            </label>
+            <input
+              type="text"
+              value={formData.base_url || ""}
+              onChange={(e) => setFormData({ ...formData, base_url: e.target.value || undefined })}
+              placeholder="https://api.openai.com/v1"
+              className={`w-full min-h-touch p-3 rounded-xl border text-body-sm ${
+                darkMode
+                  ? "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
+                  : "bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary"
+              } focus:outline-none focus:ring-1 focus:ring-theme-accent`}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            {!isPrimary && onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                onMouseDown={(e) => e.preventDefault()}
+                className={`flex-1 min-h-touch py-3 rounded-xl text-ui font-medium border transition-colors ${
+                  darkMode
+                    ? "border-red-500/50 text-red-400 hover:bg-red-900/30"
+                    : "border-red-300 text-red-600 hover:bg-red-50"
+                }`}
+              >
+                {t("settings.deleteModel")}
+              </button>
+            )}
+            <button
+              type="submit"
+              className={`flex-1 min-h-touch py-3 rounded-xl text-ui font-medium transition-colors ${
+                darkMode
+                  ? "bg-theme-accent hover:bg-theme-accent-hover text-white"
+                  : "bg-theme-accent hover:bg-theme-accent-hover text-white"
+              }`}
+            >
+              {t("settings.saveModel")}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Task Model Section Component
+function TaskModelSection({
+  title,
+  config,
+  onChange,
+  darkMode,
+  t,
+}: {
+  title: string;
+  config: TaskAIConfig | null;
+  onChange: (config: TaskAIConfig) => void;
+  darkMode: boolean;
+  t: (key: string) => string;
+}) {
+  const [editingModel, setEditingModel] = useState<AIModelConfig | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number>(-1); // -1 for primary, 0+ for fallbacks
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleEditPrimary = () => {
+    if (config?.primary) {
+      setEditingModel(config.primary);
+      setEditingIndex(-1);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleEditFallback = (index: number) => {
+    if (config?.fallbacks[index]) {
+      setEditingModel(config.fallbacks[index]);
+      setEditingIndex(index);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleAddFallback = () => {
+    setEditingModel(null);
+    setEditingIndex(config?.fallbacks.length ?? 0);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteFallback = (index: number) => {
+    if (!config) return;
+    const newFallbacks = [...config.fallbacks];
+    newFallbacks.splice(index, 1);
+    onChange({ ...config, fallbacks: newFallbacks });
+  };
+
+  const handleSaveModel = (model: AIModelConfig) => {
+    if (!config) {
+      // Create new config with this as primary
+      onChange({
+        primary: model,
+        fallbacks: [],
+      });
+    } else if (editingIndex === -1) {
+      // Update primary
+      onChange({ ...config, primary: model });
+    } else if (editingModel) {
+      // Update existing fallback
+      const newFallbacks = [...config.fallbacks];
+      newFallbacks[editingIndex] = model;
+      onChange({ ...config, fallbacks: newFallbacks });
+    } else {
+      // Add new fallback
+      onChange({ ...config, fallbacks: [...config.fallbacks, model] });
+    }
+    setIsModalOpen(false);
+  };
+
+  const handleDeleteFromModal = () => {
+    if (editingIndex >= 0 && config) {
+      handleDeleteFallback(editingIndex);
+    }
+    setIsModalOpen(false);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div
+        className={`text-body-sm font-medium ${
+          darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"
+        }`}
+      >
+        {title}
+      </div>
+      <div
+        className={`rounded-xl border p-2 space-y-2 ${
+          darkMode ? "border-theme-border" : "border-theme-border"
+        }`}
+      >
+        {config?.primary && (
+          <ModelCard
+            model={config.primary}
+            isPrimary={true}
+            onEdit={handleEditPrimary}
+            darkMode={darkMode}
+            t={t}
+          />
+        )}
+        {config?.fallbacks.map((fb, index) => (
+          <ModelCard
+            key={fb.id}
+            model={fb}
+            isPrimary={false}
+            onEdit={() => handleEditFallback(index)}
+            onDelete={() => handleDeleteFallback(index)}
+            darkMode={darkMode}
+            t={t}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={handleAddFallback}
+          onMouseDown={(e) => e.preventDefault()}
+          className={`w-full py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+            darkMode
+              ? "text-theme-accent hover:bg-theme-muted"
+              : "text-theme-accent hover:bg-theme-muted"
+          }`}
+        >
+          {t("settings.addFallback")}
+        </button>
+      </div>
+
+      <ModelEditModal
+        isOpen={isModalOpen}
+        model={editingModel}
+        isPrimary={editingIndex === -1}
+        onSave={handleSaveModel}
+        onClose={() => setIsModalOpen(false)}
+        onDelete={editingIndex >= 0 ? handleDeleteFromModal : undefined}
+        darkMode={darkMode}
+        t={t}
+      />
     </div>
   );
 }
@@ -348,6 +781,9 @@ export function SettingsView({
     zotero_library_id: "",
     zotero_collection: "",
   });
+  // New multi-model AI config state
+  const [aiConfigTranslation, setAiConfigTranslation] = useState<TaskAIConfig | null>(null);
+  const [aiConfigInterpret, setAiConfigInterpret] = useState<TaskAIConfig | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
   const fontOptions: { value: FontTheme; label: string }[] = [
@@ -375,6 +811,9 @@ export function SettingsView({
           zotero_library_id: configData.zotero_library_id ?? "",
           zotero_collection: configData.zotero_collection ?? "",
         });
+        // Load new multi-model AI config
+        setAiConfigTranslation(configData.ai_config_translation ?? null);
+        setAiConfigInterpret(configData.ai_config_interpret ?? null);
       } catch (error) {
         console.error("Failed to load config:", error);
       } finally {
@@ -415,6 +854,14 @@ export function SettingsView({
       }
       if (formData.zotero_api_key) {
         updates.zotero_api_key = formData.zotero_api_key;
+      }
+
+      // Include new multi-model AI config
+      if (aiConfigTranslation) {
+        updates.ai_config_translation = aiConfigTranslation;
+      }
+      if (aiConfigInterpret) {
+        updates.ai_config_interpret = aiConfigInterpret;
       }
 
       await configApi.update(updates);
@@ -787,119 +1234,89 @@ export function SettingsView({
         icon={<Icons.Robot />}
         darkMode={darkMode}
       >
-        <Row label={t("settings.aiProvider")} darkMode={darkMode}>
-          <select
-            value={formData.ai_provider}
-            onChange={(e) => updateFormField("ai_provider", e.target.value)}
-            className={`w-44 min-h-touch px-3 rounded-xl border text-body-sm ${
-              darkMode
-                ? "bg-theme-muted border-theme-border text-theme-text"
-                : "bg-theme-muted border-theme-border text-theme-text"
-            }`}
-          >
-            <option value="openai">OpenAI</option>
-            {/* <option value="gemini">Gemini</option> */}
-            {/* <option value="anthropic">Anthropic</option> */}
-            <option value="openai_compatible">OpenAI Compatible</option>
-          </select>
-        </Row>
-        <Row label={t("settings.aiModel")} darkMode={darkMode}>
-          <input
-            type="text"
-            placeholder="gemini-2.5-flash"
-            value={formData.ai_model}
-            onChange={(e) => updateFormField("ai_model", e.target.value)}
-            className={`w-44 min-h-touch px-3 rounded-xl border text-body-sm ${
-              darkMode
-                ? "bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary"
-                : "bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary"
-            }`}
+        <div className="space-y-5">
+          {/* Translation/Summary Model */}
+          <TaskModelSection
+            title={t("settings.translationModel")}
+            config={aiConfigTranslation}
+            onChange={(cfg) => {
+              setAiConfigTranslation(cfg);
+              setHasChanges(true);
+            }}
+            darkMode={darkMode}
+            t={t}
           />
-        </Row>
-        <Row label={t("settings.apiKey")} darkMode={darkMode}>
-          <input
-            type="password"
-            placeholder={
-              config?.ai_api_key_configured
-                ? "••••••••"
-                : t("settings.enterApiKey")
-            }
-            value={formData.ai_api_key}
-            onChange={(e) => updateFormField("ai_api_key", e.target.value)}
-            className={`w-44 min-h-touch px-3 rounded-xl border text-body-sm ${
-              darkMode
-                ? "bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary"
-                : "bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary"
-            }`}
+
+          {/* Interpretation Model */}
+          <TaskModelSection
+            title={t("settings.interpretModel")}
+            config={aiConfigInterpret}
+            onChange={(cfg) => {
+              setAiConfigInterpret(cfg);
+              setHasChanges(true);
+            }}
+            darkMode={darkMode}
+            t={t}
           />
-        </Row>
-        <Row label={t("settings.apiBaseUrl")} darkMode={darkMode}>
-          <input
-            type="text"
-            placeholder="https://api.openai.com/v1"
-            value={formData.ai_base_url}
-            onChange={(e) => updateFormField("ai_base_url", e.target.value)}
-            className={`w-44 min-h-touch px-3 rounded-xl border text-caption ${
-              darkMode
-                ? "bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary"
-                : "bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary"
-            }`}
-          />
-        </Row>
-        <Row label={t("settings.autoTranslateAbstract")} darkMode={darkMode}>
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() =>
-              updateFormField(
-                "auto_translate_abstract",
-                !formData.auto_translate_abstract,
-              )
-            }
-            className={`relative w-12 h-6 rounded-full transition-colors ${
-              formData.auto_translate_abstract
-                ? darkMode
-                  ? "bg-theme-accent"
-                  : "bg-theme-accent"
-                : darkMode
-                  ? "bg-theme-border"
-                  : "bg-zinc-300"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                formData.auto_translate_abstract ? "translate-x-6" : ""
+
+          {/* Auto-translate toggle */}
+          <Row label={t("settings.autoTranslateAbstract")} darkMode={darkMode}>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() =>
+                updateFormField(
+                  "auto_translate_abstract",
+                  !formData.auto_translate_abstract,
+                )
+              }
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                formData.auto_translate_abstract
+                  ? darkMode
+                    ? "bg-theme-accent"
+                    : "bg-theme-accent"
+                  : darkMode
+                    ? "bg-theme-border"
+                    : "bg-zinc-300"
               }`}
-            />
-          </button>
-        </Row>
-        <Row label={t("settings.autoInterpretArxiv")} darkMode={darkMode}>
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() =>
-              updateFormField(
-                "auto_interpret_arxiv",
-                !formData.auto_interpret_arxiv,
-              )
-            }
-            className={`relative w-12 h-6 rounded-full transition-colors ${
-              formData.auto_interpret_arxiv
-                ? darkMode
-                  ? "bg-theme-accent"
-                  : "bg-theme-accent"
-                : darkMode
-                  ? "bg-theme-border"
-                  : "bg-zinc-300"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                formData.auto_interpret_arxiv ? "translate-x-6" : ""
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  formData.auto_translate_abstract ? "translate-x-6" : ""
+                }`}
+              />
+            </button>
+          </Row>
+
+          {/* Auto-interpret toggle */}
+          <Row label={t("settings.autoInterpretArxiv")} darkMode={darkMode}>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() =>
+                updateFormField(
+                  "auto_interpret_arxiv",
+                  !formData.auto_interpret_arxiv,
+                )
+              }
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                formData.auto_interpret_arxiv
+                  ? darkMode
+                    ? "bg-theme-accent"
+                    : "bg-theme-accent"
+                  : darkMode
+                    ? "bg-theme-border"
+                    : "bg-zinc-300"
               }`}
-            />
-          </button>
-        </Row>
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  formData.auto_interpret_arxiv ? "translate-x-6" : ""
+                }`}
+              />
+            </button>
+          </Row>
+        </div>
       </Section>
 
       {/* Zotero Integration */}

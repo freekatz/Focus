@@ -96,7 +96,22 @@
     "promptResetFailed": "Failed to reset prompt",
     "enterApiKey": "Enter API key",
     "autoTranslateAbstract": "Auto-translate ArXiv Abstracts",
-    "autoInterpretArxiv": "Auto-interpret ArXiv Articles"
+    "autoInterpretArxiv": "Auto-interpret ArXiv Articles",
+    "translationModel": "Translation/Summary Model",
+    "interpretModel": "Interpretation Model",
+    "primaryModel": "Primary",
+    "fallbackModel": "Fallback",
+    "addFallback": "+ Add Fallback",
+    "editModel": "Edit Model",
+    "modelName": "Name",
+    "modelProvider": "Provider",
+    "modelId": "Model",
+    "deleteModel": "Delete",
+    "saveModel": "Save",
+    "confirmDeleteModel": "Are you sure you want to delete this model?",
+    "atLeastOnePrimary": "At least one primary model is required",
+    "openai": "OpenAI",
+    "openaiCompatible": "OpenAI Compatible"
   },
   "password": {
     "changePassword": "Change Password",

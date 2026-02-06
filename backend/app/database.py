@@ -81,6 +81,8 @@ async def run_migrations() -> None:
         # (table_name, column_name, column_definition_sqlite, column_definition_postgres)
         ("user_configs", "auto_translate_abstract", "BOOLEAN DEFAULT 1", "BOOLEAN DEFAULT TRUE"),
         ("user_configs", "auto_interpret_arxiv", "BOOLEAN DEFAULT 1", "BOOLEAN DEFAULT TRUE"),
+        ("user_configs", "ai_models_translation", "TEXT", "TEXT"),
+        ("user_configs", "ai_models_interpret", "TEXT", "TEXT"),
     ]
 
     async with engine.begin() as conn:
@@ -106,6 +108,58 @@ async def run_migrations() -> None:
                     f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_def}"
                 ))
                 print(f"Migration: added column '{column_name}' to table '{table_name}'")
+
+    # 运行 AI 配置数据迁移
+    await migrate_ai_configs()
+
+
+async def migrate_ai_configs() -> None:
+    """
+    将现有 AI 配置迁移到新的 JSON 格式
+
+    从旧的 ai_provider, ai_model, ai_api_key, ai_base_url 字段
+    迁移到新的 ai_models_translation 和 ai_models_interpret JSON 字段
+    """
+    import json
+    import uuid
+    from sqlalchemy import text
+
+    async with async_session_maker() as db:
+        # 获取所有配置
+        result = await db.execute(text("SELECT id, ai_provider, ai_model, ai_api_key, ai_base_url, ai_models_translation FROM user_configs"))
+        configs = result.fetchall()
+
+        for config in configs:
+            config_id, ai_provider, ai_model, ai_api_key, ai_base_url, ai_models_translation = config
+
+            # 跳过已迁移的配置
+            if ai_models_translation:
+                continue
+
+            # 构建新格式配置
+            default_config = {
+                "primary": {
+                    "id": str(uuid.uuid4())[:8],
+                    "name": "默认模型",
+                    "provider": ai_provider or "openai",
+                    "model": ai_model or "gpt-4o-mini",
+                    "api_key": ai_api_key or "",
+                    "base_url": ai_base_url
+                },
+                "fallbacks": []
+            }
+
+            config_json = json.dumps(default_config, ensure_ascii=False)
+
+            # 更新配置
+            await db.execute(
+                text("UPDATE user_configs SET ai_models_translation = :config, ai_models_interpret = :config WHERE id = :id"),
+                {"config": config_json, "id": config_id}
+            )
+
+        await db.commit()
+        if configs:
+            print(f"Migration: migrated AI configs for {len(configs)} user(s) to new JSON format")
 
 
 async def close_db() -> None:

@@ -7,6 +7,7 @@ ArXiv 论文深度解读服务
 2. 使用 Q1-Q6 框架进行两轮深度解读
 3. 合并输出 Markdown 格式解读
 4. 摘要翻译（中文）
+5. 支持多模型配置和失败自动切换
 """
 import re
 from typing import Optional
@@ -21,6 +22,10 @@ from app.agents.arxiv_prompts import (
     ARXIV_ANALYSIS_PROMPT,
     ROUND1_USER_PROMPT,
     ROUND2_USER_PROMPT,
+)
+from app.services.ai_executor import (
+    create_executor_for_translation,
+    create_executor_for_interpret,
 )
 from app.utils.logger import logger
 
@@ -176,7 +181,7 @@ def normalize_markdown_emphasis(text: str) -> str:
 
 
 class ArxivTranslator:
-    """ArXiv 摘要翻译器 - 一次 LLM 调用完成翻译和总结"""
+    """ArXiv 摘要翻译器 - 支持多模型配置和失败自动切换"""
 
     def __init__(self, config: UserConfig):
         """
@@ -186,16 +191,20 @@ class ArxivTranslator:
             config: 用户配置
         """
         self.config = config
-        self.client = AsyncOpenAI(
-            api_key=config.ai_api_key,
-            base_url=config.ai_base_url if config.ai_base_url else None,
-            timeout=API_TIMEOUT,
-        )
-        self.model = config.ai_model
+        self.executor = create_executor_for_translation(config)
+
+        # 如果新配置为空，回退到旧配置（兼容性）
+        if not self.executor:
+            self.client = AsyncOpenAI(
+                api_key=config.ai_api_key,
+                base_url=config.ai_base_url if config.ai_base_url else None,
+                timeout=API_TIMEOUT,
+            )
+            self.model = config.ai_model
 
     async def translate_and_summarize(self, abstract: str, title: str) -> tuple[str, str]:
         """
-        一次 LLM 调用同时完成翻译和总结
+        一次 LLM 调用同时完成翻译和总结，支持失败自动切换
 
         Args:
             abstract: 英文摘要
@@ -207,9 +216,9 @@ class ArxivTranslator:
         if not abstract or not abstract.strip():
             return "", ""
 
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
+        async def _translate_task(client: AsyncOpenAI, model: str) -> tuple[str, str]:
+            response = await client.chat.completions.create(
+                model=model,
                 messages=[
                     {
                         "role": "system",
@@ -241,6 +250,13 @@ class ArxivTranslator:
 
             return translation, summary
 
+        try:
+            if self.executor:
+                # 使用新的多模型执行器
+                return await self.executor.execute(_translate_task, "ArXiv Translator")
+            else:
+                # 回退到旧配置
+                return await _translate_task(self.client, self.model)
         except Exception as e:
             logger.error(f"[ArXiv Translator] Translation failed: {e}")
             raise
@@ -253,7 +269,7 @@ class ArxivTranslator:
 
 
 class ArxivInterpreter:
-    """ArXiv 论文解读器 - 使用 OpenAI SDK 完全参考 refer/arxiv_reader.py"""
+    """ArXiv 论文解读器 - 支持多模型配置和失败自动切换"""
 
     def __init__(self, config: UserConfig):
         """
@@ -263,16 +279,20 @@ class ArxivInterpreter:
             config: 用户配置
         """
         self.config = config
-        self.client = AsyncOpenAI(
-            api_key=config.ai_api_key,
-            base_url=config.ai_base_url if config.ai_base_url else None,
-            timeout=API_TIMEOUT,
-        )
-        self.model = config.ai_model
+        self.executor = create_executor_for_interpret(config)
+
+        # 如果新配置为空，回退到旧配置（兼容性）
+        if not self.executor:
+            self.client = AsyncOpenAI(
+                api_key=config.ai_api_key,
+                base_url=config.ai_base_url if config.ai_base_url else None,
+                timeout=API_TIMEOUT,
+            )
+            self.model = config.ai_model
 
     async def interpret(self, entry: Entry) -> str:
         """
-        两轮对话解读论文 - 完全参考 refer/arxiv_reader.py
+        两轮对话解读论文 - 支持失败自动切换
 
         Args:
             entry: 文章条目
@@ -287,49 +307,65 @@ class ArxivInterpreter:
             logger.error(f"[ArXiv Interpreter] {error_msg}")
             raise RuntimeError(error_msg)
 
-        # 2. 第一轮：Q1-Q6 框架解读
-        logger.info(f"[ArXiv Interpreter] Round 1: Q1-Q6 framework for '{entry.title[:50]}...'")
+        async def _interpret_task(client: AsyncOpenAI, model: str) -> str:
+            # 2. 第一轮：Q1-Q6 框架解读
+            logger.info(f"[ArXiv Interpreter] Round 1: Q1-Q6 framework for '{entry.title[:50]}...'")
 
-        round1_prompt = ROUND1_USER_PROMPT.format(
-            title=entry.title,
-            content=paper_content
+            round1_prompt = ROUND1_USER_PROMPT.format(
+                title=entry.title,
+                content=paper_content
+            )
+
+            messages = [
+                {"role": "system", "content": ARXIV_ANALYSIS_PROMPT},
+                {"role": "user", "content": round1_prompt}
+            ]
+
+            result_1 = await self._call_llm_with_client(client, model, messages)
+
+            # 3. 第二轮：评价指标、损失函数、数据集
+            logger.info(f"[ArXiv Interpreter] Round 2: Metrics, Loss, Datasets")
+
+            messages.append({"role": "assistant", "content": result_1})
+            messages.append({"role": "user", "content": ROUND2_USER_PROMPT})
+
+            result_2 = await self._call_llm_with_client(client, model, messages)
+
+            # 4. 合并结果（Markdown 拼接）
+            combined = result_1 + "\n\n" + result_2
+
+            # 规范化 Markdown 格式
+            combined = normalize_markdown_emphasis(combined)
+
+            logger.info(f"[ArXiv Interpreter] Completed interpretation for '{entry.title[:50]}...'")
+
+            return combined
+
+        try:
+            if self.executor:
+                # 使用新的多模型执行器
+                return await self.executor.execute(_interpret_task, "ArXiv Interpreter")
+            else:
+                # 回退到旧配置
+                return await _interpret_task(self.client, self.model)
+        except Exception as e:
+            logger.error(f"[ArXiv Interpreter] Interpretation failed: {e}")
+            raise
+
+    async def _call_llm_with_client(self, client: AsyncOpenAI, model: str, messages: list) -> str:
+        """使用指定客户端调用 LLM"""
+        response = await client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=16000,
+            temperature=0.3,
         )
-
-        messages = [
-            {"role": "system", "content": ARXIV_ANALYSIS_PROMPT},
-            {"role": "user", "content": round1_prompt}
-        ]
-
-        result_1 = await self._call_llm(messages)
-
-        # 3. 第二轮：评价指标、损失函数、数据集
-        logger.info(f"[ArXiv Interpreter] Round 2: Metrics, Loss, Datasets")
-
-        messages.append({"role": "assistant", "content": result_1})
-        messages.append({"role": "user", "content": ROUND2_USER_PROMPT})
-
-        result_2 = await self._call_llm(messages)
-
-        # 4. 合并结果（Markdown 拼接）- 与 refer/arxiv_reader.py 一致
-        combined = result_1 + "\n\n" + result_2
-
-        # 规范化 Markdown 格式
-        combined = normalize_markdown_emphasis(combined)
-
-        logger.info(f"[ArXiv Interpreter] Completed interpretation for '{entry.title[:50]}...'")
-
-        return combined
+        return response.choices[0].message.content
 
     async def _call_llm(self, messages: list) -> str:
-        """调用 LLM - 使用 OpenAI SDK 完全参考 refer/arxiv_reader.py"""
+        """调用 LLM - 兼容旧代码"""
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                max_tokens=16000,
-                temperature=0.3,
-            )
-            return response.choices[0].message.content
+            return await self._call_llm_with_client(self.client, self.model, messages)
         except Exception as e:
             logger.error(f"[ArXiv Interpreter] LLM call failed: {e}")
             raise

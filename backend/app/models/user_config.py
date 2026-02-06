@@ -28,12 +28,16 @@ class UserConfig(Base):
     trash_retention_days: Mapped[int] = mapped_column(Integer, default=15)
     archive_after_days: Mapped[int] = mapped_column(Integer, default=90)  # 感兴趣/收藏超过N天后归档
 
-    # AI 配置
+    # AI 配置 (legacy fields - kept for migration compatibility)
     ai_provider: Mapped[str] = mapped_column(String(50), default="openai")
     ai_model: Mapped[str] = mapped_column(String(100), default="gpt-4o-mini")
     ai_api_key: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     ai_base_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     sage_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 智者提示词
+
+    # AI 多模型配置 (JSON format with primary + fallbacks)
+    ai_models_translation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 翻译/总结模型配置
+    ai_models_interpret: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 解读模型配置
 
     # Zotero 配置
     zotero_library_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)

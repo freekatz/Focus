@@ -96,7 +96,22 @@
     "promptResetFailed": "重置提示词失败",
     "enterApiKey": "输入 API 密钥",
     "autoTranslateAbstract": "自动翻译 ArXiv 摘要",
-    "autoInterpretArxiv": "自动解读 ArXiv 论文"
+    "autoInterpretArxiv": "自动解读 ArXiv 论文",
+    "translationModel": "翻译/总结模型",
+    "interpretModel": "解读模型",
+    "primaryModel": "主",
+    "fallbackModel": "备",
+    "addFallback": "+ 添加备用",
+    "editModel": "编辑模型",
+    "modelName": "名称",
+    "modelProvider": "服务商",
+    "modelId": "模型",
+    "deleteModel": "删除",
+    "saveModel": "保存",
+    "confirmDeleteModel": "确定要删除此模型吗？",
+    "atLeastOnePrimary": "至少需要保留一个主模型",
+    "openai": "OpenAI",
+    "openaiCompatible": "OpenAI 兼容"
   },
   "password": {
     "changePassword": "修改密码",
