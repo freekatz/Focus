@@ -62,19 +62,27 @@ def parse_unified_ai_config(config_json: Optional[str], task_type: str) -> List[
         else:
             task_ids = []
 
+        logger.info(f"[AI Config] Parsing task '{task_type}': task_ids={task_ids}, has_providers={bool(providers_data)}, provider_keys={list(providers_data.keys()) if providers_data else []}")
+
         result = []
 
         if providers_data:
             # New provider-grouped format: compound IDs "pid:mid"
             for compound_id in task_ids:
                 if ":" not in compound_id:
+                    logger.warning(f"[AI Config] Skipping non-compound ID: {compound_id}")
                     continue
                 pid, mid = compound_id.split(":", 1)
                 provider = providers_data.get(pid)
-                if not provider or not provider.get("api_key"):
+                if not provider:
+                    logger.warning(f"[AI Config] Provider '{pid}' not found for compound ID '{compound_id}'")
+                    continue
+                if not provider.get("api_key"):
+                    logger.warning(f"[AI Config] Provider '{pid}' ({provider.get('name', '?')}) has no api_key, skipping")
                     continue
                 model_entry = provider.get("models", {}).get(mid)
                 if not model_entry:
+                    logger.warning(f"[AI Config] Model '{mid}' not found in provider '{pid}'")
                     continue
                 result.append(AIModelConfig(
                     id=compound_id,
@@ -98,6 +106,7 @@ def parse_unified_ai_config(config_json: Optional[str], task_type: str) -> List[
                         base_url=model_data.get("base_url"),
                     ))
 
+        logger.info(f"[AI Config] Parsed {len(result)} models for task '{task_type}': {[f'{m.name}({m.model})' for m in result]}")
         return result
     except json.JSONDecodeError:
         logger.error(f"Failed to parse unified AI config JSON: {config_json[:100]}...")
@@ -184,6 +193,8 @@ class AIModelExecutor:
         """
         self.models = [primary] + (fallbacks or [])
         self.current_index = 0
+        model_names = [f"{m.name}({m.model})" for m in self.models]
+        logger.info(f"AIModelExecutor initialized with models: {' → '.join(model_names)}")
 
     def _create_client(self, model_config: AIModelConfig) -> AsyncOpenAI:
         """创建 OpenAI 客户端"""
@@ -198,6 +209,7 @@ class AIModelExecutor:
         判断是否应该切换到备用模型
 
         切换条件：
+        - 400: 无效请求（如 max_tokens 超限等模型差异）
         - 401: API Key 无效
         - 404: 模型不存在
         - 429: 速率限制
@@ -206,6 +218,7 @@ class AIModelExecutor:
         """
         error_msg = str(error).lower()
         switch_indicators = [
+            '400', 'invalid_request',
             '401', 'unauthorized', 'invalid_api_key',
             '404', 'model_not_found', 'not found',
             '429', 'rate_limit', 'rate limit',

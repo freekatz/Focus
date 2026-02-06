@@ -357,7 +357,6 @@ class ArxivInterpreter:
         response = await client.chat.completions.create(
             model=model,
             messages=messages,
-            max_tokens=16000,
             temperature=0.3,
         )
         return response.choices[0].message.content

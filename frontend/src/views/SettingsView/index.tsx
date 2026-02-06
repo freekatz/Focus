@@ -248,7 +248,7 @@ function ProviderEditModal({
           {/* Models list */}
           <div>
             <label className={labelCls}>
-              {t("settings.modelCount", { count: formData.models.length })}
+              {`${formData.models.length} ${formData.models.length === 1 ? "model" : "models"}`}
             </label>
             <div className="space-y-2">
               {formData.models.map((model, index) => (
@@ -1021,22 +1021,24 @@ export function SettingsView({
         updates.zotero_api_key = formData.zotero_api_key;
       }
 
-      // Include unified AI models config (provider-grouped) with tasks
-      updates.ai_models_config = {
-        providers: aiModelsConfig.providers.map((p) => ({
-          id: p.id,
-          name: p.name,
-          provider: p.provider,
-          api_key: p.api_key || undefined,
-          base_url: p.base_url || undefined,
-          models: p.models.map((m) => ({
-            id: m.id,
-            name: m.name,
-            model: m.model,
+      // Only include AI models config if there are providers configured
+      if (aiModelsConfig.providers.length > 0) {
+        updates.ai_models_config = {
+          providers: aiModelsConfig.providers.map((p) => ({
+            id: p.id,
+            name: p.name,
+            provider: p.provider,
+            api_key: p.api_key || undefined,
+            base_url: p.base_url || undefined,
+            models: p.models.map((m) => ({
+              id: m.id,
+              name: m.name,
+              model: m.model,
+            })),
           })),
-        })),
-        tasks: aiModelsConfig.tasks,
-      };
+          tasks: aiModelsConfig.tasks,
+        };
+      }
 
       await configApi.update(updates);
 

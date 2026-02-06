@@ -388,7 +388,10 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
       <AddSourceModal
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        onSuccess={fetchFeeds}
+        onSuccess={() => {
+          hasLoadedTab.current.my = false;
+          fetchFeeds('my');
+        }}
       />
     </div>
   );

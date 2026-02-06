@@ -263,6 +263,7 @@ async def scan_pending_arxiv_tasks():
     """
     from app.models.entry import EntryStatus, TranslationStatus
     from app.services.arxiv_service import is_arxiv_entry, validate_ai_api_key
+    from app.services.ai_executor import is_task_enabled
 
     logger.info("Scanning for pending ArXiv translation and interpretation tasks...")
 
@@ -341,6 +342,7 @@ async def scan_pending_arxiv_tasks():
 
         # 2. 扫描已保存但未解读的 ArXiv 文章（包括解读失败需要重试的）
         # 检查是否开启自动解读（优先从统一配置读取，回退到旧字段）
+        ai_models_json = getattr(config, 'ai_models', None)
         auto_interpret = is_task_enabled(ai_models_json, "interpret") if ai_models_json else getattr(config, 'auto_interpret_arxiv', True)
         if not auto_interpret:
             logger.info("Auto ArXiv interpretation disabled, skipping interpretation scan")

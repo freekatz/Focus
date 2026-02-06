@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import DbSession, CurrentUser
+from app.utils.logger import logger
 from app.models.user_config import UserConfig
 from app.schemas.user import (
     UserConfigResponse,
@@ -253,11 +254,15 @@ async def update_config(
     update_data = data.model_dump(exclude_unset=True)
 
     # 特殊处理统一 AI 模型配置更新
-    if 'ai_models_config' in update_data and update_data['ai_models_config']:
-        config.ai_models = update_ai_models_config_json(
+    has_ai_config = 'ai_models_config' in update_data and update_data['ai_models_config']
+    logger.info(f"[Config Update] has ai_models_config: {has_ai_config}, keys in update: {list(update_data.keys())}")
+    if has_ai_config:
+        new_json = update_ai_models_config_json(
             config.ai_models,
             data.ai_models_config
         )
+        logger.info(f"[Config Update] Saving ai_models JSON ({len(new_json)} chars): {new_json[:500]}")
+        config.ai_models = new_json
         # Sync enabled flags to legacy DB columns for backward compatibility
         for task_name, task_config in data.ai_models_config.tasks.items():
             if task_name == "translation":
