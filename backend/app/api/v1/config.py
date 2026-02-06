@@ -261,7 +261,7 @@ async def update_config(
             config.ai_models,
             data.ai_models_config
         )
-        logger.info(f"[Config Update] Saving ai_models JSON ({len(new_json)} chars): {new_json[:500]}")
+        logger.info(f"[Config Update] Saving ai_models JSON ({len(new_json)} chars)")
         config.ai_models = new_json
         # Sync enabled flags to legacy DB columns for backward compatibility
         for task_name, task_config in data.ai_models_config.tasks.items():

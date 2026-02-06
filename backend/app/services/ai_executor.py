@@ -109,7 +109,7 @@ def parse_unified_ai_config(config_json: Optional[str], task_type: str) -> List[
         logger.info(f"[AI Config] Parsed {len(result)} models for task '{task_type}': {[f'{m.name}({m.model})' for m in result]}")
         return result
     except json.JSONDecodeError:
-        logger.error(f"Failed to parse unified AI config JSON: {config_json[:100]}...")
+        logger.error(f"Failed to parse unified AI config JSON (length={len(config_json) if config_json else 0})")
         return []
 
 
