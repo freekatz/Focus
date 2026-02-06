@@ -62,27 +62,19 @@ def parse_unified_ai_config(config_json: Optional[str], task_type: str) -> List[
         else:
             task_ids = []
 
-        logger.info(f"[AI Config] Parsing task '{task_type}': task_ids={task_ids}, has_providers={bool(providers_data)}, provider_keys={list(providers_data.keys()) if providers_data else []}")
-
         result = []
 
         if providers_data:
             # New provider-grouped format: compound IDs "pid:mid"
             for compound_id in task_ids:
                 if ":" not in compound_id:
-                    logger.warning(f"[AI Config] Skipping non-compound ID: {compound_id}")
                     continue
                 pid, mid = compound_id.split(":", 1)
                 provider = providers_data.get(pid)
-                if not provider:
-                    logger.warning(f"[AI Config] Provider '{pid}' not found for compound ID '{compound_id}'")
-                    continue
-                if not provider.get("api_key"):
-                    logger.warning(f"[AI Config] Provider '{pid}' ({provider.get('name', '?')}) has no api_key, skipping")
+                if not provider or not provider.get("api_key"):
                     continue
                 model_entry = provider.get("models", {}).get(mid)
                 if not model_entry:
-                    logger.warning(f"[AI Config] Model '{mid}' not found in provider '{pid}'")
                     continue
                 result.append(AIModelConfig(
                     id=compound_id,
@@ -106,10 +98,8 @@ def parse_unified_ai_config(config_json: Optional[str], task_type: str) -> List[
                         base_url=model_data.get("base_url"),
                     ))
 
-        logger.info(f"[AI Config] Parsed {len(result)} models for task '{task_type}': {[f'{m.name}({m.model})' for m in result]}")
         return result
     except json.JSONDecodeError:
-        logger.error(f"Failed to parse unified AI config JSON (length={len(config_json) if config_json else 0})")
         return []
 
 

@@ -6,9 +6,11 @@ from datetime import datetime
 from typing import Optional, Literal
 
 from fastapi import APIRouter, HTTPException, status, Query
+from sqlalchemy import select
 
 from app.api.deps import DbSession, CurrentUser
 from app.models.entry import EntryStatus
+from app.models.user_config import UserConfig
 from app.schemas.entry import (
     EntryResponse,
     EntryListResponse,
@@ -203,16 +205,28 @@ async def update_entry_status(
 
     # 如果是保存操作且是 ArXiv 文章，触发后台解读
     if data.status == EntryStatus.INTERESTED and is_arxiv_entry(entry):
-        # 检查是否需要解读：未解读或解读失败都需要重新解读
-        needs_interpretation = (
-            not entry.ai_summary or
-            entry.ai_content_type == "error" or
-            entry.ai_content_type is None
+        # 检查自动解读是否启用
+        from app.services.ai_executor import is_task_enabled
+        user_config = await db.execute(
+            select(UserConfig).where(UserConfig.user_id == current_user.id)
         )
-        # 排除正在解读中的
-        if needs_interpretation and entry.ai_content_type != "interpreting":
-            from app.tasks.fetch_rss import interpret_arxiv_entry
-            asyncio.create_task(interpret_arxiv_entry(entry.id))
+        config = user_config.scalar_one_or_none()
+        auto_interpret = False
+        if config:
+            ai_models_json = getattr(config, 'ai_models', None)
+            auto_interpret = is_task_enabled(ai_models_json, "interpret") if ai_models_json else getattr(config, 'auto_interpret_arxiv', True)
+
+        if auto_interpret:
+            # 检查是否需要解读：未解读或解读失败都需要重新解读
+            needs_interpretation = (
+                not entry.ai_summary or
+                entry.ai_content_type == "error" or
+                entry.ai_content_type is None
+            )
+            # 排除正在解读中的
+            if needs_interpretation and entry.ai_content_type != "interpreting":
+                from app.tasks.fetch_rss import interpret_arxiv_entry
+                asyncio.create_task(interpret_arxiv_entry(entry.id))
 
     return entry_to_response(updated)
 
@@ -229,24 +243,35 @@ async def batch_update_status(
     """
     # 如果是保存操作，需要获取文章详情来触发解读
     if data.status == EntryStatus.INTERESTED:
-        from app.tasks.fetch_rss import interpret_arxiv_entry
-
         # 获取所有文章
         entries = await entry_service.get_entries_by_ids(db, data.ids)
 
         # 先更新状态
         updated_count = await entry_service.batch_update_status(db, data.ids, data.status)
 
-        # 为需要解读的 ArXiv 文章触发后台任务
-        for entry in entries:
-            if is_arxiv_entry(entry):
-                needs_interpretation = (
-                    not entry.ai_summary or
-                    entry.ai_content_type == "error" or
-                    entry.ai_content_type is None
-                )
-                if needs_interpretation and entry.ai_content_type != "interpreting":
-                    asyncio.create_task(interpret_arxiv_entry(entry.id))
+        # 检查自动解读是否启用
+        from app.services.ai_executor import is_task_enabled
+        user_config = await db.execute(
+            select(UserConfig).where(UserConfig.user_id == current_user.id)
+        )
+        config = user_config.scalar_one_or_none()
+        auto_interpret = False
+        if config:
+            ai_models_json = getattr(config, 'ai_models', None)
+            auto_interpret = is_task_enabled(ai_models_json, "interpret") if ai_models_json else getattr(config, 'auto_interpret_arxiv', True)
+
+        if auto_interpret:
+            from app.tasks.fetch_rss import interpret_arxiv_entry
+            # 为需要解读的 ArXiv 文章触发后台任务
+            for entry in entries:
+                if is_arxiv_entry(entry):
+                    needs_interpretation = (
+                        not entry.ai_summary or
+                        entry.ai_content_type == "error" or
+                        entry.ai_content_type is None
+                    )
+                    if needs_interpretation and entry.ai_content_type != "interpreting":
+                        asyncio.create_task(interpret_arxiv_entry(entry.id))
 
         return EntryBatchResponse(updated_count=updated_count)
 
