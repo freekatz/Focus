@@ -62,6 +62,11 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   // Filter dropdown visibility
   const [showFilters, setShowFilters] = useState(false);
 
+  // Backend search states
+  const [searchResults, setSearchResults] = useState<Article[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Fetch entries with pagination (optimized - only fetches one page at a time)
   // Uses appliedStatusFilters instead of tempStatusFilters
   const fetchEntries = useCallback(async (append = false) => {
@@ -174,9 +179,50 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     return Array.from(yrs).sort().reverse();
   }, [articles]);
 
+  // Backend search function
+  const searchFromBackend = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults(null);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const response = await entriesApi.search(query, { page: 1, page_size: 100 });
+      setSearchResults(response.items.map(mapEntryToArticle));
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchResults(null);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (appliedSearch.trim()) {
+      searchTimeoutRef.current = setTimeout(() => {
+        searchFromBackend(appliedSearch);
+      }, 300);
+    } else {
+      setSearchResults(null);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [appliedSearch, searchFromBackend]);
+
   // Filter and sort articles - now uses applied states only
+  // When searchResults is available, use it instead of articles (backend search)
   const filteredAndSorted = useMemo(() => {
-    let result = articles;
+    // Use search results if available (backend search), otherwise use local articles
+    let result = searchResults !== null ? searchResults : articles;
 
     // Multi-select status filter
     // If 'all' is selected, don't filter by status (show all)
@@ -205,14 +251,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
       });
     }
 
-    if (appliedSearch) {
-      const searchLower = appliedSearch.toLowerCase();
-      result = result.filter(a =>
-        a.title.toLowerCase().includes(searchLower) ||
-        a.author.toLowerCase().includes(searchLower) ||
-        a.tags.some(t => t.toLowerCase().includes(searchLower))
-      );
-    }
+    // Note: Search filtering is now handled by backend API (searchResults)
+    // No need for frontend filtering when using backend search
 
     result = [...result].sort((a, b) => {
       if (sortField === 'date') {
@@ -228,7 +268,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     });
 
     return result;
-  }, [articles, appliedStatusFilters, appliedCategoryFilter, appliedYearFilter, appliedLetterFilter, appliedSearch, sortField, sortOrder]);
+  }, [articles, searchResults, appliedStatusFilters, appliedCategoryFilter, appliedYearFilter, appliedLetterFilter, sortField, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSorted.length / PAGE_SIZE);
@@ -444,6 +484,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     e.stopPropagation();
     if (!article._entry?.id) return;
 
+    const isReinterpret = article._entry?.ai_content_type === 'error';
+
     try {
       await entriesApi.reinterpret(article._entry.id);
       // Update local state to show interpreting status
@@ -452,9 +494,9 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
           ? { ...a, _entry: { ...a._entry!, ai_content_type: 'interpreting', ai_summary: null } }
           : a
       ));
-      showToast(t('home.reinterpretStarted'), 'success');
+      showToast(isReinterpret ? t('home.reinterpretStarted') : t('home.interpretStarted'), 'success');
     } catch (error) {
-      console.error('Failed to reinterpret:', error);
+      console.error('Failed to interpret:', error);
       showToast(t('home.reinterpretFailed'), 'error');
     }
   };
@@ -503,7 +545,11 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
             className={`w-full min-h-touch pl-10 pr-4 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${darkMode ? 'bg-theme-muted border-theme-border focus:ring-theme-accent text-theme-text placeholder-theme-text-tertiary' : 'bg-theme-surface border-theme-border focus:ring-theme-accent/30 text-theme-text placeholder-theme-text-tertiary'}`}
           />
           <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
-            <Icons.Search />
+            {isSearching ? (
+              <div className="animate-spin h-4 w-4 border-2 border-theme-accent border-t-transparent rounded-full" />
+            ) : (
+              <Icons.Search />
+            )}
           </div>
         </div>
 
@@ -527,18 +573,6 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse" />
           )}
         </button>
-
-        {activeFiltersCount > 0 && (
-          <button
-            onClick={resetFilters}
-            className={`flex items-center gap-1.5 min-h-touch px-3 rounded-xl border transition-micro cursor-pointer active:scale-[0.98] text-ui-sm font-medium ${
-              darkMode ? 'border-theme-border text-theme-text-secondary hover:text-theme-text hover:border-theme-text-tertiary' : 'border-theme-border text-theme-text-secondary hover:text-theme-text hover:border-theme-text-tertiary'
-            }`}
-          >
-            <Icons.X />
-            {t('library.clear')}
-          </button>
-        )}
 
         <div className={`flex rounded-xl border overflow-hidden ${darkMode ? 'border-theme-border' : 'border-theme-border'}`}>
           <button
@@ -806,14 +840,18 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
                     </div>
                     <div className="flex items-center gap-1">
                       {article.isFavorite && <div className="text-amber-500 scale-75"><Icons.Star /></div>}
-                      {/* Reinterpret button for failed ArXiv articles */}
-                      {article._entry?.link?.includes('arxiv.org') && article._entry?.ai_content_type === 'error' && (
+                      {/* Interpret button for ArXiv articles: saved + (uninterpreted or failed) */}
+                      {article._entry?.link?.includes('arxiv.org') &&
+                       article._entry?.status === 'interested' &&
+                       (article._entry?.ai_content_type === null ||
+                        article._entry?.ai_content_type === undefined ||
+                        article._entry?.ai_content_type === 'error') && (
                         <button
                           onClick={(e) => handleReinterpret(e, article)}
-                          className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'hover:bg-theme-muted text-theme-warning' : 'hover:bg-theme-muted text-theme-warning'}`}
-                          title={t('home.reinterpret')}
+                          className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'hover:bg-theme-muted text-theme-accent' : 'hover:bg-theme-muted text-theme-accent'}`}
+                          title={article._entry?.ai_content_type === 'error' ? t('home.reinterpret') : t('home.interpret')}
                         >
-                          <Icons.Refresh />
+                          <Icons.Sparkles />
                         </button>
                       )}
                       {article._entry?.link && (

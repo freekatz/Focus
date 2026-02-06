@@ -204,7 +204,7 @@ async def translate_abstract(entry_id: int, config=None):
         entry = result.scalar_one_or_none()
 
         if not entry:
-            logger.warning(f"Entry {entry_id} not found for translation")
+            logger.info(f"Entry {entry_id} not found (may have been deleted), skipping translation")
             return
 
         # 跳过已完成的文章
@@ -338,38 +338,44 @@ async def scan_pending_arxiv_tasks():
             asyncio.create_task(batch_translate_abstracts(untranslated, config))
 
         # 2. 扫描已保存但未解读的 ArXiv 文章（包括解读失败需要重试的）
-        # 注意：no_html 状态不在此列表中，因为没有 HTML 版本的论文无法解读
-        interpretation_result = await db.execute(
-            select(Entry)
-            .options(selectinload(Entry.rss_source))
-            .where(
-                Entry.status == EntryStatus.INTERESTED,
-                or_(
-                    # 未解读：ai_content_type 为空
-                    Entry.ai_content_type.is_(None),
-                    # 解读中断：因重启而停在 interpreting 状态
-                    Entry.ai_content_type == "interpreting",
-                    # 解读失败：error 状态，需要重试（不包括 no_html）
-                    Entry.ai_content_type == "error",
+        # 检查是否开启自动解读（默认开启）
+        auto_interpret = getattr(config, 'auto_interpret_arxiv', True)
+        if not auto_interpret:
+            logger.info("Auto ArXiv interpretation disabled, skipping interpretation scan")
+            uninterpreted = []
+        else:
+            # 注意：no_html 状态不在此列表中，因为没有 HTML 版本的论文无法解读
+            interpretation_result = await db.execute(
+                select(Entry)
+                .options(selectinload(Entry.rss_source))
+                .where(
+                    Entry.status == EntryStatus.INTERESTED,
+                    or_(
+                        # 未解读：ai_content_type 为空
+                        Entry.ai_content_type.is_(None),
+                        # 解读中断：因重启而停在 interpreting 状态
+                        Entry.ai_content_type == "interpreting",
+                        # 解读失败：error 状态，需要重试（不包括 no_html）
+                        Entry.ai_content_type == "error",
+                    )
                 )
             )
-        )
-        saved_entries = list(interpretation_result.scalars().all())
-        uninterpreted = [e for e in saved_entries if is_arxiv_entry(e)]
+            saved_entries = list(interpretation_result.scalars().all())
+            uninterpreted = [e for e in saved_entries if is_arxiv_entry(e)]
 
-        if uninterpreted:
-            logger.info(f"Found {len(uninterpreted)} saved but uninterpreted ArXiv entries, starting interpretation...")
-            # 重置状态并逐个启动解读任务
-            for entry in uninterpreted:
-                # 重置解读相关字段，确保重新开始
-                entry.ai_summary = None
-                entry.ai_content_type = None
-                entry.ai_processed_at = None
-            await db.commit()
+            if uninterpreted:
+                logger.info(f"Found {len(uninterpreted)} saved but uninterpreted ArXiv entries, starting interpretation...")
+                # 重置状态并逐个启动解读任务
+                for entry in uninterpreted:
+                    # 重置解读相关字段，确保重新开始
+                    entry.ai_summary = None
+                    entry.ai_content_type = None
+                    entry.ai_processed_at = None
+                await db.commit()
 
-            # 逐个启动解读任务（解读较重，不并发太多）
-            for entry in uninterpreted:
-                asyncio.create_task(interpret_arxiv_entry(entry.id))
+                # 逐个启动解读任务（解读较重，不并发太多）
+                for entry in uninterpreted:
+                    asyncio.create_task(interpret_arxiv_entry(entry.id))
 
         if not untranslated and not uninterpreted:
             logger.info("No pending ArXiv tasks found")
@@ -394,7 +400,7 @@ async def interpret_arxiv_entry(entry_id: int):
         entry = result.scalar_one_or_none()
 
         if not entry:
-            logger.warning(f"Entry {entry_id} not found for interpretation")
+            logger.info(f"Entry {entry_id} not found (may have been deleted), skipping interpretation")
             return
 
         # 跳过已成功解读的文章

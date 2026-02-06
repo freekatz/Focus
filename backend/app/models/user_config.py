@@ -50,6 +50,7 @@ class UserConfig(Base):
 
     # ArXiv 配置
     auto_translate_abstract: Mapped[bool] = mapped_column(Boolean, default=True)  # 自动翻译摘要
+    auto_interpret_arxiv: Mapped[bool] = mapped_column(Boolean, default=True)  # 自动解读ArXiv
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

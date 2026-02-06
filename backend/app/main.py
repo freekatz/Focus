@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import settings
-from app.database import init_db, close_db
+from app.database import init_db, close_db, run_migrations
 from app.utils.logger import setup_logger, logger
 from app.api.v1.router import api_router
 
@@ -25,6 +25,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Starting Focus v{settings.app_version}")
     await init_db()
     logger.info("Database initialized")
+
+    # 运行数据库迁移（添加新列等）
+    await run_migrations()
+    logger.info("Database migrations completed")
 
     # 初始化默认用户
     from app.services.user_service import init_default_user

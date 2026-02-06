@@ -14,6 +14,7 @@ export interface UserConfig {
   sage_prompt: string | null;
   // ArXiv config
   auto_translate_abstract: boolean;
+  auto_interpret_arxiv: boolean;
   // Zotero config
   zotero_library_id: string | null;
   zotero_library_type: string | null;
@@ -36,6 +37,7 @@ export interface UserConfigUpdateRequest {
   ai_base_url?: string;
   sage_prompt?: string;
   auto_translate_abstract?: boolean;
+  auto_interpret_arxiv?: boolean;
   zotero_library_id?: string;
   zotero_library_type?: string;
   zotero_api_key?: string;

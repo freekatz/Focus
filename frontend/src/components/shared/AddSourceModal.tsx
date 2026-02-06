@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from './Modal';
-import { rssApi } from '../../api';
+import { rssApi, subscriptionsApi } from '../../api';
 import { CATEGORY_OPTIONS } from '../../types/subscription';
 
 interface AddSourceModalProps {
@@ -52,13 +52,18 @@ export function AddSourceModal({ isOpen, onClose, onSuccess }: AddSourceModalPro
     setError(null);
 
     try {
-      await rssApi.create({
+      // 创建 RSS 源
+      const source = await rssApi.create({
         name: name.trim(),
         url: url.trim(),
         category,
         description: description.trim() || undefined,
         website_url: homepage.trim() || undefined,
       });
+
+      // 自动订阅新创建的源
+      await subscriptionsApi.subscribe(source.id);
+
       onSuccess();
       handleClose();
     } catch (err) {

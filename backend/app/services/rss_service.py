@@ -161,6 +161,7 @@ async def create_rss_source(db: AsyncSession, data: RssSourceCreate) -> RssSourc
         description=data.description,
         category=data.category,
         url_hash=url_hash,
+        is_active=False,  # 默认不激活，有用户订阅时才激活
     )
     db.add(rss_source)
     await db.commit()

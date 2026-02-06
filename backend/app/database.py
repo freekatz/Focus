@@ -68,6 +68,46 @@ async def init_db() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
 
+async def run_migrations() -> None:
+    """
+    运行数据库迁移
+
+    检查并添加新列到现有表中。这是一个简单的迁移系统，
+    适用于添加新列的场景。对于复杂迁移，建议使用 Alembic。
+    """
+    from sqlalchemy import text
+
+    migrations = [
+        # (table_name, column_name, column_definition_sqlite, column_definition_postgres)
+        ("user_configs", "auto_translate_abstract", "BOOLEAN DEFAULT 1", "BOOLEAN DEFAULT TRUE"),
+        ("user_configs", "auto_interpret_arxiv", "BOOLEAN DEFAULT 1", "BOOLEAN DEFAULT TRUE"),
+    ]
+
+    async with engine.begin() as conn:
+        is_sqlite = settings.database_url.startswith("sqlite")
+
+        for table_name, column_name, sqlite_def, postgres_def in migrations:
+            # 检查列是否存在
+            if is_sqlite:
+                result = await conn.execute(text(f"PRAGMA table_info({table_name})"))
+                columns = [row[1] for row in result.fetchall()]
+                exists = column_name in columns
+            else:
+                result = await conn.execute(text(f"""
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = '{table_name}' AND column_name = '{column_name}'
+                """))
+                exists = result.fetchone() is not None
+
+            if not exists:
+                # 添加列
+                column_def = sqlite_def if is_sqlite else postgres_def
+                await conn.execute(text(
+                    f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_def}"
+                ))
+                print(f"Migration: added column '{column_name}' to table '{table_name}'")
+
+
 async def close_db() -> None:
     """关闭数据库连接"""
     await engine.dispose()

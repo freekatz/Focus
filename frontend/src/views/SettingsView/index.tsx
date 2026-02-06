@@ -343,6 +343,7 @@ export function SettingsView({
     ai_api_key: "",
     ai_base_url: "",
     auto_translate_abstract: true,
+    auto_interpret_arxiv: true,
     zotero_api_key: "",
     zotero_library_id: "",
     zotero_collection: "",
@@ -369,6 +370,7 @@ export function SettingsView({
           ai_api_key: "",
           ai_base_url: configData.ai_base_url ?? "",
           auto_translate_abstract: configData.auto_translate_abstract ?? true,
+          auto_interpret_arxiv: configData.auto_interpret_arxiv ?? true,
           zotero_api_key: "",
           zotero_library_id: configData.zotero_library_id ?? "",
           zotero_collection: configData.zotero_collection ?? "",
@@ -402,6 +404,7 @@ export function SettingsView({
         ai_model: formData.ai_model,
         ai_base_url: formData.ai_base_url || undefined,
         auto_translate_abstract: formData.auto_translate_abstract,
+        auto_interpret_arxiv: formData.auto_interpret_arxiv,
         zotero_library_id: formData.zotero_library_id || undefined,
         zotero_collection: formData.zotero_collection || undefined,
       };
@@ -866,6 +869,33 @@ export function SettingsView({
             <span
               className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
                 formData.auto_translate_abstract ? "translate-x-6" : ""
+              }`}
+            />
+          </button>
+        </Row>
+        <Row label={t("settings.autoInterpretArxiv")} darkMode={darkMode}>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() =>
+              updateFormField(
+                "auto_interpret_arxiv",
+                !formData.auto_interpret_arxiv,
+              )
+            }
+            className={`relative w-12 h-6 rounded-full transition-colors ${
+              formData.auto_interpret_arxiv
+                ? darkMode
+                  ? "bg-theme-accent"
+                  : "bg-theme-accent"
+                : darkMode
+                  ? "bg-theme-border"
+                  : "bg-zinc-300"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                formData.auto_interpret_arxiv ? "translate-x-6" : ""
               }`}
             />
           </button>

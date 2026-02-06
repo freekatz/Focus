@@ -95,7 +95,8 @@
     "promptReset": "Prompt reset to default",
     "promptResetFailed": "Failed to reset prompt",
     "enterApiKey": "Enter API key",
-    "autoTranslateAbstract": "Auto-translate ArXiv Abstracts"
+    "autoTranslateAbstract": "Auto-translate ArXiv Abstracts",
+    "autoInterpretArxiv": "Auto-interpret ArXiv Articles"
   },
   "password": {
     "changePassword": "Change Password",
@@ -265,6 +266,8 @@
     "interpretFailed": "Interpret Failed",
     "noHtml": "No HTML",
     "noHtmlAvailable": "HTML version not available, deep interpretation unavailable",
+    "interpret": "Interpret",
+    "interpretStarted": "Starting interpretation...",
     "reinterpret": "Reinterpret",
     "reinterpretStarted": "Reinterpretation started",
     "reinterpretFailed": "Failed to start reinterpretation",

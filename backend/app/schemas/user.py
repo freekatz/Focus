@@ -48,6 +48,7 @@ class UserConfigResponse(BaseModel):
     ai_api_key_configured: bool = False  # 标识 AI API Key 是否已配置
     sage_prompt: Optional[str]
     auto_translate_abstract: bool = True  # 是否自动翻译 ArXiv 摘要
+    auto_interpret_arxiv: bool = True  # 是否自动解读 ArXiv 论文
     zotero_library_id: Optional[str]
     zotero_library_type: str
     zotero_collection: Optional[str]
@@ -72,6 +73,7 @@ class UserConfigUpdateRequest(BaseModel):
     ai_base_url: Optional[str] = None
     sage_prompt: Optional[str] = None
     auto_translate_abstract: Optional[bool] = None  # 是否自动翻译 ArXiv 摘要
+    auto_interpret_arxiv: Optional[bool] = None  # 是否自动解读 ArXiv 论文
     zotero_library_id: Optional[str] = None
     zotero_library_type: Optional[str] = None
     zotero_api_key: Optional[str] = None
