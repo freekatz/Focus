@@ -34,14 +34,14 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   const isInitialMount = useRef(true);  // Phase 1: Prevent duplicate API calls on mount
 
   // Applied filter states - these are used for actual filtering
-  const [appliedStatusFilters, setAppliedStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested', 'favorite']));
+  const [appliedStatusFilters, setAppliedStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested']));
   const [appliedCategoryFilter, setAppliedCategoryFilter] = useState<string>('all');
   const [appliedYearFilter, setAppliedYearFilter] = useState<string>('all');
   const [appliedLetterFilter, setAppliedLetterFilter] = useState<string>('all');
   const [appliedSearch, setAppliedSearch] = useState<string>('');
 
   // Temporary filter states - these are used for UI interaction before applying
-  const [tempStatusFilters, setTempStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested', 'favorite']));
+  const [tempStatusFilters, setTempStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested']));
   const [tempCategoryFilter, setTempCategoryFilter] = useState<string>('all');
   const [tempYearFilter, setTempYearFilter] = useState<string>('all');
   const [tempLetterFilter, setTempLetterFilter] = useState<string>('all');
@@ -65,7 +65,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   // Backend search states
   const [searchResults, setSearchResults] = useState<Article[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [searchInput, setSearchInput] = useState(''); // Local input state
 
   // Fetch entries with pagination (optimized - only fetches one page at a time)
   // Uses appliedStatusFilters instead of tempStatusFilters
@@ -197,26 +197,17 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     }
   }, []);
 
-  // Debounced search effect
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    if (appliedSearch.trim()) {
-      searchTimeoutRef.current = setTimeout(() => {
-        searchFromBackend(appliedSearch);
-      }, 300);
+  // Manual search trigger
+  const handleSearch = useCallback(() => {
+    const query = searchInput.trim();
+    setAppliedSearch(query);
+    setTempSearch(query);
+    if (query) {
+      searchFromBackend(query);
     } else {
       setSearchResults(null);
     }
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [appliedSearch, searchFromBackend]);
+  }, [searchInput, searchFromBackend]);
 
   // Filter and sort articles - now uses applied states only
   // When searchResults is available, use it instead of articles (backend search)
@@ -324,7 +315,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
   // Reset all filters to default
   const resetFilters = () => {
-    const defaultStatusFilters = new Set<EntryStatus | 'all'>(['interested', 'favorite']);
+    const defaultStatusFilters = new Set<EntryStatus | 'all'>(['interested']);
 
     setTempStatusFilters(defaultStatusFilters);
     setTempCategoryFilter('all');
@@ -528,29 +519,39 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     <div className="animate-fade-in space-y-4 pb-32 pt-4 md:pt-6 relative">
       {/* Search + Filter + Sort Row */}
       <div className="flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            placeholder={t('library.searchArticles')}
-            value={appliedSearch}
-            onChange={(e) => {
-              setAppliedSearch(e.target.value);
-              setTempSearch(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                applyFilters();
-              }
-            }}
-            className={`w-full min-h-touch pl-10 pr-4 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${darkMode ? 'bg-theme-muted border-theme-border focus:ring-theme-accent text-theme-text placeholder-theme-text-tertiary' : 'bg-theme-surface border-theme-border focus:ring-theme-accent/30 text-theme-text placeholder-theme-text-tertiary'}`}
-          />
-          <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
-            {isSearching ? (
-              <div className="animate-spin h-4 w-4 border-2 border-theme-accent border-t-transparent rounded-full" />
-            ) : (
-              <Icons.Search />
-            )}
+        <div className="relative flex-1 flex gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder={t('library.searchArticles')}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
+              className={`w-full min-h-touch pl-10 pr-4 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${darkMode ? 'bg-theme-muted border-theme-border focus:ring-theme-accent text-theme-text placeholder-theme-text-tertiary' : 'bg-theme-surface border-theme-border focus:ring-theme-accent/30 text-theme-text placeholder-theme-text-tertiary'}`}
+            />
+            <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
+              {isSearching ? (
+                <div className="animate-spin h-4 w-4 border-2 border-theme-accent border-t-transparent rounded-full" />
+              ) : (
+                <Icons.Search />
+              )}
+            </div>
           </div>
+          <button
+            onClick={handleSearch}
+            disabled={isSearching}
+            className={`min-h-touch px-4 rounded-xl border transition-micro cursor-pointer active:scale-[0.98] ${
+              darkMode
+                ? 'bg-theme-muted border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent'
+                : 'bg-theme-surface border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent'
+            } disabled:opacity-50`}
+          >
+            {t('common.search')}
+          </button>
         </div>
 
         <button
@@ -904,8 +905,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
         </div>
       )}
 
-      {/* Load More Button - for fetching more data from API */}
-      {hasMore && !loading && paginatedArticles.length > 0 && (
+      {/* Load More Button - for fetching more data from API (not shown in search mode) */}
+      {hasMore && !loading && !searchResults && paginatedArticles.length > 0 && (
         <div className="flex justify-center py-6">
           <button
             onClick={() => fetchEntries(true)}

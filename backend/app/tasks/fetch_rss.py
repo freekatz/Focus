@@ -229,7 +229,7 @@ async def translate_abstract(entry_id: int, config=None):
             entry.translation_status = TranslationStatus.TRANSLATING.value
             await db.commit()
 
-            logger.info(f"Translating abstract for entry {entry_id}: '{entry.title[:50]}...'")
+            logger.info(f"Translating entry {entry_id} using model '{config.ai_model}': '{entry.title[:50]}...'")
 
             translator = ArxivTranslator(config)
             translated, brief_summary = await translator.translate_and_summarize(
@@ -452,7 +452,20 @@ async def interpret_arxiv_entry(entry_id: int):
             await db.commit()
 
         except Exception as e:
-            logger.error(f"Failed to interpret entry {entry_id}: {e}")
+            error_msg = str(e)
+            # 解析常见 AI API 错误
+            if "404" in error_msg:
+                logger.error(f"Failed to interpret entry {entry_id}: Model '{config.ai_model}' not found. "
+                           f"Base URL: {config.ai_base_url or 'default'}. Please check AI settings.")
+                entry.ai_summary = f"解读失败: 模型 '{config.ai_model}' 不存在，请检查 AI 设置"
+            elif "401" in error_msg or "Unauthorized" in error_msg:
+                logger.error(f"Failed to interpret entry {entry_id}: Invalid API key.")
+                entry.ai_summary = "解读失败: API 密钥无效，请检查 AI 设置"
+            elif "429" in error_msg or "rate" in error_msg.lower():
+                logger.error(f"Failed to interpret entry {entry_id}: Rate limit exceeded.")
+                entry.ai_summary = "解读失败: API 请求频率超限，请稍后重试"
+            else:
+                logger.error(f"Failed to interpret entry {entry_id}: {e}")
+                entry.ai_summary = f"解读失败: {error_msg}"
             entry.ai_content_type = "error"
-            entry.ai_summary = f"解读失败: {str(e)}"
             await db.commit()
