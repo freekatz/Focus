@@ -13,17 +13,21 @@ interface SidebarItemProps {
   darkMode: boolean;
 }
 
-const SidebarItem = ({ active, onClick, icon, label, darkMode }: SidebarItemProps) => (
+const SidebarItem = ({ active, onClick, icon, label }: SidebarItemProps) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
+    className={`w-full flex items-center space-x-3 px-4 min-h-touch py-3 rounded-xl transition-micro cursor-pointer relative overflow-hidden ${
       active
-        ? (darkMode ? 'bg-slate-800 text-indigo-300' : 'bg-spira-100 text-spira-800 font-medium')
-        : (darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900')
+        ? 'bg-theme-selected text-theme-accent font-medium'
+        : 'text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text active:scale-[0.98]'
     }`}
   >
-    <div className={active ? (darkMode ? 'text-indigo-400' : 'text-spira-600') : ''}>{icon}</div>
-    <span>{label}</span>
+    {/* Active indicator bar */}
+    {active && (
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-theme-accent" />
+    )}
+    <div className={active ? 'text-theme-accent' : ''}>{icon}</div>
+    <span className="text-ui">{label}</span>
   </button>
 );
 
@@ -55,9 +59,9 @@ export function Sidebar({ activeTab, onTabChange, darkMode, themeMode, setThemeM
   };
 
   return (
-    <aside className={`hidden md:flex flex-col w-64 border-r flex-shrink-0 ${darkMode ? 'border-slate-800 bg-slate-900' : 'border-zinc-200 bg-white'} p-6`}>
+    <aside className="hidden md:flex flex-col w-64 border-r flex-shrink-0 border-theme-border bg-theme-surface p-6">
       <div className="flex items-center space-x-2 mb-8">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-indigo-500' : 'bg-spira-600'} text-white`}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-theme-accent text-white">
           <Icons.Focus />
         </div>
         <h1 className="text-2xl font-bold tracking-tight font-serif">Focus</h1>
@@ -69,17 +73,15 @@ export function Sidebar({ activeTab, onTabChange, darkMode, themeMode, setThemeM
         <SidebarItem active={activeTab === 'library'} onClick={() => onTabChange('library')} icon={<Icons.Library />} label={t('nav.library')} darkMode={darkMode} />
       </nav>
 
-      <div className={`border-t pt-4 space-y-2 ${darkMode ? 'border-slate-800' : 'border-zinc-200'}`}>
+      <div className="border-t pt-4 space-y-2 border-theme-border">
         <SidebarItem active={activeTab === 'settings'} onClick={() => onTabChange('settings')} icon={<Icons.Settings />} label={t('nav.settings')} darkMode={darkMode} />
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={cycleTheme}
-          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
-            darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'
-          }`}
+          className="w-full flex items-center space-x-3 px-4 min-h-touch py-3 rounded-xl transition-micro cursor-pointer text-theme-text-secondary hover:bg-theme-muted hover:text-theme-text active:scale-[0.98]"
         >
           <div>{getThemeIcon()}</div>
-          <span>{getThemeLabel()}</span>
+          <span className="text-ui">{getThemeLabel()}</span>
         </button>
       </div>
     </aside>

@@ -4,7 +4,7 @@ RSS 服务 - 处理 RSS 相关业务逻辑
 import asyncio
 import ssl
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import partial
 from typing import Optional, List, Tuple
 import feedparser
@@ -146,7 +146,7 @@ async def get_rss_source_by_url_hash(db: AsyncSession, url_hash: str) -> Optiona
 
 async def create_rss_source(db: AsyncSession, data: RssSourceCreate) -> RssSource:
     """创建 RSS 源"""
-    logger.info(f"Creating RSS source: {data.name}, url={data.url}, allow_ssl_bypass={data.allow_ssl_bypass}")
+    logger.info(f"Creating RSS source: {data.name}, url={data.url}")
     url_hash = generate_hash(data.url)
 
     # 检查是否已存在
@@ -160,9 +160,8 @@ async def create_rss_source(db: AsyncSession, data: RssSourceCreate) -> RssSourc
         website_url=data.website_url,
         description=data.description,
         category=data.category,
-        fetch_interval=data.fetch_interval,
-        allow_ssl_bypass=data.allow_ssl_bypass,
         url_hash=url_hash,
+        is_active=False,  # 默认不激活，有用户订阅时才激活
     )
     db.add(rss_source)
     await db.commit()
@@ -306,6 +305,8 @@ async def fetch_rss_entries(db: AsyncSession, rss_source: RssSource) -> Tuple[in
     1. 同一 RSS 源内通过 content_hash 去重
     2. 对于孤立条目（rss_source_id 为 NULL 的已保留文章），
        通过 content_hash 匹配并重新关联到当前源，避免重复
+    3. 全局去重：跨 RSS 源检查是否已存在相同 content_hash 的条目，
+       避免多个源（如不同 ArXiv 分类）抓取同一篇文章产生重复
 
     Returns:
         (fetched_count, new_count): 采集总数和新增数量
@@ -327,6 +328,7 @@ async def fetch_rss_entries(db: AsyncSession, rss_source: RssSource) -> Tuple[in
         fetched_count = len(feed.entries)
         new_count = 0
         reassociated_count = 0
+        skipped_duplicates = 0
 
         for entry in feed.entries:
             # 生成内容哈希用于去重
@@ -361,19 +363,48 @@ async def fetch_rss_entries(db: AsyncSession, rss_source: RssSource) -> Tuple[in
                 reassociated_count += 1
                 continue
 
-            # 解析发布时间
+            # 全局去重：检查是否已存在于其他源（跨源去重）
+            # 避免多个 ArXiv 分类订阅同一篇论文产生重复
+            global_duplicate = await db.execute(
+                select(Entry).where(
+                    Entry.content_hash == content_hash,
+                    Entry.rss_source_id.isnot(None),
+                ).limit(1)
+            )
+            if global_duplicate.scalar_one_or_none():
+                skipped_duplicates += 1
+                continue
+
+            # 解析发布时间（兼容 RSS 和 Atom 格式）
+            # RSS 使用 published_parsed，Atom 可能使用 updated_parsed
             published_at = None
             if entry.get("published_parsed"):
                 published_at = datetime(*entry.published_parsed[:6])
+            elif entry.get("updated_parsed"):
+                # Atom feed 可能只有 updated 没有 published
+                published_at = datetime(*entry.updated_parsed[:6])
 
-            # 获取内容
+            # 过滤超过 30 天的旧文章
+            if published_at:
+                cutoff_date = datetime.utcnow() - timedelta(days=30)
+                if published_at < cutoff_date:
+                    continue
+
+            # 获取内容（兼容 RSS 和 Atom 格式）
+            # Atom: content > summary
+            # RSS: content:encoded > description > summary
             content = ""
             if entry.get("content"):
+                # Atom 和 RSS content:encoded
                 content = entry.content[0].get("value", "")
             elif entry.get("summary"):
                 content = entry.summary
             elif entry.get("description"):
                 content = entry.description
+
+            # 清理标题和内容中的多余空白
+            title = title.strip() if title else ""
+            content = content.strip() if content else ""
 
             # 创建条目
             new_entry = Entry(
@@ -399,13 +430,15 @@ async def fetch_rss_entries(db: AsyncSession, rss_source: RssSource) -> Tuple[in
         rss_source.unread_count += new_count  # 重新关联的保持原状态，不计入 unread
 
         await db.commit()
+
+        # 构建日志信息
+        log_parts = [f"Fetched RSS '{rss_source.name}': {fetched_count} entries, {new_count} new"]
         if reassociated_count > 0:
-            logger.info(
-                f"Fetched RSS '{rss_source.name}': {fetched_count} entries, "
-                f"{new_count} new, {reassociated_count} reassociated"
-            )
-        else:
-            logger.info(f"Fetched RSS '{rss_source.name}': {fetched_count} entries, {new_count} new")
+            log_parts.append(f"{reassociated_count} reassociated")
+        if skipped_duplicates > 0:
+            log_parts.append(f"{skipped_duplicates} duplicates skipped")
+        logger.info(", ".join(log_parts))
+
         return fetched_count, new_count
 
     except Exception as e:

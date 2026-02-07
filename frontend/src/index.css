@@ -2,50 +2,195 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base styles - Apple-inspired warm white */
+/* ===== Disable Overscroll Bounce ===== */
+/* Prevent rubber band/bounce effect on mobile browsers */
+html, body {
+  overscroll-behavior: none;
+}
+
+/* Apply to all scrollable containers */
+.overflow-y-auto,
+.overflow-x-auto,
+.overflow-auto {
+  overscroll-behavior: none;
+}
+
+/* ===== CSS Variable Defaults (Cream Light Theme) ===== */
+/* These are set dynamically by applyTheme() in themes.ts */
+:root {
+  --color-base: #FDF8F3;
+  --color-surface: #FFFCF7;
+  --color-muted: #F7F3ED;
+  --color-border: #E8E2DA;
+  --color-selected: #F0EBE4;
+  --color-text: #2D2926;
+  --color-text-secondary: #5C534A;
+  --color-text-tertiary: #8B8178;
+  --color-text-muted: #A8A29E;
+  --color-accent: #C2410C;
+  --color-accent-hover: #9A3412;
+  --color-accent-soft: #EA580C;
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+  --color-favorite: #F59E0B;
+}
+
+/* ===== Reduced Motion Support ===== */
+/* Respect user's motion preferences for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===== Micro-interaction Utilities ===== */
+/* Unified transition classes for consistent animations */
+.transition-micro {
+  transition: all 200ms ease-out;
+}
+
+.transition-micro-fast {
+  transition: all 150ms ease-out;
+}
+
+.transition-micro-slow {
+  transition: all 300ms ease-out;
+}
+
+/* Interactive element base styles */
+.interactive-base {
+  cursor: pointer;
+  transition: all 200ms ease-out;
+}
+
+.interactive-base:active {
+  transform: scale(0.98);
+}
+
+/* Card hover effect */
+.card-interactive {
+  cursor: pointer;
+  transition: all 200ms ease-out;
+}
+
+.card-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dark .card-interactive:hover {
+  box-shadow: 0 4px 12px rgba(61, 54, 48, 0.1);  /* sepia-text with light opacity */
+}
+
+/* Button hover scale (subtle, no layout shift) */
+.btn-interactive {
+  cursor: pointer;
+  transition: all 200ms ease-out;
+}
+
+.btn-interactive:hover {
+  transform: scale(1.02);
+}
+
+.btn-interactive:active {
+  transform: scale(0.98);
+}
+
+/* Base styles - Theme colors via CSS variables */
 body {
   font-family: 'Source Sans 3', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #FAFAF9;
-  color: #1C1C1E;
+  background-color: var(--color-base);
+  color: var(--color-text);
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Optimize text rendering */
   text-rendering: optimizeLegibility;
+  /* Smooth theme transitions */
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Responsive base font sizing */
+/* ===== Responsive Base Font Sizing ===== */
+/* Mobile-first: 16px minimum for readability (WCAG compliance) */
 html {
-  /* Mobile-first: smaller base for mobile devices */
-  font-size: 14px;
+  font-size: 16px;
 }
 
 /* Tablet and small desktop */
 @media (min-width: 768px) {
   html {
-    font-size: 15px;
+    font-size: 16px;
   }
 }
 
 /* Desktop and larger screens */
 @media (min-width: 1024px) {
   html {
-    font-size: 16px;
+    font-size: 17px;
   }
 }
 
 /* Large desktop screens */
 @media (min-width: 1440px) {
   html {
-    font-size: 17px;
+    font-size: 18px;
   }
 }
 
-/* Dark mode base */
+/* ===== Font Size Adjustment Classes ===== */
+/* Small: -2px from default at each breakpoint */
+html.font-size-small {
+  font-size: 14px !important;
+}
+@media (min-width: 768px) {
+  html.font-size-small {
+    font-size: 14px !important;
+  }
+}
+@media (min-width: 1024px) {
+  html.font-size-small {
+    font-size: 15px !important;
+  }
+}
+@media (min-width: 1440px) {
+  html.font-size-small {
+    font-size: 16px !important;
+  }
+}
+
+/* Medium: uses default values (no override needed) */
+
+/* Large: +2px from default at each breakpoint */
+html.font-size-large {
+  font-size: 18px !important;
+}
+@media (min-width: 768px) {
+  html.font-size-large {
+    font-size: 18px !important;
+  }
+}
+@media (min-width: 1024px) {
+  html.font-size-large {
+    font-size: 19px !important;
+  }
+}
+@media (min-width: 1440px) {
+  html.font-size-large {
+    font-size: 20px !important;
+  }
+}
+
+/* Dark mode base - Colors handled by CSS variables */
 .dark body,
 body.dark {
-  background-color: #121212;
-  color: rgba(255, 255, 255, 0.87);
+  background-color: var(--color-base);
+  color: var(--color-text);
 }
 
 /* Hide scrollbar utility */
@@ -58,58 +203,34 @@ body.dark {
   scrollbar-width: none;
 }
 
-/* Custom styled scrollbar - Light mode */
-.scrollbar-styled::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.scrollbar-styled::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollbar-styled::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-
-.scrollbar-styled::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
-  background-clip: content-box;
-}
-
-/* Dark mode scrollbar - subtle white overlay */
+/* Custom styled scrollbar - Uses theme colors */
+.scrollbar-styled::-webkit-scrollbar,
 .scrollbar-styled-dark::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
+.scrollbar-styled::-webkit-scrollbar-track,
 .scrollbar-styled-dark::-webkit-scrollbar-track {
   background: transparent;
 }
 
+.scrollbar-styled::-webkit-scrollbar-thumb,
 .scrollbar-styled-dark::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: content-box;
+  background: var(--color-border);
+  border-radius: 3px;
 }
 
+.scrollbar-styled::-webkit-scrollbar-thumb:hover,
 .scrollbar-styled-dark::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-  background-clip: content-box;
+  background: var(--color-text-muted);
 }
 
 /* Firefox scrollbar */
-.scrollbar-styled {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
-}
-
+.scrollbar-styled,
 .scrollbar-styled-dark {
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
 }
 
 /* Animations from refer prototype */
@@ -177,9 +298,9 @@ body.dark {
 }
 
 /* ===== Article Content Styles - Light Mode ===== */
-/* Optimized for readability following Apple/Google guidelines */
+/* Optimized for readability, uses theme CSS variables */
 .article-content-light {
-  color: #3C3C43;  /* Secondary text - easier on eyes than pure black */
+  color: var(--color-text-secondary);
   font-size: 1rem;       /* Base size, scales with responsive html font-size */
   line-height: 1.75;     /* Comfortable line height for reading */
   letter-spacing: -0.01em; /* Slight negative tracking for better readability */
@@ -198,40 +319,41 @@ body.dark {
 .article-content-light h4,
 .article-content-light h5,
 .article-content-light h6 {
-  color: #1C1C1E;  /* Primary text for headings */
+  color: var(--color-text);
   font-weight: 600;
-  line-height: 1.3;
-  margin-top: 1.75em;
-  margin-bottom: 0.75em;
-  letter-spacing: -0.02em;
+  line-height: 1.5;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  letter-spacing: -0.01em;
 }
 
-.article-content-light h1 { font-size: 1.875rem; font-weight: 700; }
-.article-content-light h2 { font-size: 1.5rem; }
-.article-content-light h3 { font-size: 1.25rem; }
-.article-content-light h4 { font-size: 1.125rem; }
-.article-content-light h5 { font-size: 1rem; }
-.article-content-light h6 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+/* Uniform font sizing - subtle hierarchy through weight, not size */
+.article-content-light h1 { font-size: 1.125rem; font-weight: 700; }
+.article-content-light h2 { font-size: 1.0625rem; font-weight: 600; }
+.article-content-light h3 { font-size: 1rem; font-weight: 600; }
+.article-content-light h4 { font-size: 1rem; font-weight: 600; }
+.article-content-light h5 { font-size: 1rem; font-weight: 600; }
+.article-content-light h6 { font-size: 1rem; font-weight: 600; color: var(--color-text-tertiary); }
 
 .article-content-light p {
   margin-bottom: 1.25em;
 }
 
 .article-content-light a {
-  color: #0d947c;  /* Brand teal - optimized for light bg */
+  color: var(--color-accent);
   text-decoration: none;
-  border-bottom: 1px solid rgba(13, 148, 124, 0.3);
+  border-bottom: 1px solid var(--color-accent-soft);
   transition: border-color 0.2s ease;
 }
 
 .article-content-light a:hover {
-  border-bottom-color: #0d947c;
+  border-bottom-color: var(--color-accent);
 }
 
 .article-content-light strong,
 .article-content-light b {
   font-weight: 600;
-  color: #1C1C1E;
+  color: var(--color-text);
 }
 
 .article-content-light em,
@@ -240,16 +362,16 @@ body.dark {
 }
 
 .article-content-light blockquote {
-  border-left: 3px solid #0d947c;
+  border-left: 3px solid var(--color-accent);
   padding-left: 1.25rem;
   margin: 1.75em 0;
-  color: #636366;  /* Tertiary text */
+  color: var(--color-text-tertiary);
   font-style: italic;
 }
 
 .article-content-light pre {
-  background-color: #F5F5F4;
-  border: 1px solid #E5E5E5;
+  background-color: var(--color-muted);
+  border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   padding: 1.25rem;
   overflow-x: auto;
@@ -263,10 +385,10 @@ body.dark {
 }
 
 .article-content-light :not(pre) > code {
-  background-color: #F5F5F4;
+  background-color: var(--color-muted);
   padding: 0.2rem 0.4rem;
   border-radius: 0.375rem;
-  color: #0d947c;
+  color: var(--color-accent);
 }
 
 .article-content-light ul,
@@ -296,7 +418,7 @@ body.dark {
 .article-content-light hr {
   border: none;
   height: 1px;
-  background: linear-gradient(to right, transparent, #E5E5E5, transparent);
+  background: linear-gradient(to right, transparent, var(--color-border), transparent);
   margin: 2.5em 0;
 }
 
@@ -316,15 +438,15 @@ body.dark {
 
 .article-content-light th,
 .article-content-light td {
-  border: 1px solid #E5E5E5;
+  border: 1px solid var(--color-border);
   padding: 0.75rem 1rem;
   text-align: left;
 }
 
 .article-content-light th {
-  background-color: #FAFAF9;
+  background-color: var(--color-muted);
   font-weight: 600;
-  color: #1C1C1E;
+  color: var(--color-text);
 }
 
 .article-content-light figure {
@@ -333,21 +455,20 @@ body.dark {
 
 .article-content-light figcaption {
   font-size: 0.875rem;
-  color: #636366;
+  color: var(--color-text-tertiary);
   text-align: center;
   margin-top: 0.75rem;
 }
 
 .article-content-light del {
   text-decoration: line-through;
-  color: #AEAEB2;
+  color: var(--color-text-muted);
 }
 
 /* ===== Article Content Styles - Dark Mode ===== */
-/* Following Google Material Design 3 dark theme guidelines */
-/* Using reduced white brightness (87%) and dark gray surfaces */
+/* Uses theme CSS variables for consistent theming */
 .article-content-dark {
-  color: rgba(255, 255, 255, 0.70);  /* Slightly reduced for body text */
+  color: var(--color-text-secondary);
   font-size: 1rem;       /* Base size, scales with responsive html font-size */
   line-height: 1.75;
   letter-spacing: -0.01em;
@@ -366,40 +487,41 @@ body.dark {
 .article-content-dark h4,
 .article-content-dark h5,
 .article-content-dark h6 {
-  color: rgba(255, 255, 255, 0.87);  /* High emphasis text */
+  color: var(--color-text);
   font-weight: 600;
-  line-height: 1.3;
-  margin-top: 1.75em;
-  margin-bottom: 0.75em;
-  letter-spacing: -0.02em;
+  line-height: 1.5;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  letter-spacing: -0.01em;
 }
 
-.article-content-dark h1 { font-size: 1.875rem; font-weight: 700; }
-.article-content-dark h2 { font-size: 1.5rem; }
-.article-content-dark h3 { font-size: 1.25rem; }
-.article-content-dark h4 { font-size: 1.125rem; }
-.article-content-dark h5 { font-size: 1rem; }
-.article-content-dark h6 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+/* Uniform font sizing - subtle hierarchy through weight, not size */
+.article-content-dark h1 { font-size: 1.125rem; font-weight: 700; }
+.article-content-dark h2 { font-size: 1.0625rem; font-weight: 600; }
+.article-content-dark h3 { font-size: 1rem; font-weight: 600; }
+.article-content-dark h4 { font-size: 1rem; font-weight: 600; }
+.article-content-dark h5 { font-size: 1rem; font-weight: 600; }
+.article-content-dark h6 { font-size: 1rem; font-weight: 600; color: var(--color-text-tertiary); }
 
 .article-content-dark p {
   margin-bottom: 1.25em;
 }
 
 .article-content-dark a {
-  color: #80CBC4;  /* Desaturated teal for dark mode */
+  color: var(--color-accent);
   text-decoration: none;
-  border-bottom: 1px solid rgba(128, 203, 196, 0.3);
+  border-bottom: 1px solid var(--color-accent-soft);
   transition: border-color 0.2s ease;
 }
 
 .article-content-dark a:hover {
-  border-bottom-color: #80CBC4;
+  border-bottom-color: var(--color-accent);
 }
 
 .article-content-dark strong,
 .article-content-dark b {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.87);
+  color: var(--color-text);
 }
 
 .article-content-dark em,
@@ -408,16 +530,16 @@ body.dark {
 }
 
 .article-content-dark blockquote {
-  border-left: 3px solid #4DB6AC;  /* Desaturated teal accent */
+  border-left: 3px solid var(--color-accent);
   padding-left: 1.25rem;
   margin: 1.75em 0;
-  color: rgba(255, 255, 255, 0.60);  /* Medium emphasis */
+  color: var(--color-text-tertiary);
   font-style: italic;
 }
 
 .article-content-dark pre {
-  background-color: #1E1E1E;  /* Raised surface */
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: var(--color-muted);
+  border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   padding: 1.25rem;
   overflow-x: auto;
@@ -431,10 +553,10 @@ body.dark {
 }
 
 .article-content-dark :not(pre) > code {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--color-muted);
   padding: 0.2rem 0.4rem;
   border-radius: 0.375rem;
-  color: #80CBC4;  /* Desaturated teal */
+  color: var(--color-accent);
 }
 
 .article-content-dark ul,
@@ -464,7 +586,7 @@ body.dark {
 .article-content-dark hr {
   border: none;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.12), transparent);
+  background: linear-gradient(to right, transparent, var(--color-border), transparent);
   margin: 2.5em 0;
 }
 
@@ -473,6 +595,10 @@ body.dark {
   height: auto;
   border-radius: 0.75rem;
   margin: 1.5em 0;
+  /* 深色模式下为图片添加浅色背景，解决矢量图/透明图显示问题 */
+  background-color: #f8f8f8;
+  padding: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .article-content-dark table {
@@ -484,15 +610,15 @@ body.dark {
 
 .article-content-dark th,
 .article-content-dark td {
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--color-border);
   padding: 0.75rem 1rem;
   text-align: left;
 }
 
 .article-content-dark th {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--color-muted);
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.87);
+  color: var(--color-text);
 }
 
 .article-content-dark figure {
@@ -501,14 +627,14 @@ body.dark {
 
 .article-content-dark figcaption {
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.60);
+  color: var(--color-text-tertiary);
   text-align: center;
   margin-top: 0.75rem;
 }
 
 .article-content-dark del {
   text-decoration: line-through;
-  color: rgba(255, 255, 255, 0.38);
+  color: var(--color-text-muted);
 }
 
 /* First element should not have top margin */
@@ -523,11 +649,295 @@ body.dark {
   margin-bottom: 0;
 }
 
-/* Selection colors */
-.article-content-light ::selection {
-  background-color: rgba(13, 148, 124, 0.2);
+/* Table wrapper for horizontal scroll on wide tables */
+.article-content-light .table-wrapper,
+.article-content-dark .table-wrapper {
+  overflow-x: auto;
+  margin: 1.5em 0;
+  -webkit-overflow-scrolling: touch;
 }
 
+.article-content-light .table-wrapper table,
+.article-content-dark .table-wrapper table {
+  margin: 0;
+}
+
+/* Code block styling */
+.article-content-light .code-block,
+.article-content-dark .code-block {
+  margin: 1.5em 0;
+  overflow-x: auto;
+}
+
+/* Inline code styling */
+.article-content-light .inline-code,
+.article-content-dark .inline-code {
+  background-color: var(--color-muted);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.375rem;
+  color: var(--color-accent);
+  font-family: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 0.875em;
+}
+
+/* Selection colors */
+.article-content-light ::selection,
 .article-content-dark ::selection {
-  background-color: rgba(77, 182, 172, 0.3);
+  background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+/* ===== KaTeX Math Formula Styles ===== */
+/* Base KaTeX styling */
+.article-content-light .katex,
+.article-content-dark .katex {
+  font-size: 1.1em;
+  color: var(--color-text);
+}
+
+/* Block math (display mode) */
+.article-content-light .katex-display,
+.article-content-dark .katex-display {
+  margin: 1.5em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+
+/* Block math background for dark mode */
+.article-content-dark .katex-display {
+  background-color: var(--color-muted);
+  border-radius: 0.5rem;
+  padding: 1em;
+}
+
+/* Inline math spacing */
+.article-content-light .katex:not(.katex-display .katex),
+.article-content-dark .katex:not(.katex-display .katex) {
+  padding: 0 0.1em;
+}
+
+/* Math error styling */
+.article-content-light .katex-error,
+.article-content-dark .katex-error {
+  color: #EF4444;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  background-color: rgba(239, 68, 68, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 0.25em;
+}
+
+/* Ensure math formulas in tables display correctly */
+.article-content-light td .katex,
+.article-content-light th .katex,
+.article-content-dark td .katex,
+.article-content-dark th .katex {
+  font-size: 1em;
+}
+
+/* Responsive math - allow horizontal scroll on mobile */
+@media (max-width: 640px) {
+  .article-content-light .katex-display,
+  .article-content-dark .katex-display {
+    font-size: 0.9em;
+  }
+}
+
+/* ===== Component Utility Classes ===== */
+/* These classes provide consistent styling across the app */
+
+/* ----- Button Components ----- */
+/* Base button styles */
+.btn-base {
+  @apply inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200;
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply active:scale-[0.98];
+}
+
+/* Button sizes */
+.btn-sm {
+  @apply btn-base h-9 px-3 text-ui-sm;
+}
+
+.btn-md {
+  @apply btn-base min-h-touch h-11 px-4 text-ui;
+}
+
+.btn-lg {
+  @apply btn-base min-h-touch-lg h-[52px] px-6 text-ui;
+}
+
+/* Button variants - Uses theme CSS variables */
+.btn-primary {
+  @apply text-white;
+  background-color: var(--color-accent);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.btn-primary:focus-visible {
+  --tw-ring-color: var(--color-accent);
+}
+
+.btn-secondary {
+  background-color: var(--color-muted);
+  color: var(--color-text);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-border);
+}
+
+.btn-secondary:focus-visible {
+  --tw-ring-color: var(--color-border);
+}
+
+.btn-ghost {
+  @apply bg-transparent;
+  color: var(--color-text-secondary);
+}
+
+.btn-ghost:hover {
+  background-color: var(--color-muted);
+}
+
+.btn-ghost:focus-visible {
+  --tw-ring-color: var(--color-border);
+}
+
+.btn-danger {
+  @apply text-white;
+  background-color: var(--color-error);
+}
+
+.btn-danger:hover {
+  filter: brightness(0.9);
+}
+
+.btn-danger:focus-visible {
+  --tw-ring-color: var(--color-error);
+}
+
+/* Icon button (square touch target) */
+.btn-icon {
+  @apply btn-base min-h-touch min-w-touch h-11 w-11 p-0;
+}
+
+.btn-icon-sm {
+  @apply btn-base h-9 w-9 p-0;
+}
+
+/* ----- Form Input Components ----- */
+.input {
+  @apply w-full min-h-touch px-4 py-3 rounded-xl border transition-colors duration-200;
+  @apply text-body-sm focus:outline-none focus:ring-2 focus:ring-offset-0;
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.input:focus {
+  border-color: var(--color-accent);
+  --tw-ring-color: color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+
+.input-error {
+  @apply border-red-500 focus:border-red-500 focus:ring-red-500/20;
+}
+
+/* Form label */
+.form-label {
+  @apply block text-ui-sm font-medium mb-2;
+  color: var(--color-text-secondary);
+}
+
+/* ----- Card Components ----- */
+.card {
+  @apply rounded-2xl p-4 md:p-6 shadow-sm;
+  background-color: var(--color-surface);
+}
+
+.card-hover {
+  @apply card cursor-pointer transition-all duration-200;
+  @apply hover:shadow-md hover:-translate-y-0.5;
+}
+
+.card-hover:hover {
+  background-color: var(--color-muted);
+}
+
+/* ----- Modal Components ----- */
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  @apply bg-black/50 backdrop-blur-sm;
+}
+
+.modal-content {
+  @apply relative w-full max-w-lg max-h-[90vh] overflow-hidden;
+  @apply rounded-2xl shadow-xl;
+  background-color: var(--color-surface);
+}
+
+.modal-header {
+  @apply flex items-center justify-between px-5 py-4 md:px-6 md:py-5 border-b;
+  border-color: var(--color-border);
+}
+
+.modal-body {
+  @apply px-5 py-4 md:px-6 overflow-y-auto;
+}
+
+.modal-footer {
+  @apply flex items-center justify-end gap-3 px-5 py-4 md:px-6 md:py-5 border-t;
+  border-color: var(--color-border);
+}
+
+/* ----- Navigation Components ----- */
+.nav-item {
+  @apply flex items-center gap-3 min-h-touch px-4 py-3 rounded-xl;
+  @apply text-ui font-medium transition-colors duration-200;
+  color: var(--color-text-secondary);
+}
+
+.nav-item:hover {
+  background-color: var(--color-muted);
+}
+
+.nav-item-active {
+  background-color: var(--color-selected);
+  color: var(--color-accent);
+}
+
+/* ----- Badge/Tag Components ----- */
+.badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded text-caption font-medium;
+  background-color: var(--color-muted);
+  color: var(--color-text-secondary);
+}
+
+.badge-primary {
+  background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: var(--color-accent);
+}
+
+.badge-success {
+  background-color: color-mix(in srgb, var(--color-success) 10%, transparent);
+  color: var(--color-success);
+}
+
+/* ----- Responsive Container ----- */
+.container-responsive {
+  @apply w-full max-w-4xl mx-auto px-4 md:px-6 lg:px-8;
+}
+
+/* ----- Touch-friendly spacing ----- */
+.touch-spacing {
+  @apply gap-2 md:gap-3;
 }

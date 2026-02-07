@@ -61,7 +61,7 @@ async def get_user_subscriptions(
             id=sub.id,
             rss_source_id=sub.rss_source_id,
             is_active=sub.is_active,
-            custom_fetch_interval=sub.custom_fetch_interval,
+            custom_refresh_time=sub.custom_refresh_time,
             created_at=sub.created_at,
             rss_source_name=source.name,
             rss_source_url=source.url,
@@ -117,9 +117,14 @@ async def create_subscription(
         user_id=user_id,
         rss_source_id=data.rss_source_id,
         is_active=data.is_active,
-        custom_fetch_interval=data.custom_fetch_interval,
+        custom_refresh_time=data.custom_refresh_time,
     )
     db.add(subscription)
+
+    # 激活 RSS 源的自动获取（有订阅者时启用）
+    if not source.is_active:
+        source.is_active = True
+
     await db.commit()
     await db.refresh(subscription)
 
@@ -147,7 +152,27 @@ async def update_subscription(
 
 async def delete_subscription(db: AsyncSession, subscription: UserRssSubscription):
     """删除订阅"""
+    rss_source_id = subscription.rss_source_id
+
     await db.delete(subscription)
+
+    # 检查是否还有其他用户订阅该源
+    remaining_count = await db.execute(
+        select(func.count()).select_from(UserRssSubscription).where(
+            UserRssSubscription.rss_source_id == rss_source_id
+        )
+    )
+    count = remaining_count.scalar() or 0
+
+    # 如果没有其他订阅者，停止该源的自动获取
+    if count == 0:
+        source_result = await db.execute(
+            select(RssSource).where(RssSource.id == rss_source_id)
+        )
+        source = source_result.scalar_one_or_none()
+        if source and source.is_active:
+            source.is_active = False
+
     await db.commit()
 
 
@@ -185,6 +210,11 @@ async def batch_subscribe(
             is_active=True,
         )
         db.add(subscription)
+
+        # 激活 RSS 源的自动获取
+        if not source.is_active:
+            source.is_active = True
+
         result["success"].append(source_id)
 
     await db.commit()
@@ -234,7 +264,6 @@ async def get_rss_market(
             category=source.category,
             icon_url=source.icon_url,
             entry_count=source.entry_count,
-            allow_ssl_bypass=source.allow_ssl_bypass,
             is_subscribed=source.id in subscribed_ids,
         )
         for source in sources

@@ -1,6 +1,7 @@
 """
 FastAPI 应用入口
 """
+import asyncio
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
@@ -11,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import settings
-from app.database import init_db, close_db
+from app.database import init_db, close_db, run_migrations
 from app.utils.logger import setup_logger, logger
 from app.api.v1.router import api_router
 
@@ -25,6 +26,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await init_db()
     logger.info("Database initialized")
 
+    # 运行数据库迁移（添加新列等）
+    await run_migrations()
+    logger.info("Database migrations completed")
+
     # 初始化默认用户
     from app.services.user_service import init_default_user
     await init_default_user()
@@ -33,6 +38,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.tasks.scheduler import start_scheduler
     start_scheduler()
     logger.info("Scheduler started")
+
+    # 扫描并处理未完成的 ArXiv 翻译和解读任务
+    from app.tasks.fetch_rss import scan_pending_arxiv_tasks
+    asyncio.create_task(scan_pending_arxiv_tasks())
 
     yield
 

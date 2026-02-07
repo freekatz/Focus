@@ -1,0 +1,104 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: focus-postgres
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - focus-net
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-focus}
+      - POSTGRES_USER=${POSTGRES_USER:-focus}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-focus-change-me}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - focus-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-focus} -d ${POSTGRES_DB:-focus}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    image: ghcr.nju.edu.cn/${GITHUB_USERNAME:-freekatz}/focus-backend:latest
+    container_name: focus-backend
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      focus-net:
+        aliases:
+          - backend
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - DEFAULT_PASSWORD=${DEFAULT_PASSWORD:-focus123}
+      - POSTGRES_DB=${POSTGRES_DB:-focus}
+      - POSTGRES_USER=${POSTGRES_USER:-focus}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-focus-change-me}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://focus:focus-change-me@postgres:5432/focus}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - AI_PROVIDER=${AI_PROVIDER:-openai}
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-gpt-4o-mini}
+      - AI_BASE_URL=${AI_BASE_URL:-}
+      - ZOTERO_LIBRARY_ID=${ZOTERO_LIBRARY_ID:-}
+      - ZOTERO_API_KEY=${ZOTERO_API_KEY:-}
+    volumes:
+      - focus-data:/app/data
+      - focus-logs:/app/logs
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.nju.edu.cn/${GITHUB_USERNAME:-freekatz}/focus-frontend:latest
+    container_name: focus-frontend
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - focus-net
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  focus-net:
+    name: focus-net
+
+volumes:
+  focus-data:
+    name: focus-data
+  focus-logs:
+    name: focus-logs
+  focus-postgres-data:
+    name: focus-postgres-data

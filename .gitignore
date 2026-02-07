@@ -21,6 +21,7 @@ build/
 *.db
 *.sqlite
 *.sqlite3
+data/
 
 # Environment files
 .env
@@ -68,3 +69,5 @@ htmlcov/
 *.tmp
 *.temp
 .cache/
+tmp/
+

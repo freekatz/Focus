@@ -1,94 +1,52 @@
 # Focus
 
-English | [中文](README_zh.md)
+RSS 信息源聚合与 AI 驱动的内容管理平台。
 
-A modern, minimalist RSS reader with AI-powered insights. Designed for vibe reading with a card-based swipe interface.
+Focus 帮助你高效管理信息流，聚合多种 RSS 源，通过 AI 智能解读 ArXiv 论文，让知识获取更加轻松高效。
 
-## Features
+## 功能特性
 
-- **Card-based Reading** - Tinder-style swipe interface for quick article triage
-- **AI Insights** - Summarize articles and generate key takeaways using multiple AI providers
-- **RSS Subscriptions** - Subscribe to your favorite sources with automatic fetching
-- **Smart Library** - Organize saved articles with favorites, archives, and trash
-- **Personal RSS Feed** - Export your saved articles as an RSS/Atom feed
-- **Zotero Integration** - Export articles directly to your Zotero library
-- **Dark Mode** - Beautiful light and dark themes
-- **Responsive Design** - Optimized for both desktop and mobile
+- **RSS 订阅** - 支持博客、社区、论文、社交媒体等多种分类
+- **文章管理** - 五种状态流转，批量操作，全文搜索
+- **ArXiv 解读** - 自动翻译摘要，Q1-Q6 框架深度解读
+- **Zotero 导出** - 一键导出到 Zotero
+- **个性化** - 多主题、明暗模式、中英文
 
-## Tech Stack
+详见 [使用说明](./USER_GUIDE.md)
 
-**Frontend:**
-- React 19 + TypeScript
-- Tailwind CSS
-- Vite
+## 快速开始
 
-**Backend:**
-- FastAPI (Python)
-- SQLAlchemy (async) + SQLite/PostgreSQL
-- LangChain (multi-provider AI support)
+详见 [部署文档](./DEPLOYMENT.md)
 
-## Quick Start
+## 技术栈
 
-### Prerequisites
+| 层级 | 技术                                 |
+| ---- | ------------------------------------ |
+| 前端 | React 19 + TypeScript + Tailwind CSS |
+| 后端 | FastAPI + SQLAlchemy + SQLite        |
+| 部署 | Docker + Caddy                       |
 
-- Node.js 18+
-- Python 3.10+
-- (Optional) AI API key (OpenAI, Anthropic, Google, or Ollama)
+## 项目结构
 
-### Installation
+```
+Focus/
+├── backend/           # FastAPI 后端
+│   ├── app/
+│   │   ├── api/       # API 路由
+│   │   ├── models/    # 数据模型
+│   │   ├── services/  # 业务逻辑
+│   │   └── tasks/     # 定时任务
+│   └── requirements.txt
+├── frontend/          # React 前端
+│   ├── src/
+│   │   ├── api/       # API 调用
+│   │   ├── components/
+│   │   ├── views/
+│   │   └── types/
+│   └── nginx.conf
+└── docker-compose.yml
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/katz/focus.git
-   cd focus
-   ```
+## 开源协议
 
-2. **Setup Backend**
-   ```bash
-   cd backend
-   cp .env.example .env
-   # Edit .env with your configuration
-
-   pip install -r requirements.txt
-   python run.py
-   ```
-
-3. **Setup Frontend**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-4. **Access the app**
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:8000
-   - API Docs: http://localhost:8000/docs
-
-### Default Login
-
-- Username: `admin`
-- Password: `focus123`
-
-## Configuration
-
-Key environment variables in `backend/.env`:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | Database connection string | SQLite |
-| `SECRET_KEY` | JWT secret key | Change in production! |
-| `AI_PROVIDER` | AI provider (openai/anthropic/google/ollama) | openai |
-| `AI_MODEL` | Model name | gpt-4o-mini |
-| `AI_API_KEY` | API key for AI provider | - |
-| `RSS_FETCH_INTERVAL` | Auto-fetch interval (minutes) | 30 |
-
-See [.env.example](backend/.env.example) for all options.
-
-## Deployment
-
-For production deployment instructions, see [docs/deployment.md](docs/deployment.md).
-
-## License
-
-[MIT License](LICENSE) - Copyright (c) 2025 Katz
+MIT License

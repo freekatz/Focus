@@ -4,7 +4,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Integer, Boolean, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Integer, Boolean, DateTime, ForeignKey, UniqueConstraint, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -30,7 +30,8 @@ class UserRssSubscription(Base):
 
     # 用户个性化配置（覆盖全局配置）
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)  # 是否启用
-    custom_fetch_interval: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # 自定义采集间隔
+    custom_fetch_interval: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # 自定义采集间隔（已废弃）
+    custom_refresh_time: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # 每日刷新时间，如 "08:00"
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

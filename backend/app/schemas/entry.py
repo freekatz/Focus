@@ -39,6 +39,11 @@ class EntryResponse(BaseModel):
     fetched_at: datetime
     created_at: datetime
 
+    # ArXiv 翻译
+    translated_abstract: Optional[str] = None
+    brief_summary: Optional[str] = None  # 简要总结（帮助快速判断）
+    translation_status: Optional[str] = None  # pending, translating, completed, failed
+
     # 关联信息（即使源被删除，仍保留源名称）
     rss_source_name: Optional[str] = None
 

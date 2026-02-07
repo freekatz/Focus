@@ -1,6 +1,5 @@
 import type { Entry, Article, EntryStatus, Subscription, RssMarketItem, Feed, RssCategory } from '../types';
 import { formatRelativeTime, estimateReadTime, stripHtml, truncateText, formatAuthors } from './formatters';
-import { CATEGORY_DISPLAY } from '../types/subscription';
 
 /**
  * Maps backend Entry to frontend Article for display
@@ -9,12 +8,22 @@ export function mapEntryToArticle(entry: Entry): Article {
   const content = entry.content || '';
   const plainContent = stripHtml(content);
 
+  // 优先使用简要总结作为摘要，其次是翻译摘要，最后是原始内容
+  let snippet = '';
+  if (entry.brief_summary) {
+    snippet = entry.brief_summary;
+  } else if (entry.translated_abstract) {
+    snippet = truncateText(entry.translated_abstract, 200);
+  } else {
+    snippet = truncateText(plainContent, 200);
+  }
+
   return {
     id: String(entry.id),
     title: entry.title,
     source: entry.rss_source_name || 'Unknown Source',
     author: formatAuthors(entry.author),
-    snippet: truncateText(plainContent, 200),
+    snippet,
     content: content,
     timestamp: formatRelativeTime(entry.published_at || entry.fetched_at),
     status: mapBackendStatusToFrontend(entry.status),
@@ -71,12 +80,10 @@ export function mapSubscriptionToFeed(subscription: Subscription): Feed {
     id: String(subscription.id),
     name: subscription.rss_source_name,
     url: subscription.rss_source_url,
-    category: CATEGORY_DISPLAY[subscription.rss_source_category] || 'Other',
+    category: subscription.rss_source_category || 'other',
     subscribed: true,
     description: subscription.rss_source_description || undefined,
-    refreshRate: subscription.custom_fetch_interval
-      ? formatFetchInterval(subscription.custom_fetch_interval)
-      : 'Default',
+    refreshTime: subscription.custom_refresh_time || 'default',
     _subscription: subscription,
   };
 }
@@ -89,29 +96,19 @@ export function mapMarketItemToFeed(item: RssMarketItem): Feed {
     id: String(item.id),
     name: item.name,
     url: item.url,
-    category: CATEGORY_DISPLAY[item.category] || 'Other',
+    category: item.category || 'other',
     subscribed: item.is_subscribed,
     description: item.description || undefined,
     homepage: item.website_url || undefined,
-    allow_ssl_bypass: item.allow_ssl_bypass,
     _marketItem: item,
   };
 }
 
 /**
- * Format fetch interval minutes to human-readable string
- */
-function formatFetchInterval(minutes: number): string {
-  if (minutes < 60) return `${minutes}min`;
-  if (minutes === 60) return 'Hourly';
-  if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
-  return 'Daily';
-}
-
-/**
  * Get all unique categories from feeds
+ * Returns category keys (e.g., 'blog', 'paper') for i18n translation
  */
 export function getUniqueCategories(feeds: Feed[]): string[] {
   const categories = new Set(feeds.map(f => f.category));
-  return ['All', ...Array.from(categories)];
+  return ['all', ...Array.from(categories)];
 }
