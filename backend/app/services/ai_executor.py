@@ -25,6 +25,7 @@ class AIModelConfig:
     id: str
     name: str
     provider: str
+    provider_name: str  # 服务商显示名称，如 "Gemini Pro"
     model: str
     api_key: str
     base_url: Optional[str] = None
@@ -80,6 +81,7 @@ def parse_unified_ai_config(config_json: Optional[str], task_type: str) -> List[
                     id=compound_id,
                     name=model_entry.get("name", ""),
                     provider=provider.get("provider", "openai"),
+                    provider_name=provider.get("name", provider.get("provider", "openai")),
                     model=model_entry.get("model", ""),
                     api_key=provider.get("api_key", ""),
                     base_url=provider.get("base_url"),
@@ -93,6 +95,7 @@ def parse_unified_ai_config(config_json: Optional[str], task_type: str) -> List[
                         id=model_id,
                         name=model_data.get("name", ""),
                         provider=model_data.get("provider", "openai"),
+                        provider_name=model_data.get("provider", "openai"),
                         model=model_data.get("model", ""),
                         api_key=model_data.get("api_key", ""),
                         base_url=model_data.get("base_url"),
@@ -142,6 +145,7 @@ def get_task_models(user_config: UserConfig, task_type: str) -> List[AIModelConf
             id="legacy",
             name="默认模型",
             provider=user_config.ai_provider or "openai",
+            provider_name=user_config.ai_provider or "openai",
             model=user_config.ai_model or "gpt-4o-mini",
             api_key=user_config.ai_api_key,
             base_url=user_config.ai_base_url,
@@ -183,7 +187,7 @@ class AIModelExecutor:
         """
         self.models = [primary] + (fallbacks or [])
         self.current_index = 0
-        model_names = [f"{m.name}({m.model}) via {m.provider}" for m in self.models]
+        model_names = [f"{m.name}({m.model}) via {m.provider_name}" for m in self.models]
         logger.info(f"AIModelExecutor initialized with models: {' → '.join(model_names)}")
 
     def _create_client(self, model_config: AIModelConfig) -> AsyncOpenAI:
@@ -241,7 +245,7 @@ class AIModelExecutor:
         for i, model_config in enumerate(self.models):
             try:
                 client = self._create_client(model_config)
-                logger.info(f"[{task_name}] Using model: {model_config.name} ({model_config.model}) via {model_config.provider}")
+                logger.info(f"[{task_name}] Using model: {model_config.name} ({model_config.model}) via {model_config.provider_name}")
                 result = await task_func(client, model_config.model)
                 return result
             except Exception as e:
@@ -252,7 +256,7 @@ class AIModelExecutor:
                 # 检查是否应该切换模型
                 if self._should_switch(e) and i < len(self.models) - 1:
                     next_model = self.models[i + 1]
-                    logger.info(f"[{task_name}] Switching from '{model_config.name}' ({model_config.provider}) to '{next_model.name}' ({next_model.provider})")
+                    logger.info(f"[{task_name}] Switching from '{model_config.name}' ({model_config.provider_name}) to '{next_model.name}' ({next_model.provider_name})")
                     continue
 
                 # 不应切换或已是最后一个模型，直接抛出
