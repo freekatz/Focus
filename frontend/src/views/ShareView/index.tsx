@@ -41,10 +41,10 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
   // Render entry content based on ArXiv status
   const renderEntryContent = (entry: Entry) => {
     const isArxiv = isArxivEntry(entry);
-    const hasInterpretation = entry.ai_summary && entry.ai_content_type === 'arxiv_interpretation';
+    const hasInterpretation = entry.ai_summary && entry.task_interpret_status === 'completed';
     const translatedAbstract = entry.translated_abstract;
     const briefSummary = entry.brief_summary;
-    const isTranslationCompleted = entry.translation_status === 'completed';
+    const isTranslationCompleted = entry.task_translation_status === 'completed';
 
     if (!isArxiv) {
       return <ArticleContent content={entry.content || ''} darkMode={darkMode} />;
@@ -228,7 +228,7 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
   if (share_type === 'entries' && entries && entries.length > 0) {
     const current = entries[currentIndex];
     const isArxiv = isArxivEntry(current);
-    const hasInterpretation = current.ai_summary && current.ai_content_type === 'arxiv_interpretation';
+    const hasInterpretation = current.ai_summary && current.task_interpret_status === 'completed';
 
     return (
       <div className={`min-h-screen flex flex-col ${fontClass} ${darkMode ? 'bg-theme-base text-theme-text' : 'bg-theme-base text-theme-text'}`}>
@@ -267,13 +267,13 @@ export function ShareView({ code, darkMode, fontClass = 'font-sans' }: ShareView
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                   hasInterpretation
                     ? "bg-theme-success/15 text-theme-success"
-                    : current.translation_status === 'completed'
+                    : current.task_translation_status === 'completed'
                       ? "bg-theme-success/15 text-theme-success"
                       : "bg-theme-accent/15 text-theme-accent"
                 }`}>
                   {hasInterpretation
                     ? t("home.interpreted")
-                    : current.translation_status === 'completed'
+                    : current.task_translation_status === 'completed'
                       ? t("library.translated")
                       : "ArXiv"}
                 </span>

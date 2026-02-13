@@ -139,12 +139,15 @@ async def get_share(share_code: str):
                     is_read=entry.is_read,
                     marked_at=entry.marked_at,
                     ai_summary=entry.ai_summary,
-                    ai_content_type=entry.ai_content_type,
                     ai_processed_at=entry.ai_processed_at,
+                    task_interpret_status=entry.task_interpret_status,
+                    task_translation_status=entry.task_translation_status,
                     user_notes=entry.user_notes,
                     exported_to_zotero=entry.exported_to_zotero,
                     fetched_at=entry.fetched_at,
                     created_at=entry.created_at,
+                    translated_abstract=entry.translated_abstract,
+                    brief_summary=entry.brief_summary,
                     rss_source_name=entry.rss_source_name or (entry.rss_source.name if entry.rss_source else None),
                 )
             )

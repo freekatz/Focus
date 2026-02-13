@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import async_session_maker
 from app.models.rss import RssSource
-from app.models.entry import Entry
+from app.models.entry import Entry, TaskStatus
 from app.models.user import User
 from app.services.rss_service import fetch_rss_entries
 from app.services.arxiv_service import is_arxiv_entry, ArxivInterpreter
@@ -135,16 +135,15 @@ async def trigger_arxiv_translation(db, source_id: int):
 
     # 查找该源下待翻译的 ArXiv 文章（pending 或未设置状态且未翻译）
     from sqlalchemy import or_
-    from app.models.entry import TranslationStatus
 
     result = await db.execute(
         select(Entry).where(
             Entry.rss_source_id == source_id,
             Entry.translated_abstract.is_(None),  # 未翻译
             or_(
-                Entry.translation_status.is_(None),
-                Entry.translation_status == TranslationStatus.PENDING.value,
-                Entry.translation_status == TranslationStatus.FAILED.value,  # 重试失败的
+                Entry.task_translation_status.is_(None),
+                Entry.task_translation_status == TaskStatus.PENDING.value,
+                Entry.task_translation_status == TaskStatus.FAILED.value,  # 重试失败的
             )
         )
     )
@@ -157,8 +156,8 @@ async def trigger_arxiv_translation(db, source_id: int):
 
     # 标记为待翻译状态
     for entry in arxiv_entries:
-        if not entry.translation_status:
-            entry.translation_status = TranslationStatus.PENDING.value
+        if not entry.task_translation_status:
+            entry.task_translation_status = TaskStatus.PENDING.value
     await db.commit()
 
     logger.info(f"Found {len(arxiv_entries)} ArXiv entries to translate for source {source_id}")
@@ -199,7 +198,6 @@ async def translate_abstract(entry_id: int, config=None):
         config: 用户配置（可选，如果不传则从数据库获取）
     """
     from app.services.arxiv_service import ArxivTranslator
-    from app.models.entry import TranslationStatus
 
     async with async_session_maker() as db:
         result = await db.execute(select(Entry).where(Entry.id == entry_id))
@@ -228,7 +226,7 @@ async def translate_abstract(entry_id: int, config=None):
             return
 
         try:
-            entry.translation_status = TranslationStatus.TRANSLATING.value
+            entry.task_translation_status = TaskStatus.RUNNING.value
             await db.commit()
 
             logger.info(f"Translating entry {entry_id} using model '{config.ai_model}': '{entry.title[:50]}...'")
@@ -241,14 +239,14 @@ async def translate_abstract(entry_id: int, config=None):
 
             entry.translated_abstract = translated
             entry.brief_summary = brief_summary
-            entry.translation_status = TranslationStatus.COMPLETED.value
+            entry.task_translation_status = TaskStatus.COMPLETED.value
             await db.commit()
 
             logger.info(f"Completed translation for entry {entry_id}")
 
         except Exception as e:
             logger.error(f"Failed to translate entry {entry_id}: {e}")
-            entry.translation_status = TranslationStatus.FAILED.value
+            entry.task_translation_status = TaskStatus.FAILED.value
             await db.commit()
 
 
@@ -257,11 +255,11 @@ async def scan_pending_arxiv_tasks():
     启动时扫描未完成的 ArXiv 翻译和解读任务
 
     扫描并处理：
-    1. 未翻译的 ArXiv 文章（translation_status 为 pending/failed/translating）
+    1. 未翻译的 ArXiv 文章（task_translation_status 为 pending/failed/running）
     2. 已翻译但缺少简要总结的 ArXiv 文章
-    3. 已保存但未解读的 ArXiv 文章（status=interested 且 ai_content_type 为空或 interpreting）
+    3. 已保存但未解读的 ArXiv 文章（status=interested 且 task_interpret_status 为空或 running）
     """
-    from app.models.entry import EntryStatus, TranslationStatus
+    from app.models.entry import EntryStatus
     from app.services.arxiv_service import is_arxiv_entry, validate_ai_api_key
     from app.services.ai_executor import is_task_enabled
 
@@ -303,11 +301,11 @@ async def scan_pending_arxiv_tasks():
             .options(selectinload(Entry.rss_source))
             .where(
                 or_(
-                    Entry.translation_status.is_(None),
-                    Entry.translation_status == TranslationStatus.PENDING.value,
-                    Entry.translation_status == TranslationStatus.FAILED.value,
-                    Entry.translation_status == TranslationStatus.TRANSLATING.value,  # 可能因重启而中断
-                    Entry.translation_status == TranslationStatus.COMPLETED.value,  # 已完成但可能内容为空
+                    Entry.task_translation_status.is_(None),
+                    Entry.task_translation_status == TaskStatus.PENDING.value,
+                    Entry.task_translation_status == TaskStatus.FAILED.value,
+                    Entry.task_translation_status == TaskStatus.RUNNING.value,  # 可能因重启而中断
+                    Entry.task_translation_status == TaskStatus.COMPLETED.value,  # 已完成但可能内容为空
                 )
             )
         )
@@ -335,7 +333,7 @@ async def scan_pending_arxiv_tasks():
             logger.info(f"Found {len(untranslated)} untranslated ArXiv entries, starting translation...")
             # 标记为待翻译
             for entry in untranslated:
-                entry.translation_status = TranslationStatus.PENDING.value
+                entry.task_translation_status = TaskStatus.PENDING.value
             await db.commit()
             # 启动后台翻译任务
             asyncio.create_task(batch_translate_abstracts(untranslated, config))
@@ -348,19 +346,19 @@ async def scan_pending_arxiv_tasks():
             logger.info("Auto ArXiv interpretation disabled, skipping interpretation scan")
             uninterpreted = []
         else:
-            # 注意：no_html 状态不在此列表中，因为没有 HTML 版本的论文无法解读
+            # 注意：skipped 状态不在此列表中，因为没有 HTML 版本的论文无法解读
             interpretation_result = await db.execute(
                 select(Entry)
                 .options(selectinload(Entry.rss_source))
                 .where(
                     Entry.status == EntryStatus.INTERESTED,
                     or_(
-                        # 未解读：ai_content_type 为空
-                        Entry.ai_content_type.is_(None),
-                        # 解读中断：因重启而停在 interpreting 状态
-                        Entry.ai_content_type == "interpreting",
-                        # 解读失败：error 状态，需要重试（不包括 no_html）
-                        Entry.ai_content_type == "error",
+                        # 未解读：task_interpret_status 为空
+                        Entry.task_interpret_status.is_(None),
+                        # 解读中断：因重启而停在 running 状态
+                        Entry.task_interpret_status == TaskStatus.RUNNING.value,
+                        # 解读失败：failed 状态，需要重试（不包括 skipped）
+                        Entry.task_interpret_status == TaskStatus.FAILED.value,
                     )
                 )
             )
@@ -373,7 +371,7 @@ async def scan_pending_arxiv_tasks():
                 for entry in uninterpreted:
                     # 重置解读相关字段，确保重新开始
                     entry.ai_summary = None
-                    entry.ai_content_type = None
+                    entry.task_interpret_status = None
                     entry.ai_processed_at = None
                 await db.commit()
 
@@ -408,12 +406,12 @@ async def interpret_arxiv_entry(entry_id: int):
             return
 
         # 跳过已成功解读的文章
-        if entry.ai_content_type == "arxiv_interpretation" and entry.ai_summary:
+        if entry.task_interpret_status == TaskStatus.COMPLETED.value and entry.ai_summary:
             logger.info(f"Entry {entry_id} already interpreted, skipping")
             return
 
-        # 跳过正在解读中的文章（但如果是从启动扫描来的 interpreting 状态，需要继续）
-        # 这里不跳过 interpreting 状态，因为可能是重启后恢复的任务
+        # 跳过正在解读中的文章（但如果是从启动扫描来的 running 状态，需要继续）
+        # 这里不跳过 running 状态，因为可能是重启后恢复的任务
 
         # 获取用户配置（使用默认用户）
         user_result = await db.execute(select(User).limit(1))
@@ -432,7 +430,7 @@ async def interpret_arxiv_entry(entry_id: int):
 
         try:
             # 更新状态：解读中
-            entry.ai_content_type = "interpreting"
+            entry.task_interpret_status = TaskStatus.RUNNING.value
             await db.commit()
 
             logger.info(f"Starting interpretation for entry {entry_id}: '{entry.title[:50]}...'")
@@ -443,7 +441,7 @@ async def interpret_arxiv_entry(entry_id: int):
 
             # 保存结果到数据库
             entry.ai_summary = interpretation
-            entry.ai_content_type = "arxiv_interpretation"
+            entry.task_interpret_status = TaskStatus.COMPLETED.value
             entry.ai_processed_at = datetime.utcnow()
             await db.commit()
 
@@ -451,7 +449,7 @@ async def interpret_arxiv_entry(entry_id: int):
 
         except NoHtmlAvailableError as e:
             logger.info(f"Entry {entry_id} has no HTML version: {e}")
-            entry.ai_content_type = "no_html"
+            entry.task_interpret_status = TaskStatus.SKIPPED.value
             entry.ai_summary = None  # 不保存错误信息，前端显示翻译内容
             await db.commit()
 
@@ -471,5 +469,5 @@ async def interpret_arxiv_entry(entry_id: int):
             else:
                 logger.error(f"Failed to interpret entry {entry_id}: {e}")
                 entry.ai_summary = f"解读失败: {error_msg}"
-            entry.ai_content_type = "error"
+            entry.task_interpret_status = TaskStatus.FAILED.value
             await db.commit()

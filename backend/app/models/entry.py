@@ -22,12 +22,17 @@ class EntryStatus(str, Enum):
     ALL = "all"                 # 全部状态（不过滤）
 
 
-class TranslationStatus(str, Enum):
-    """ArXiv 翻译状态"""
-    PENDING = "pending"         # 待翻译
-    TRANSLATING = "translating" # 翻译中
-    COMPLETED = "completed"     # 已完成
-    FAILED = "failed"           # 翻译失败
+class TaskStatus(str, Enum):
+    """统一任务处理状态"""
+    PENDING = "pending"         # 待处理
+    RUNNING = "running"         # 处理中（原 translating / interpreting）
+    COMPLETED = "completed"     # 已完成（原 completed / arxiv_interpretation）
+    FAILED = "failed"           # 处理失败（原 failed / error）
+    SKIPPED = "skipped"         # 跳过（原 no_html，无法处理）
+
+
+# 向后兼容别名
+TranslationStatus = TaskStatus
 
 
 class Entry(Base):
@@ -63,13 +68,19 @@ class Entry(Base):
 
     # AI 生成内容
     ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    ai_content_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     ai_processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
-    # ArXiv 翻译
+    # 旧列（已弃用，由迁移脚本复制到新列后不再使用）
+    ai_content_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    translation_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)
+
+    # 统一任务状态（新列，取代 ai_content_type 和 translation_status）
+    task_interpret_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # 解读任务状态
+    task_translation_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # 翻译任务状态
+
+    # ArXiv 翻译结果
     translated_abstract: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 翻译后的摘要
     brief_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 简要总结（帮助快速判断）
-    translation_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)  # 翻译状态
 
     # 用户笔记
     user_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -103,8 +114,9 @@ class Entry(Base):
         Index("ix_entry_source_name", "rss_source_name"),  # 源名称索引，用于筛选孤立条目
         # Focus 页面优化：按状态、源、显示顺序查询
         Index("ix_entry_unread_source_order", "status", "rss_source_id", "display_order"),
-        # AI 解读状态查询
-        Index("ix_entry_ai_status", "ai_content_type", "ai_processed_at"),
+        # AI 解读状态查询（新列）
+        Index("ix_entry_task_interpret_status", "task_interpret_status", "ai_processed_at"),
+        Index("ix_entry_task_translation_status", "task_translation_status"),
         # 唯一约束：同一源下同一内容只能有一条
         # 注意：当 rss_source_id 为 NULL 时（源已删除），此约束不生效
         # SQLite 和 PostgreSQL 都将 NULL 视为不相等，所以孤立条目不受约束影响

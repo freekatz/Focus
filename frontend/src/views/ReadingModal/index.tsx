@@ -36,13 +36,13 @@ export function ReadingModal({ article, onClose, darkMode, onDiscard, onFavorite
   const isArxiv = isArxivArticle(article);
 
   // ArXiv status checks
-  const hasInterpretation = article._entry?.ai_summary && article._entry?.ai_content_type === 'arxiv_interpretation';
-  const isInterpreting = article._entry?.ai_content_type === 'interpreting';
-  const isInterpretFailed = article._entry?.ai_content_type === 'error';
-  const isNoHtml = article._entry?.ai_content_type === 'no_html';
+  const hasInterpretation = article._entry?.ai_summary && article._entry?.task_interpret_status === 'completed';
+  const isInterpreting = article._entry?.task_interpret_status === 'running';
+  const isInterpretFailed = article._entry?.task_interpret_status === 'failed';
+  const isNoHtml = article._entry?.task_interpret_status === 'skipped';
   const translatedAbstract = article._entry?.translated_abstract;
-  const translationStatus = article._entry?.translation_status;
-  const isTranslating = translationStatus === 'translating';
+  const translationStatus = article._entry?.task_translation_status;
+  const isTranslating = translationStatus === 'running';
   const isTranslationFailed = translationStatus === 'failed';
   const isTranslationCompleted = translationStatus === 'completed';
   const briefSummary = article._entry?.brief_summary;

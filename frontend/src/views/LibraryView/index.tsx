@@ -39,6 +39,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   const [appliedYearFilter, setAppliedYearFilter] = useState<string>('all');
   const [appliedLetterFilter, setAppliedLetterFilter] = useState<string>('all');
   const [appliedSearch, setAppliedSearch] = useState<string>('');
+  const [appliedTranslationFilter, setAppliedTranslationFilter] = useState<string>('all');
+  const [appliedInterpretFilter, setAppliedInterpretFilter] = useState<string>('all');
 
   // Temporary filter states - these are used for UI interaction before applying
   const [tempStatusFilters, setTempStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested']));
@@ -46,6 +48,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   const [tempYearFilter, setTempYearFilter] = useState<string>('all');
   const [tempLetterFilter, setTempLetterFilter] = useState<string>('all');
   const [tempSearch, setTempSearch] = useState<string>('');
+  const [tempTranslationFilter, setTempTranslationFilter] = useState<string>('all');
+  const [tempInterpretFilter, setTempInterpretFilter] = useState<string>('all');
 
   // Sort states
   const [sortField, setSortField] = useState<SortField>('date');
@@ -82,10 +86,19 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     }
 
     try {
+      // Build task status filter params
+      const taskFilterParams: Record<string, string> = {};
+      if (appliedTranslationFilter !== 'all') {
+        taskFilterParams.task_translation_status = appliedTranslationFilter;
+      }
+      if (appliedInterpretFilter !== 'all') {
+        taskFilterParams.task_interpret_status = appliedInterpretFilter;
+      }
+
       // Phase 2: Handle 'all' status - call single endpoint instead of parallel requests
       if (appliedStatusFilters.has('all')) {
         // Call single 'all' endpoint (backend handles fetching all statuses)
-        const response = await entriesApi.list({ status: 'all' as any, page: currentPage, page_size: pageSize });
+        const response = await entriesApi.list({ status: 'all' as any, page: currentPage, page_size: pageSize, ...taskFilterParams });
         const mappedArticles = response.items.map(mapEntryToArticle);
 
         if (append) {
@@ -104,7 +117,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
         const responses = await Promise.all(
           statuses.map(status =>
-            entriesApi.list({ status, page: currentPage, page_size: pageSize })
+            entriesApi.list({ status, page: currentPage, page_size: pageSize, ...taskFilterParams })
           )
         );
 
@@ -127,7 +140,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [page, appliedStatusFilters]);
+  }, [page, appliedStatusFilters, appliedTranslationFilter, appliedInterpretFilter]);
 
   // Initial load - only fetch once
   useEffect(() => {
@@ -157,7 +170,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     if (hasLoaded.current) {
       fetchEntries();
     }
-  }, [appliedStatusFilters]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [appliedStatusFilters, appliedTranslationFilter, appliedInterpretFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get unique categories and years for filters
   const categories = useMemo(() => {
@@ -288,7 +301,9 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
       tempCategoryFilter !== appliedCategoryFilter ||
       tempYearFilter !== appliedYearFilter ||
       tempLetterFilter !== appliedLetterFilter ||
-      tempSearch !== appliedSearch
+      tempSearch !== appliedSearch ||
+      tempTranslationFilter !== appliedTranslationFilter ||
+      tempInterpretFilter !== appliedInterpretFilter
     );
   };
 
@@ -303,6 +318,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     setAppliedYearFilter(tempYearFilter);
     setAppliedLetterFilter(tempLetterFilter);
     setAppliedSearch(tempSearch);
+    setAppliedTranslationFilter(tempTranslationFilter);
+    setAppliedInterpretFilter(tempInterpretFilter);
 
     // Reset pagination
     setPage(1);
@@ -322,12 +339,16 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     setTempYearFilter('all');
     setTempLetterFilter('all');
     setTempSearch('');
+    setTempTranslationFilter('all');
+    setTempInterpretFilter('all');
 
     setAppliedStatusFilters(defaultStatusFilters);
     setAppliedCategoryFilter('all');
     setAppliedYearFilter('all');
     setAppliedLetterFilter('all');
     setAppliedSearch('');
+    setAppliedTranslationFilter('all');
+    setAppliedInterpretFilter('all');
 
     setPage(1);
     setCurrentPage(1);
@@ -341,6 +362,8 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     setTempYearFilter(appliedYearFilter);
     setTempLetterFilter(appliedLetterFilter);
     setTempSearch(appliedSearch);
+    setTempTranslationFilter(appliedTranslationFilter);
+    setTempInterpretFilter(appliedInterpretFilter);
 
     setShowFilters(false);
   };
@@ -384,9 +407,11 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     if (appliedYearFilter !== 'all') count++;
     if (appliedLetterFilter !== 'all') count++;
     if (appliedSearch.trim()) count++;
+    if (appliedTranslationFilter !== 'all') count++;
+    if (appliedInterpretFilter !== 'all') count++;
 
     return count;
-  }, [appliedStatusFilters, appliedCategoryFilter, appliedYearFilter, appliedLetterFilter, appliedSearch]);
+  }, [appliedStatusFilters, appliedCategoryFilter, appliedYearFilter, appliedLetterFilter, appliedSearch, appliedTranslationFilter, appliedInterpretFilter]);
 
   const toggleSelect = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -475,14 +500,14 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     e.stopPropagation();
     if (!article._entry?.id) return;
 
-    const isReinterpret = article._entry?.ai_content_type === 'error';
+    const isReinterpret = article._entry?.task_interpret_status === 'failed';
 
     try {
       await entriesApi.reinterpret(article._entry.id);
       // Update local state to show interpreting status
       setArticles(prev => prev.map(a =>
         a.id === article.id
-          ? { ...a, _entry: { ...a._entry!, ai_content_type: 'interpreting', ai_summary: null } }
+          ? { ...a, _entry: { ...a._entry!, task_interpret_status: 'running', ai_summary: null } }
           : a
       ));
       showToast(isReinterpret ? t('home.reinterpretStarted') : t('home.interpretStarted'), 'success');
@@ -553,6 +578,24 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
             {t('common.search')}
           </button>
         </div>
+
+        <button
+          onClick={() => {
+            fetchEntries();
+            showToast(t('library.refreshed'), 'success');
+          }}
+          disabled={loading}
+          className={`flex items-center gap-2 min-h-touch px-4 rounded-xl border transition-micro cursor-pointer active:scale-[0.98] ${
+            darkMode
+              ? 'bg-theme-muted border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent'
+              : 'bg-theme-surface border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent'
+          } disabled:opacity-50`}
+        >
+          <div className={loading ? 'animate-spin' : ''}>
+            <Icons.Refresh />
+          </div>
+          <span className="text-ui-sm font-medium hidden md:inline">{t('common.refresh')}</span>
+        </button>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -715,6 +758,40 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
               </div>
             </div>
 
+            {/* Task Status Filters */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.translationStatus')}</label>
+                <select
+                  value={tempTranslationFilter}
+                  onChange={(e) => setTempTranslationFilter(e.target.value)}
+                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-surface border-theme-border text-theme-text'}`}
+                >
+                  <option value="all">{t('library.allStatuses')}</option>
+                  <option value="none">{t('library.taskNone')}</option>
+                  <option value="pending">{t('library.taskPending')}</option>
+                  <option value="running">{t('library.taskRunning')}</option>
+                  <option value="completed">{t('library.taskCompleted')}</option>
+                  <option value="failed">{t('library.taskFailed')}</option>
+                </select>
+              </div>
+              <div>
+                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.interpretStatus')}</label>
+                <select
+                  value={tempInterpretFilter}
+                  onChange={(e) => setTempInterpretFilter(e.target.value)}
+                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-surface border-theme-border text-theme-text'}`}
+                >
+                  <option value="all">{t('library.allStatuses')}</option>
+                  <option value="none">{t('library.taskNone')}</option>
+                  <option value="running">{t('library.taskRunning')}</option>
+                  <option value="completed">{t('library.taskCompleted')}</option>
+                  <option value="failed">{t('library.taskFailed')}</option>
+                  <option value="skipped">{t('library.taskSkipped')}</option>
+                </select>
+              </div>
+            </div>
+
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4 border-t border-theme-border">
               <button
@@ -808,31 +885,31 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
                       {/* ArXiv 翻译/解读状态徽章 */}
                       {article._entry?.link?.includes('arxiv.org') && (
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                          article._entry?.ai_content_type === 'arxiv_interpretation'
+                          article._entry?.task_interpret_status === 'completed'
                             ? 'bg-theme-success/15 text-theme-success'
-                            : article._entry?.ai_content_type === 'error'
+                            : article._entry?.task_interpret_status === 'failed'
                               ? 'bg-theme-error/15 text-theme-error'
-                              : article._entry?.ai_content_type === 'interpreting'
+                              : article._entry?.task_interpret_status === 'running'
                                 ? 'bg-theme-warning/15 text-theme-warning'
-                                : article._entry?.translation_status === 'translating'
+                                : article._entry?.task_translation_status === 'running'
                                   ? 'bg-theme-accent/15 text-theme-accent'
-                                  : article._entry?.translation_status === 'completed'
+                                  : article._entry?.task_translation_status === 'completed'
                                     ? 'bg-theme-success/15 text-theme-success'
-                                    : article._entry?.translation_status === 'pending'
+                                    : article._entry?.task_translation_status === 'pending'
                                       ? 'bg-theme-muted text-theme-text-secondary'
                                       : 'bg-theme-accent/15 text-theme-accent'
                         }`}>
-                          {article._entry?.ai_content_type === 'arxiv_interpretation'
+                          {article._entry?.task_interpret_status === 'completed'
                             ? t('home.interpreted')
-                            : article._entry?.ai_content_type === 'error'
+                            : article._entry?.task_interpret_status === 'failed'
                               ? t('home.interpretFailed')
-                              : article._entry?.ai_content_type === 'interpreting'
+                              : article._entry?.task_interpret_status === 'running'
                                 ? t('home.interpreting')
-                                : article._entry?.translation_status === 'translating'
+                                : article._entry?.task_translation_status === 'running'
                                   ? t('library.translating')
-                                  : article._entry?.translation_status === 'completed'
+                                  : article._entry?.task_translation_status === 'completed'
                                     ? t('library.translated')
-                                    : article._entry?.translation_status === 'pending'
+                                    : article._entry?.task_translation_status === 'pending'
                                       ? t('library.pendingTranslation')
                                       : 'ArXiv'}
                         </span>
@@ -844,13 +921,13 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
                       {/* Interpret button for ArXiv articles: saved + (uninterpreted or failed) */}
                       {article._entry?.link?.includes('arxiv.org') &&
                        article._entry?.status === 'interested' &&
-                       (article._entry?.ai_content_type === null ||
-                        article._entry?.ai_content_type === undefined ||
-                        article._entry?.ai_content_type === 'error') && (
+                       (article._entry?.task_interpret_status === null ||
+                        article._entry?.task_interpret_status === undefined ||
+                        article._entry?.task_interpret_status === 'failed') && (
                         <button
                           onClick={(e) => handleReinterpret(e, article)}
                           className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'hover:bg-theme-muted text-theme-accent' : 'hover:bg-theme-muted text-theme-accent'}`}
-                          title={article._entry?.ai_content_type === 'error' ? t('home.reinterpret') : t('home.interpret')}
+                          title={article._entry?.task_interpret_status === 'failed' ? t('home.reinterpret') : t('home.interpret')}
                         >
                           <Icons.Sparkles />
                         </button>

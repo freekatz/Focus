@@ -84,6 +84,9 @@ async def run_migrations() -> None:
         ("user_configs", "ai_models_translation", "TEXT", "TEXT"),
         ("user_configs", "ai_models_interpret", "TEXT", "TEXT"),
         ("user_configs", "ai_models", "TEXT", "TEXT"),
+        # 统一任务状态新列
+        ("entries", "task_translation_status", "VARCHAR(20)", "VARCHAR(20)"),
+        ("entries", "task_interpret_status", "VARCHAR(50)", "VARCHAR(50)"),
     ]
 
     async with engine.begin() as conn:
@@ -118,6 +121,9 @@ async def run_migrations() -> None:
 
     # 运行任务结构迁移（flat list -> {model_ids, enabled}）
     await migrate_tasks_to_abstract_format()
+
+    # 迁移旧的任务状态列到新的统一列
+    await migrate_to_task_status_columns()
 
 
 async def migrate_ai_configs() -> None:
@@ -383,6 +389,48 @@ async def migrate_tasks_to_abstract_format() -> None:
         await db.commit()
         if migrated_count > 0:
             print(f"Migration: migrated {migrated_count} user(s) to abstract task format")
+
+
+async def migrate_to_task_status_columns() -> None:
+    """
+    将旧的 translation_status 和 ai_content_type 列数据迁移到新的统一任务状态列
+
+    旧列 → 新列:
+      translation_status → task_translation_status (translating → running，其余不变)
+      ai_content_type → task_interpret_status (interpreting → running, arxiv_interpretation → completed,
+                                                error → failed, no_html → skipped)
+
+    迁移是幂等的：只更新新列为 NULL 且旧列不为 NULL 的行
+    """
+    from sqlalchemy import text
+
+    async with async_session_maker() as db:
+        # 迁移 translation_status → task_translation_status
+        result = await db.execute(text("""
+            UPDATE entries SET task_translation_status = CASE
+                WHEN translation_status = 'translating' THEN 'running'
+                ELSE translation_status
+            END
+            WHERE task_translation_status IS NULL AND translation_status IS NOT NULL
+        """))
+        if result.rowcount > 0:
+            print(f"Migration: migrated {result.rowcount} entries translation_status -> task_translation_status")
+
+        # 迁移 ai_content_type → task_interpret_status
+        result = await db.execute(text("""
+            UPDATE entries SET task_interpret_status = CASE
+                WHEN ai_content_type = 'interpreting' THEN 'running'
+                WHEN ai_content_type = 'arxiv_interpretation' THEN 'completed'
+                WHEN ai_content_type = 'error' THEN 'failed'
+                WHEN ai_content_type = 'no_html' THEN 'skipped'
+                ELSE ai_content_type
+            END
+            WHERE task_interpret_status IS NULL AND ai_content_type IS NOT NULL
+        """))
+        if result.rowcount > 0:
+            print(f"Migration: migrated {result.rowcount} entries ai_content_type -> task_interpret_status")
+
+        await db.commit()
 
 
 async def close_db() -> None:

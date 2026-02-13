@@ -7,6 +7,8 @@ interface ListEntriesParams {
   category?: string;
   period?: 'today' | 'past';
   is_read?: boolean;
+  task_translation_status?: string;
+  task_interpret_status?: string;
   page?: number;
   page_size?: number;
 }
