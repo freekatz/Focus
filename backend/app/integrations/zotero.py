@@ -119,7 +119,7 @@ class ZoteroClient:
         """
         try:
             # 根据 AI 内容类型和链接选择 Zotero item type
-            item_type = self._get_zotero_item_type(entry.ai_content_type, entry.link)
+            item_type = self._get_zotero_item_type(entry.task_interpret_status, entry.link)
             template = self.client.item_template(item_type)
 
             # 通用字段
@@ -184,7 +184,7 @@ class ZoteroClient:
             extra_parts = []
 
             # ArXiv 论文：优先使用深度解读，其次是翻译摘要
-            if entry.ai_content_type == "arxiv_interpretation" and entry.ai_summary:
+            if entry.task_interpret_status == "completed" and entry.ai_summary:
                 extra_parts.append(f"【AI 深度解读】\n{entry.ai_summary}")
             elif entry.translated_abstract:
                 # 有翻译摘要
@@ -200,8 +200,8 @@ class ZoteroClient:
 
             # 添加标签
             tags = []
-            if entry.ai_content_type:
-                tags.append({"tag": entry.ai_content_type})
+            if entry.task_interpret_status:
+                tags.append({"tag": entry.task_interpret_status})
             if entry.rss_source:
                 tags.append({"tag": entry.rss_source.name})
             tags.append({"tag": "Focus"})

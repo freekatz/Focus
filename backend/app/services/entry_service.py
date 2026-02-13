@@ -7,7 +7,7 @@ from sqlalchemy import select, func, update, delete, and_, or_, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.entry import Entry, EntryStatus
+from app.models.entry import Entry, EntryStatus, TaskStatus
 from app.models.rss import RssSource
 from app.utils.logger import logger
 from app.utils.datetime_utils import get_today_start_utc
@@ -40,6 +40,8 @@ async def get_entries(
     exclude_untranslated_arxiv: bool = False,
     user_id: Optional[int] = None,
     only_subscribed: bool = False,
+    task_translation_status: Optional[str] = None,
+    task_interpret_status: Optional[str] = None,
 ) -> Tuple[List[Entry], int]:
     """Get entry list.
 
@@ -48,7 +50,6 @@ async def get_entries(
         user_id: User ID for filtering subscribed sources.
         only_subscribed: If True, only return entries from user's subscribed sources.
     """
-    from app.models.entry import TranslationStatus
     from app.models.subscription import UserRssSubscription
 
     query = select(Entry).options(selectinload(Entry.rss_source))
@@ -86,9 +87,23 @@ async def get_entries(
         query = query.where(
             or_(
                 ~Entry.link.contains('arxiv.org'),
-                Entry.translation_status == TranslationStatus.COMPLETED.value,
+                Entry.task_translation_status == TaskStatus.COMPLETED.value,
             )
         )
+
+    # Filter by task translation status
+    if task_translation_status:
+        if task_translation_status == "none":
+            query = query.where(Entry.task_translation_status.is_(None))
+        else:
+            query = query.where(Entry.task_translation_status == task_translation_status)
+
+    # Filter by task interpretation status
+    if task_interpret_status:
+        if task_interpret_status == "none":
+            query = query.where(Entry.task_interpret_status.is_(None))
+        else:
+            query = query.where(Entry.task_interpret_status == task_interpret_status)
 
     count_query = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_query)).scalar() or 0

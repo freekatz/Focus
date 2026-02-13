@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, status, Query
 from sqlalchemy import select
 
 from app.api.deps import DbSession, CurrentUser
-from app.models.entry import EntryStatus
+from app.models.entry import EntryStatus, TaskStatus
 from app.models.user_config import UserConfig
 from app.schemas.entry import (
     EntryResponse,
@@ -47,15 +47,15 @@ def entry_to_response(entry) -> EntryResponse:
         is_read=entry.is_read,
         marked_at=entry.marked_at,
         ai_summary=entry.ai_summary,
-        ai_content_type=entry.ai_content_type,
         ai_processed_at=entry.ai_processed_at,
+        task_interpret_status=getattr(entry, 'task_interpret_status', None),
+        task_translation_status=getattr(entry, 'task_translation_status', None),
         user_notes=entry.user_notes,
         exported_to_zotero=entry.exported_to_zotero,
         fetched_at=entry.fetched_at,
         created_at=entry.created_at,
         translated_abstract=getattr(entry, 'translated_abstract', None),
         brief_summary=getattr(entry, 'brief_summary', None),
-        translation_status=getattr(entry, 'translation_status', None),
         rss_source_name=source_name,
     )
 
@@ -69,6 +69,8 @@ async def list_entries(
     category: Optional[str] = None,
     period: Optional[Literal["today", "past"]] = None,
     is_read: Optional[bool] = None,
+    task_translation_status: Optional[str] = None,
+    task_interpret_status: Optional[str] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
@@ -81,6 +83,8 @@ async def list_entries(
         category=category,
         period=period,
         is_read=is_read,
+        task_translation_status=task_translation_status,
+        task_interpret_status=task_interpret_status,
         skip=skip,
         limit=page_size,
     )
@@ -220,11 +224,11 @@ async def update_entry_status(
             # 检查是否需要解读：未解读或解读失败都需要重新解读
             needs_interpretation = (
                 not entry.ai_summary or
-                entry.ai_content_type == "error" or
-                entry.ai_content_type is None
+                entry.task_interpret_status == TaskStatus.FAILED.value or
+                entry.task_interpret_status is None
             )
             # 排除正在解读中的
-            if needs_interpretation and entry.ai_content_type != "interpreting":
+            if needs_interpretation and entry.task_interpret_status != TaskStatus.RUNNING.value:
                 from app.tasks.fetch_rss import interpret_arxiv_entry
                 asyncio.create_task(interpret_arxiv_entry(entry.id))
 
@@ -267,10 +271,10 @@ async def batch_update_status(
                 if is_arxiv_entry(entry):
                     needs_interpretation = (
                         not entry.ai_summary or
-                        entry.ai_content_type == "error" or
-                        entry.ai_content_type is None
+                        entry.task_interpret_status == TaskStatus.FAILED.value or
+                        entry.task_interpret_status is None
                     )
-                    if needs_interpretation and entry.ai_content_type != "interpreting":
+                    if needs_interpretation and entry.task_interpret_status != TaskStatus.RUNNING.value:
                         asyncio.create_task(interpret_arxiv_entry(entry.id))
 
         return EntryBatchResponse(updated_count=updated_count)
@@ -341,7 +345,7 @@ async def reinterpret_entry(
 
     # 重置解读状态
     entry.ai_summary = None
-    entry.ai_content_type = None
+    entry.task_interpret_status = None
     entry.ai_processed_at = None
     await db.commit()
 

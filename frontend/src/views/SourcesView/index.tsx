@@ -389,8 +389,10 @@ export function SourcesView({ darkMode }: SourcesViewProps) {
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSuccess={() => {
+          // Invalidate both tabs cache and refresh current tab
           hasLoadedTab.current.my = false;
-          fetchFeeds('my');
+          hasLoadedTab.current.market = false;
+          fetchFeeds();
         }}
       />
     </div>

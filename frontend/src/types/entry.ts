@@ -1,8 +1,11 @@
 // Backend entry status enum values
 export type EntryStatus = 'unread' | 'interested' | 'trash' | 'favorite' | 'archived';
 
-// Translation status for ArXiv articles
-export type TranslationStatus = 'pending' | 'translating' | 'completed' | 'failed';
+// Unified task processing status
+export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+
+// Backward-compatible alias
+export type TranslationStatus = TaskStatus;
 
 // Backend entry response type
 export interface Entry {
@@ -18,8 +21,9 @@ export interface Entry {
   is_read: boolean;
   marked_at: string | null;
   ai_summary: string | null;
-  ai_content_type: string | null;
   ai_processed_at: string | null;
+  task_interpret_status: TaskStatus | null;
+  task_translation_status: TaskStatus | null;
   user_notes: string | null;
   exported_to_zotero: boolean;
   fetched_at: string;
@@ -27,7 +31,6 @@ export interface Entry {
   rss_source_name: string | null;
   translated_abstract: string | null;
   brief_summary: string | null;
-  translation_status: TranslationStatus | null;
 }
 
 export interface EntryListResponse {

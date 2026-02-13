@@ -604,10 +604,10 @@ export function HomeView({ darkMode, isActive = true }: HomeViewProps) {
   const isArxiv = isArxivArticle(current);
   const hasInterpretation =
     current._entry?.ai_summary &&
-    current._entry?.ai_content_type === "arxiv_interpretation";
-  const isInterpreting = current._entry?.ai_content_type === "interpreting";
-  const isInterpretFailed = current._entry?.ai_content_type === "error";
-  const isNoHtml = current._entry?.ai_content_type === "no_html";
+    current._entry?.task_interpret_status === "completed";
+  const isInterpreting = current._entry?.task_interpret_status === "running";
+  const isInterpretFailed = current._entry?.task_interpret_status === "failed";
+  const isNoHtml = current._entry?.task_interpret_status === "skipped";
   const translatedAbstract = current._entry?.translated_abstract;
   const briefSummary = current._entry?.brief_summary;
 

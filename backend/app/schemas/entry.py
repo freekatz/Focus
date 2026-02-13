@@ -32,17 +32,17 @@ class EntryResponse(BaseModel):
     is_read: bool
     marked_at: Optional[datetime]
     ai_summary: Optional[str]
-    ai_content_type: Optional[str]
     ai_processed_at: Optional[datetime]
+    task_interpret_status: Optional[str] = None  # 统一任务状态：pending, running, completed, failed, skipped
+    task_translation_status: Optional[str] = None  # 统一任务状态：pending, running, completed, failed
     user_notes: Optional[str]
     exported_to_zotero: bool
     fetched_at: datetime
     created_at: datetime
 
-    # ArXiv 翻译
+    # ArXiv 翻译结果
     translated_abstract: Optional[str] = None
     brief_summary: Optional[str] = None  # 简要总结（帮助快速判断）
-    translation_status: Optional[str] = None  # pending, translating, completed, failed
 
     # 关联信息（即使源被删除，仍保留源名称）
     rss_source_name: Optional[str] = None

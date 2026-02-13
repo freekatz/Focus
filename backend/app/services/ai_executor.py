@@ -183,7 +183,7 @@ class AIModelExecutor:
         """
         self.models = [primary] + (fallbacks or [])
         self.current_index = 0
-        model_names = [f"{m.name}({m.model})" for m in self.models]
+        model_names = [f"{m.name}({m.model}) via {m.provider}" for m in self.models]
         logger.info(f"AIModelExecutor initialized with models: {' → '.join(model_names)}")
 
     def _create_client(self, model_config: AIModelConfig) -> AsyncOpenAI:
@@ -241,7 +241,7 @@ class AIModelExecutor:
         for i, model_config in enumerate(self.models):
             try:
                 client = self._create_client(model_config)
-                logger.info(f"[{task_name}] Using model: {model_config.name} ({model_config.model})")
+                logger.info(f"[{task_name}] Using model: {model_config.name} ({model_config.model}) via {model_config.provider}")
                 result = await task_func(client, model_config.model)
                 return result
             except Exception as e:
@@ -252,7 +252,7 @@ class AIModelExecutor:
                 # 检查是否应该切换模型
                 if self._should_switch(e) and i < len(self.models) - 1:
                     next_model = self.models[i + 1]
-                    logger.info(f"[{task_name}] Switching from '{model_config.name}' to '{next_model.name}'")
+                    logger.info(f"[{task_name}] Switching from '{model_config.name}' ({model_config.provider}) to '{next_model.name}' ({next_model.provider})")
                     continue
 
                 # 不应切换或已是最后一个模型，直接抛出
