@@ -174,7 +174,17 @@ class AIModelExecutor:
     """
     AI 模型执行器
 
-    支持多模型配置，失败时自动切换到备用模型
+    实现主备模型模式：
+    - 优先使用主模型（列表第一个）
+    - 主模型失败时，依次尝试所有备用模型
+    - 只有在所有模型都失败后才抛出异常
+    - 支持任意数量的备用模型
+
+    示例：
+        models = [primary, backup1, backup2]
+        executor = AIModelExecutor(primary, [backup1, backup2])
+
+        执行顺序：primary → backup1 → backup2 → raise error
     """
 
     def __init__(self, primary: AIModelConfig, fallbacks: Optional[List[AIModelConfig]] = None):
@@ -200,15 +210,21 @@ class AIModelExecutor:
 
     def _should_switch(self, error: Exception) -> bool:
         """
-        判断是否应该切换到备用模型
+        判断错误是否属于预期的可恢复类型（用于日志记录）
 
-        切换条件：
+        注意：此方法仅用于日志分类，不影响实际的模型切换逻辑。
+        无论错误类型如何，系统都会尝试所有备用模型。
+
+        可恢复的错误类型：
         - 400: 无效请求（如 max_tokens 超限等模型差异）
         - 401: API Key 无效
         - 404: 模型不存在
         - 429: 速率限制
         - 503: 服务不可用
         - timeout: 请求超时
+
+        Returns:
+            错误是否属于已知的可恢复类型
         """
         error_msg = str(error).lower()
         switch_indicators = [
@@ -247,22 +263,35 @@ class AIModelExecutor:
                 client = self._create_client(model_config)
                 logger.info(f"[{task_name}] Using model: {model_config.name} ({model_config.model}) via {model_config.provider_name}")
                 result = await task_func(client, model_config.model)
+
+                # Success - return immediately
+                if i > 0:
+                    logger.info(f"[{task_name}] Backup model '{model_config.name}' succeeded")
                 return result
             except Exception as e:
                 error_msg = f"{model_config.name}: {str(e)}"
                 errors.append(error_msg)
                 logger.warning(f"[{task_name}] Model '{model_config.name}' failed: {e}")
 
-                # 检查是否应该切换模型
-                if self._should_switch(e) and i < len(self.models) - 1:
+                # Check if there are more models to try
+                if i < len(self.models) - 1:
                     next_model = self.models[i + 1]
-                    logger.info(f"[{task_name}] Switching from '{model_config.name}' ({model_config.provider_name}) to '{next_model.name}' ({next_model.provider_name})")
-                    continue
 
-                # 不应切换或已是最后一个模型，直接抛出
-                raise
+                    # Log whether this is an expected switchable error
+                    is_switchable = self._should_switch(e)
+                    switch_reason = "recoverable error" if is_switchable else "unhandled error"
 
-        # 所有模型都失败
+                    logger.info(
+                        f"[{task_name}] Switching from '{model_config.name}' ({model_config.provider_name}) "
+                        f"to backup '{next_model.name}' ({next_model.provider_name}) ({switch_reason})"
+                    )
+                    continue  # Try next model
+                else:
+                    # Last model - log and break to raise final error
+                    logger.error(f"[{task_name}] All {len(self.models)} model(s) failed")
+                    break
+
+        # All models exhausted
         raise RuntimeError(f"All models failed for {task_name}: {'; '.join(errors)}")
 
 
