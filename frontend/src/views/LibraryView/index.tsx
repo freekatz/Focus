@@ -500,7 +500,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     e.stopPropagation();
     if (!article._entry?.id) return;
 
-    const isReinterpret = article._entry?.task_interpret_status === 'failed';
+    const isReinterpret = article._entry?.task_interpret_status === 'failed' || article._entry?.task_interpret_status === 'completed';
 
     try {
       await entriesApi.reinterpret(article._entry.id);
@@ -918,16 +918,14 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
                     </div>
                     <div className="flex items-center gap-1">
                       {article.isFavorite && <div className="text-amber-500 scale-75"><Icons.Star /></div>}
-                      {/* Interpret button for ArXiv articles: saved + (uninterpreted or failed) */}
+                      {/* Interpret button for ArXiv articles: saved + (uninterpreted, failed, or completed for re-interpret) */}
                       {article._entry?.link?.includes('arxiv.org') &&
                        article._entry?.status === 'interested' &&
-                       (article._entry?.task_interpret_status === null ||
-                        article._entry?.task_interpret_status === undefined ||
-                        article._entry?.task_interpret_status === 'failed') && (
+                       article._entry?.task_interpret_status !== 'running' && (
                         <button
                           onClick={(e) => handleReinterpret(e, article)}
                           className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'hover:bg-theme-muted text-theme-accent' : 'hover:bg-theme-muted text-theme-accent'}`}
-                          title={article._entry?.task_interpret_status === 'failed' ? t('home.reinterpret') : t('home.interpret')}
+                          title={article._entry?.task_interpret_status === 'completed' || article._entry?.task_interpret_status === 'failed' ? t('home.reinterpret') : t('home.interpret')}
                         >
                           <Icons.Sparkles />
                         </button>
