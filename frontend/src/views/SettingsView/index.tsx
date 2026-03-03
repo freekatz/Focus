@@ -9,7 +9,13 @@ import {
   type ColorThemeId,
   validateCustomTheme,
 } from "../../themes";
-import type { UserConfig, AIProvider, AIModelEntry, AIModelsConfig, AITaskConfig } from "../../types";
+import type {
+  UserConfig,
+  AIProvider,
+  AIModelEntry,
+  AIModelsConfig,
+  AITaskConfig,
+} from "../../types";
 
 type FontTheme = "sans" | "serif" | "mono";
 type ThemeMode = "light" | "dark" | "system";
@@ -151,11 +157,18 @@ function ProviderEditModal({
   const addModelEntry = () => {
     setFormData({
       ...formData,
-      models: [...formData.models, { id: crypto.randomUUID().slice(0, 6), name: "", model: "" }],
+      models: [
+        ...formData.models,
+        { id: crypto.randomUUID().slice(0, 6), name: "", model: "" },
+      ],
     });
   };
 
-  const updateModelEntry = (index: number, field: keyof AIModelEntry, value: string) => {
+  const updateModelEntry = (
+    index: number,
+    field: keyof AIModelEntry,
+    value: string,
+  ) => {
     const newModels = [...formData.models];
     newModels[index] = { ...newModels[index], [field]: value };
     // Auto-fill name from model ID if name is empty
@@ -166,12 +179,15 @@ function ProviderEditModal({
   };
 
   const removeModelEntry = (index: number) => {
+    if (!confirm(t("settings.confirmDeleteModel"))) return;
     const newModels = formData.models.filter((_, i) => i !== index);
     setFormData({ ...formData, models: newModels });
   };
 
-  const inputCls = "w-full min-h-touch p-3 rounded-xl border text-body-sm bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary focus:outline-none focus:ring-1 focus:ring-theme-accent";
-  const labelCls = "block text-caption font-medium uppercase tracking-wider mb-2 text-theme-text-tertiary";
+  const inputCls =
+    "w-full min-h-touch p-3 rounded-xl border text-body-sm bg-theme-muted border-theme-border text-theme-text focus:border-theme-accent placeholder-theme-text-tertiary focus:outline-none focus:ring-1 focus:ring-theme-accent";
+  const labelCls =
+    "block text-caption font-medium uppercase tracking-wider mb-2 text-theme-text-tertiary";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -194,14 +210,19 @@ function ProviderEditModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-5 py-4 md:px-6 space-y-4 overflow-y-auto flex-1">
+        <form
+          onSubmit={handleSubmit}
+          className="px-5 py-4 md:px-6 space-y-4 overflow-y-auto flex-1"
+        >
           {/* Provider Name */}
           <div>
             <label className={labelCls}>{t("settings.providerName")}</label>
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
               placeholder="Google AI"
               className={inputCls}
@@ -213,11 +234,15 @@ function ProviderEditModal({
             <label className={labelCls}>{t("settings.providerType")}</label>
             <select
               value={formData.provider}
-              onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, provider: e.target.value })
+              }
               className={inputCls}
             >
               <option value="openai">{t("settings.openai")}</option>
-              <option value="openai_compatible">{t("settings.openaiCompatible")}</option>
+              <option value="openai_compatible">
+                {t("settings.openaiCompatible")}
+              </option>
             </select>
           </div>
 
@@ -227,8 +252,14 @@ function ProviderEditModal({
             <input
               type="password"
               value={formData.api_key || ""}
-              onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
-              placeholder={provider?.api_key_configured ? "••••••••" : t("settings.enterApiKey")}
+              onChange={(e) =>
+                setFormData({ ...formData, api_key: e.target.value })
+              }
+              placeholder={
+                provider?.api_key_configured
+                  ? "••••••••"
+                  : t("settings.enterApiKey")
+              }
               className={inputCls}
             />
           </div>
@@ -239,7 +270,12 @@ function ProviderEditModal({
             <input
               type="text"
               value={formData.base_url || ""}
-              onChange={(e) => setFormData({ ...formData, base_url: e.target.value || undefined })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  base_url: e.target.value || undefined,
+                })
+              }
               placeholder="https://api.openai.com/v1"
               className={inputCls}
             />
@@ -256,14 +292,18 @@ function ProviderEditModal({
                   <input
                     type="text"
                     value={model.name}
-                    onChange={(e) => updateModelEntry(index, "name", e.target.value)}
+                    onChange={(e) =>
+                      updateModelEntry(index, "name", e.target.value)
+                    }
                     placeholder={t("settings.modelName")}
                     className="flex-1 min-h-touch p-2 rounded-lg border text-body-sm bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:outline-none focus:ring-1 focus:ring-theme-accent"
                   />
                   <input
                     type="text"
                     value={model.model}
-                    onChange={(e) => updateModelEntry(index, "model", e.target.value)}
+                    onChange={(e) =>
+                      updateModelEntry(index, "model", e.target.value)
+                    }
                     placeholder={t("settings.modelId")}
                     required
                     className="flex-1 min-h-touch p-2 rounded-lg border text-body-sm bg-theme-muted border-theme-border text-theme-text placeholder-theme-text-tertiary focus:outline-none focus:ring-1 focus:ring-theme-accent"
@@ -272,9 +312,10 @@ function ProviderEditModal({
                     type="button"
                     onClick={() => removeModelEntry(index)}
                     onMouseDown={(e) => e.preventDefault()}
-                    className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded transition-colors cursor-pointer flex-shrink-0"
+                    className="min-h-touch min-w-[36px] flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-500 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+                    title={t("common.delete")}
                   >
-                    <Icons.X />
+                    <Icons.Trash />
                   </button>
                 </div>
               ))}
@@ -335,7 +376,7 @@ function ProviderListSection({
   const handleDelete = (provider: AIProvider) => {
     // Check if any model in this provider is used by tasks
     const isUsed = Object.values(tasks).some((task) =>
-      task.model_ids.some((cid) => cid.startsWith(provider.id + ":"))
+      task.model_ids.some((cid) => cid.startsWith(provider.id + ":")),
     );
     if (isUsed) {
       alert(t("settings.providerInUse"));
@@ -367,14 +408,21 @@ function ProviderListSection({
                   onMouseDown={(e) => e.preventDefault()}
                   className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
                 >
-                  <span className="w-4 h-4 flex-shrink-0 text-theme-text-tertiary transition-transform" style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)" }}>
+                  <span
+                    className="w-4 h-4 flex-shrink-0 text-theme-text-tertiary transition-transform"
+                    style={{
+                      transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+                    }}
+                  >
                     <Icons.ChevronDown />
                   </span>
                   <span className="font-medium text-sm text-theme-text truncate">
                     {provider.name}
                   </span>
                   <span className="text-xs text-theme-text-tertiary flex-shrink-0">
-                    {t("settings.modelCount", { count: provider.models.length })}
+                    {t("settings.modelCount", {
+                      count: provider.models.length,
+                    })}
                   </span>
                 </button>
                 <div className="flex items-center gap-1 flex-shrink-0">
@@ -407,7 +455,9 @@ function ProviderListSection({
                       className="flex items-center gap-2 py-1 text-xs text-theme-text-secondary"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-theme-accent flex-shrink-0" />
-                      <span className="truncate">{model.name || model.model}</span>
+                      <span className="truncate">
+                        {model.name || model.model}
+                      </span>
                       <span className="text-theme-text-tertiary truncate hidden sm:inline">
                         {model.model}
                       </span>
@@ -454,17 +504,28 @@ function TaskAssignmentSection({
   const taskIds = taskConfig.model_ids;
 
   // Resolve compound ID "pid:mid" to display info
-  const resolveModel = (compoundId: string): { providerName: string; modelName: string; modelId: string } | null => {
+  const resolveModel = (
+    compoundId: string,
+  ): { providerName: string; modelName: string; modelId: string } | null => {
     const [pid, mid] = compoundId.split(":", 2);
     const provider = providers.find((p) => p.id === pid);
     if (!provider) return null;
     const model = provider.models.find((m) => m.id === mid);
     if (!model) return null;
-    return { providerName: provider.name, modelName: model.name || model.model, modelId: model.model };
+    return {
+      providerName: provider.name,
+      modelName: model.name || model.model,
+      modelId: model.model,
+    };
   };
 
   // Build flat list of all available compound IDs not yet in this task
-  const availableModels: { compoundId: string; providerName: string; modelName: string; modelId: string }[] = [];
+  const availableModels: {
+    compoundId: string;
+    providerName: string;
+    modelName: string;
+    modelId: string;
+  }[] = [];
   for (const provider of providers) {
     for (const model of provider.models) {
       const cid = `${provider.id}:${model.id}`;
@@ -550,7 +611,9 @@ function TaskAssignmentSection({
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <span className="text-xs text-theme-text-tertiary flex-shrink-0">
-                  {isPrimary ? t("settings.primaryModel") : t("settings.backupModel")}
+                  {isPrimary
+                    ? t("settings.primaryModel")
+                    : t("settings.backupModel")}
                 </span>
                 <span className="font-medium text-sm text-theme-text truncate">
                   {resolved.modelName}
@@ -600,7 +663,9 @@ function TaskAssignmentSection({
                 : "text-theme-accent hover:bg-theme-muted"
             }`}
           >
-            {availableModels.length === 0 ? t("settings.noModelsAvailable") : t("settings.addToTask")}
+            {availableModels.length === 0
+              ? t("settings.noModelsAvailable")
+              : t("settings.addToTask")}
           </button>
           {dropdownOpen && availableModels.length > 0 && (
             <>
@@ -894,7 +959,9 @@ export function SettingsView({
   const [hasChanges, setHasChanges] = useState(false);
 
   // Provider edit modal state
-  const [editingProvider, setEditingProvider] = useState<AIProvider | null>(null);
+  const [editingProvider, setEditingProvider] = useState<AIProvider | null>(
+    null,
+  );
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
 
   const fontOptions: { value: FontTheme; label: string }[] = [
@@ -925,10 +992,16 @@ export function SettingsView({
           const loadedConfig = configData.ai_models_config;
           const tasks = loadedConfig.tasks ?? {};
           if (!tasks.translation) {
-            tasks.translation = { model_ids: [], enabled: configData.auto_translate_abstract ?? true };
+            tasks.translation = {
+              model_ids: [],
+              enabled: configData.auto_translate_abstract ?? true,
+            };
           }
           if (!tasks.interpret) {
-            tasks.interpret = { model_ids: [], enabled: configData.auto_interpret_arxiv ?? true };
+            tasks.interpret = {
+              model_ids: [],
+              enabled: configData.auto_interpret_arxiv ?? true,
+            };
           }
           setAiModelsConfig({
             providers: loadedConfig.providers ?? [],
@@ -969,30 +1042,55 @@ export function SettingsView({
   };
 
   const handleSaveProvider = (provider: AIProvider) => {
-    const existingIndex = aiModelsConfig.providers.findIndex((p) => p.id === provider.id);
+    const existingIndex = aiModelsConfig.providers.findIndex(
+      (p) => p.id === provider.id,
+    );
     let newProviders: AIProvider[];
     if (existingIndex >= 0) {
       newProviders = [...aiModelsConfig.providers];
       newProviders[existingIndex] = {
         ...provider,
-        api_key_configured: provider.api_key ? true : aiModelsConfig.providers[existingIndex].api_key_configured,
+        api_key_configured: provider.api_key
+          ? true
+          : aiModelsConfig.providers[existingIndex].api_key_configured,
       };
     } else {
-      newProviders = [...aiModelsConfig.providers, { ...provider, api_key_configured: !!provider.api_key }];
+      newProviders = [
+        ...aiModelsConfig.providers,
+        { ...provider, api_key_configured: !!provider.api_key },
+      ];
     }
-    updateAiModelsConfig({ ...aiModelsConfig, providers: newProviders });
+    // Clean up tasks: remove compound IDs referencing models that no longer exist in this provider
+    const validModelIds = new Set(
+      provider.models.map((m) => `${provider.id}:${m.id}`),
+    );
+    const newTasks = { ...aiModelsConfig.tasks };
+    for (const taskName of Object.keys(newTasks)) {
+      const task = newTasks[taskName];
+      const filtered = task.model_ids.filter(
+        (cid) => !cid.startsWith(provider.id + ":") || validModelIds.has(cid),
+      );
+      if (filtered.length !== task.model_ids.length) {
+        newTasks[taskName] = { ...task, model_ids: filtered };
+      }
+    }
+    updateAiModelsConfig({ providers: newProviders, tasks: newTasks });
     setIsProviderModalOpen(false);
   };
 
   const handleDeleteProvider = (providerId: string) => {
-    const newProviders = aiModelsConfig.providers.filter((p) => p.id !== providerId);
+    const newProviders = aiModelsConfig.providers.filter(
+      (p) => p.id !== providerId,
+    );
     // Also remove all compound IDs for this provider from tasks
     const newTasks = { ...aiModelsConfig.tasks };
     for (const taskName of Object.keys(newTasks)) {
       const task = newTasks[taskName];
       newTasks[taskName] = {
         ...task,
-        model_ids: task.model_ids.filter((cid) => !cid.startsWith(providerId + ":")),
+        model_ids: task.model_ids.filter(
+          (cid) => !cid.startsWith(providerId + ":"),
+        ),
       };
     }
     updateAiModelsConfig({ providers: newProviders, tasks: newTasks });
@@ -1426,7 +1524,12 @@ export function SettingsView({
           <TaskAssignmentSection
             title={t("settings.translationTask")}
             description={t("settings.translationTaskDesc")}
-            taskConfig={aiModelsConfig.tasks.translation ?? { model_ids: [], enabled: true }}
+            taskConfig={
+              aiModelsConfig.tasks.translation ?? {
+                model_ids: [],
+                enabled: true,
+              }
+            }
             providers={aiModelsConfig.providers}
             onChangeConfig={(config) =>
               updateAiModelsConfig({
@@ -1442,7 +1545,9 @@ export function SettingsView({
           <TaskAssignmentSection
             title={t("settings.interpretTask")}
             description={t("settings.interpretTaskDesc")}
-            taskConfig={aiModelsConfig.tasks.interpret ?? { model_ids: [], enabled: true }}
+            taskConfig={
+              aiModelsConfig.tasks.interpret ?? { model_ids: [], enabled: true }
+            }
             providers={aiModelsConfig.providers}
             onChangeConfig={(config) =>
               updateAiModelsConfig({
