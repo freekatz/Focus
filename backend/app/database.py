@@ -32,6 +32,8 @@ engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
     future=True,
+    pool_pre_ping=True,        # 使用前检测连接是否存活，自动丢弃已断开的连接
+    pool_recycle=600,           # 10 分钟回收连接，防止被数据库端关闭
 )
 
 # 创建异步会话工厂
