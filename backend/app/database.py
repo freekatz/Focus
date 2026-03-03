@@ -127,6 +127,9 @@ async def run_migrations() -> None:
     # 迁移旧的任务状态列到新的统一列
     await migrate_to_task_status_columns()
 
+    # 修复 arXiv 解读中的错误图片链接
+    await fix_arxiv_image_urls()
+
 
 async def migrate_ai_configs() -> None:
     """
@@ -433,6 +436,48 @@ async def migrate_to_task_status_columns() -> None:
             print(f"Migration: migrated {result.rowcount} entries ai_content_type -> task_interpret_status")
 
         await db.commit()
+
+
+async def fix_arxiv_image_urls() -> None:
+    """
+    修复 ai_summary 中的错误 arXiv 图片链接
+
+    错误格式: https://arxiv.org/html/2603.02049/2603.02049v1/x3.png
+    正确格式: https://arxiv.org/html/2603.02049v1/x3.png
+
+    原因: 旧代码用简单字符串拼接构建图片 URL，导致 arxiv_id 重复出现
+    """
+    import re
+    from sqlalchemy import text
+
+    async with async_session_maker() as db:
+        # 查找包含错误图片链接的解读内容
+        result = await db.execute(text(
+            "SELECT id, ai_summary FROM entries "
+            "WHERE ai_summary IS NOT NULL AND ai_summary LIKE '%arxiv.org/html/%'"
+        ))
+        rows = result.fetchall()
+
+        # 匹配错误模式: /html/{id}/{id}v{N}/ → /html/{id}v{N}/
+        # 例: /html/2603.02049/2603.02049v1/ → /html/2603.02049v1/
+        pattern = re.compile(
+            r'(https?://arxiv\.org/html/)(\d{4}\.\d{4,5})/(\2v\d+/)'
+        )
+
+        fixed_count = 0
+        for row in rows:
+            entry_id, ai_summary = row
+            fixed = pattern.sub(r'\1\3', ai_summary)
+            if fixed != ai_summary:
+                await db.execute(
+                    text("UPDATE entries SET ai_summary = :summary WHERE id = :id"),
+                    {"summary": fixed, "id": entry_id}
+                )
+                fixed_count += 1
+
+        await db.commit()
+        if fixed_count > 0:
+            print(f"Migration: fixed arXiv image URLs in {fixed_count} entries")
 
 
 async def close_db() -> None:

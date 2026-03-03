@@ -11,6 +11,7 @@ ArXiv 论文深度解读服务
 """
 import re
 from typing import Optional
+from urllib.parse import urljoin
 
 import httpx
 from bs4 import BeautifulSoup
@@ -380,8 +381,6 @@ class ArxivInterpreter:
             return None
 
         html_url = f"https://arxiv.org/html/{arxiv_id}"
-        # 保存 base_url 用于构建完整的图片链接
-        self._base_url = html_url
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
@@ -392,6 +391,8 @@ class ArxivInterpreter:
                 response = await client.get(html_url, headers=headers, follow_redirects=True)
                 response.raise_for_status()
                 html_content = response.text
+                # 使用实际响应 URL 作为基准（跟随重定向后的地址，如 /html/2603.02049v1/）
+                self._base_url = str(response.url)
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 logger.info(f"ArXiv HTML not available (404): {html_url}")
@@ -559,8 +560,7 @@ class ArxivInterpreter:
                 if not img_url.startswith(("http://", "https://")):
                     base_url = getattr(self, '_base_url', '')
                     if base_url:
-                        # 从 base_url 获取目录部分
-                        img_url = f"{base_url}/{img_url}"
+                        img_url = urljoin(base_url, img_url)
                 figure.replace_with(f"\n![{caption_text}]({img_url})\n")
             else:
                 figure.replace_with(f"\n[Image: {caption_text}]\n")
