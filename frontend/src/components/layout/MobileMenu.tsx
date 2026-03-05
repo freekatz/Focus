@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icons } from '../icons/Icons';
 
-type TabType = 'home' | 'sources' | 'library' | 'settings';
+type TabType = 'home' | 'sources' | 'library' | 'settings' | 'github';
 
 interface MobileMenuItemProps {
   active: boolean;
@@ -41,6 +41,7 @@ export function MobileMenu({ activeTab, onTabChange, darkMode }: MobileMenuProps
         <MobileMenuItem active={activeTab === 'home'} onClick={() => onTabChange('home')} icon={<Icons.Home />} label={t('nav.home')} darkMode={darkMode} />
         <MobileMenuItem active={activeTab === 'sources'} onClick={() => onTabChange('sources')} icon={<Icons.Sources />} label={t('nav.sources')} darkMode={darkMode} />
         <MobileMenuItem active={activeTab === 'library'} onClick={() => onTabChange('library')} icon={<Icons.Library />} label={t('nav.library')} darkMode={darkMode} />
+        <MobileMenuItem active={activeTab === 'github'} onClick={() => onTabChange('github')} icon={<Icons.Github />} label={t('nav.github')} darkMode={darkMode} />
         <MobileMenuItem active={activeTab === 'settings'} onClick={() => onTabChange('settings')} icon={<Icons.Settings />} label={t('nav.settings')} darkMode={darkMode} />
       </nav>
     </div>

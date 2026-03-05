@@ -6,3 +6,4 @@ export { configApi } from './config';
 export { exportApi } from './export';
 export { rssApi } from './rss';
 export { shareApi } from './share';
+export { githubApi } from './github';

@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icons } from '../icons/Icons';
 
-type TabType = 'home' | 'sources' | 'library' | 'settings';
+type TabType = 'home' | 'sources' | 'library' | 'settings' | 'github';
 type ThemeMode = 'light' | 'dark' | 'system';
 
 interface SidebarItemProps {
@@ -71,6 +71,7 @@ export function Sidebar({ activeTab, onTabChange, darkMode, themeMode, setThemeM
         <SidebarItem active={activeTab === 'home'} onClick={() => onTabChange('home')} icon={<Icons.Home />} label={t('nav.home')} darkMode={darkMode} />
         <SidebarItem active={activeTab === 'sources'} onClick={() => onTabChange('sources')} icon={<Icons.Sources />} label={t('nav.sources')} darkMode={darkMode} />
         <SidebarItem active={activeTab === 'library'} onClick={() => onTabChange('library')} icon={<Icons.Library />} label={t('nav.library')} darkMode={darkMode} />
+        <SidebarItem active={activeTab === 'github'} onClick={() => onTabChange('github')} icon={<Icons.Github />} label={t('nav.github')} darkMode={darkMode} />
       </nav>
 
       <div className="border-t pt-4 space-y-2 border-theme-border">

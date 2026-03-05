@@ -12,10 +12,11 @@ import { LibraryView } from './views/LibraryView';
 import { SettingsView } from './views/SettingsView';
 import { ReadingModal } from './views/ReadingModal';
 import { ShareView } from './views/ShareView';
+import { GithubAnalysisView } from './views/GithubAnalysisView';
 import { entriesApi } from './api';
 import type { Article } from './types';
 
-type Tab = 'home' | 'sources' | 'library' | 'settings';
+type Tab = 'home' | 'sources' | 'library' | 'settings' | 'github';
 
 // Map URL paths to tabs
 const pathToTab: Record<string, Tab> = {
@@ -23,6 +24,7 @@ const pathToTab: Record<string, Tab> = {
   '/sources': 'sources',
   '/library': 'library',
   '/settings': 'settings',
+  '/github': 'github',
 };
 
 const tabToPath: Record<Tab, string> = {
@@ -30,6 +32,7 @@ const tabToPath: Record<Tab, string> = {
   sources: '/sources',
   library: '/library',
   settings: '/settings',
+  github: '/github',
 };
 
 // Get initial tab from URL
@@ -239,6 +242,9 @@ function App() {
                   customThemeJson={customThemeJson}
                   setCustomThemeJson={setCustomThemeJson}
                 />
+              </div>
+              <div style={{ display: activeTab === 'github' ? 'block' : 'none' }}>
+                <GithubAnalysisView darkMode={darkMode} />
               </div>
             </div>
           </div>

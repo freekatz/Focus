@@ -3,7 +3,7 @@ API v1 路由聚合
 """
 from fastapi import APIRouter
 
-from app.api.v1 import auth, rss, entries, config, export, share, system, subscriptions
+from app.api.v1 import auth, rss, entries, config, export, share, system, subscriptions, github
 
 api_router = APIRouter()
 
@@ -16,3 +16,4 @@ api_router.include_router(config.router, prefix="/config", tags=["config"])
 api_router.include_router(export.router, prefix="/export", tags=["export"])
 api_router.include_router(share.router, prefix="/share", tags=["share"])
 api_router.include_router(system.router, prefix="/system", tags=["system"])
+api_router.include_router(github.router, prefix="/github", tags=["github"])
