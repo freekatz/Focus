@@ -1,11 +1,20 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Icons } from '../../components/icons/Icons';
-import { entriesApi } from '../../api';
-import { mapEntryToArticle, mapActionToBackendStatus } from '../../utils/mappers';
-import { ExportModal } from '../../components/shared/ExportModal';
-import { useToast } from '../../context/ToastContext';
-import type { Article, EntryStatus } from '../../types';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
+import { useTranslation } from "react-i18next";
+import { Icons } from "../../components/icons/Icons";
+import { entriesApi } from "../../api";
+import {
+  mapEntryToArticle,
+  mapActionToBackendStatus,
+} from "../../utils/mappers";
+import { ExportModal } from "../../components/shared/ExportModal";
+import { useToast } from "../../context/ToastContext";
+import type { Article, EntryStatus } from "../../types";
 
 interface LibraryViewProps {
   darkMode: boolean;
@@ -13,47 +22,59 @@ interface LibraryViewProps {
   refreshKey?: number;
 }
 
-type SortField = 'date' | 'title';
-type SortOrder = 'asc' | 'desc';
+type SortField = "date" | "title";
+type SortOrder = "asc" | "desc";
 
 // Page size constants (borrowed from HomeView pattern)
-const INITIAL_PAGE_SIZE = 20;  // Fast first load
-const LOAD_MORE_SIZE = 30;     // Subsequent loads
-const PAGE_SIZE = 20;  // For UI pagination display
+const INITIAL_PAGE_SIZE = 20; // Fast first load
+const LOAD_MORE_SIZE = 30; // Subsequent loads
+const PAGE_SIZE = 20; // For UI pagination display
 
-export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: LibraryViewProps) {
+export function LibraryView({
+  darkMode,
+  onOpenArticle,
+  refreshKey = 0,
+}: LibraryViewProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [articles, setArticles] = useState<Article[]>([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const hasLoaded = useRef(false);
   const lastRefreshKey = useRef(refreshKey);
-  const isInitialMount = useRef(true);  // Phase 1: Prevent duplicate API calls on mount
+  const isInitialMount = useRef(true); // Phase 1: Prevent duplicate API calls on mount
 
   // Applied filter states - these are used for actual filtering
-  const [appliedStatusFilters, setAppliedStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested']));
-  const [appliedCategoryFilter, setAppliedCategoryFilter] = useState<string>('all');
-  const [appliedYearFilter, setAppliedYearFilter] = useState<string>('all');
-  const [appliedLetterFilter, setAppliedLetterFilter] = useState<string>('all');
-  const [appliedSearch, setAppliedSearch] = useState<string>('');
-  const [appliedTranslationFilter, setAppliedTranslationFilter] = useState<string>('all');
-  const [appliedInterpretFilter, setAppliedInterpretFilter] = useState<string>('all');
+  const [appliedStatusFilters, setAppliedStatusFilters] = useState<
+    Set<EntryStatus | "all">
+  >(new Set(["interested"]));
+  const [appliedCategoryFilter, setAppliedCategoryFilter] =
+    useState<string>("all");
+  const [appliedYearFilter, setAppliedYearFilter] = useState<string>("all");
+  const [appliedLetterFilter, setAppliedLetterFilter] = useState<string>("all");
+  const [appliedSearch, setAppliedSearch] = useState<string>("");
+  const [appliedTranslationFilter, setAppliedTranslationFilter] =
+    useState<string>("all");
+  const [appliedInterpretFilter, setAppliedInterpretFilter] =
+    useState<string>("all");
 
   // Temporary filter states - these are used for UI interaction before applying
-  const [tempStatusFilters, setTempStatusFilters] = useState<Set<EntryStatus | 'all'>>(new Set(['interested']));
-  const [tempCategoryFilter, setTempCategoryFilter] = useState<string>('all');
-  const [tempYearFilter, setTempYearFilter] = useState<string>('all');
-  const [tempLetterFilter, setTempLetterFilter] = useState<string>('all');
-  const [tempSearch, setTempSearch] = useState<string>('');
-  const [tempTranslationFilter, setTempTranslationFilter] = useState<string>('all');
-  const [tempInterpretFilter, setTempInterpretFilter] = useState<string>('all');
+  const [tempStatusFilters, setTempStatusFilters] = useState<
+    Set<EntryStatus | "all">
+  >(new Set(["interested"]));
+  const [tempCategoryFilter, setTempCategoryFilter] = useState<string>("all");
+  const [tempYearFilter, setTempYearFilter] = useState<string>("all");
+  const [tempLetterFilter, setTempLetterFilter] = useState<string>("all");
+  const [tempSearch, setTempSearch] = useState<string>("");
+  const [tempTranslationFilter, setTempTranslationFilter] =
+    useState<string>("all");
+  const [tempInterpretFilter, setTempInterpretFilter] = useState<string>("all");
 
   // Sort states
-  const [sortField, setSortField] = useState<SortField>('date');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   // Pagination (existing UI pagination)
   const [currentPage, setCurrentPage] = useState(1);
@@ -69,78 +90,100 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   // Backend search states
   const [searchResults, setSearchResults] = useState<Article[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchInput, setSearchInput] = useState(''); // Local input state
+  const [searchInput, setSearchInput] = useState(""); // Local input state
 
   // Fetch entries with pagination (optimized - only fetches one page at a time)
   // Uses appliedStatusFilters instead of tempStatusFilters
-  const fetchEntries = useCallback(async (append = false) => {
-    const currentPage = append ? page + 1 : 1;
-    const pageSize = !append && currentPage === 1 ? INITIAL_PAGE_SIZE : LOAD_MORE_SIZE;
+  const fetchEntries = useCallback(
+    async (append = false) => {
+      const currentPage = append ? page + 1 : 1;
+      const pageSize =
+        !append && currentPage === 1 ? INITIAL_PAGE_SIZE : LOAD_MORE_SIZE;
 
-    if (append) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-      setPage(1);
-      setSelectedIds(new Set());
-    }
-
-    try {
-      // Build task status filter params
-      const taskFilterParams: Record<string, string> = {};
-      if (appliedTranslationFilter !== 'all') {
-        taskFilterParams.task_translation_status = appliedTranslationFilter;
-      }
-      if (appliedInterpretFilter !== 'all') {
-        taskFilterParams.task_interpret_status = appliedInterpretFilter;
-      }
-
-      // Phase 2: Handle 'all' status - call single endpoint instead of parallel requests
-      if (appliedStatusFilters.has('all')) {
-        // Call single 'all' endpoint (backend handles fetching all statuses)
-        const response = await entriesApi.list({ status: 'all' as any, page: currentPage, page_size: pageSize, ...taskFilterParams });
-        const mappedArticles = response.items.map(mapEntryToArticle);
-
-        if (append) {
-          setArticles(prev => [...prev, ...mappedArticles]);
-        } else {
-          setArticles(mappedArticles);
-        }
-
-        setPage(currentPage);
-        setHasMore(response.has_more);
+      if (append) {
+        setLoadingMore(true);
       } else {
-        // Multiple statuses selected - fetch each in parallel
-        const statuses: EntryStatus[] = appliedStatusFilters.size > 0
-          ? Array.from(appliedStatusFilters).filter(s => s !== 'all') as EntryStatus[]
-          : ['interested', 'favorite'];  // Fallback default
+        setLoading(true);
+        setPage(1);
+        setSelectedIds(new Set());
+      }
 
-        const responses = await Promise.all(
-          statuses.map(status =>
-            entriesApi.list({ status, page: currentPage, page_size: pageSize, ...taskFilterParams })
-          )
-        );
-
-        // Merge and sort results
-        const allItems = responses.flatMap(r => r.items);
-        const mappedArticles = allItems.map(mapEntryToArticle);
-
-        if (append) {
-          setArticles(prev => [...prev, ...mappedArticles]);
-        } else {
-          setArticles(mappedArticles);
+      try {
+        // Build task status filter params
+        const taskFilterParams: Record<string, string> = {};
+        if (appliedTranslationFilter !== "all") {
+          taskFilterParams.task_translation_status = appliedTranslationFilter;
+        }
+        if (appliedInterpretFilter !== "all") {
+          taskFilterParams.task_interpret_status = appliedInterpretFilter;
         }
 
-        setPage(currentPage);
-        setHasMore(responses.some(r => r.has_more));
+        // Phase 2: Handle 'all' status - call single endpoint instead of parallel requests
+        if (appliedStatusFilters.has("all")) {
+          // Call single 'all' endpoint (backend handles fetching all statuses)
+          const response = await entriesApi.list({
+            status: "all" as any,
+            page: currentPage,
+            page_size: pageSize,
+            ...taskFilterParams,
+          });
+          const mappedArticles = response.items.map(mapEntryToArticle);
+
+          if (append) {
+            setArticles((prev) => [...prev, ...mappedArticles]);
+          } else {
+            setArticles(mappedArticles);
+          }
+
+          setPage(currentPage);
+          setHasMore(response.has_more);
+        } else {
+          // Multiple statuses selected - fetch each in parallel
+          const statuses: EntryStatus[] =
+            appliedStatusFilters.size > 0
+              ? (Array.from(appliedStatusFilters).filter(
+                  (s) => s !== "all",
+                ) as EntryStatus[])
+              : ["interested", "favorite"]; // Fallback default
+
+          const responses = await Promise.all(
+            statuses.map((status) =>
+              entriesApi.list({
+                status,
+                page: currentPage,
+                page_size: pageSize,
+                ...taskFilterParams,
+              }),
+            ),
+          );
+
+          // Merge and sort results
+          const allItems = responses.flatMap((r) => r.items);
+          const mappedArticles = allItems.map(mapEntryToArticle);
+
+          if (append) {
+            setArticles((prev) => [...prev, ...mappedArticles]);
+          } else {
+            setArticles(mappedArticles);
+          }
+
+          setPage(currentPage);
+          setHasMore(responses.some((r) => r.has_more));
+        }
+      } catch (error) {
+        console.error("Failed to fetch entries:", error);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-    } catch (error) {
-      console.error('Failed to fetch entries:', error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [page, appliedStatusFilters, appliedTranslationFilter, appliedInterpretFilter]);
+    },
+    [
+      page,
+      appliedStatusFilters,
+      appliedTranslationFilter,
+      appliedInterpretFilter,
+    ],
+  );
 
   // Initial load - only fetch once
   useEffect(() => {
@@ -175,7 +218,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   // Get unique categories and years for filters
   const categories = useMemo(() => {
     const cats = new Set<string>();
-    articles.forEach(a => {
+    articles.forEach((a) => {
       if (a._entry?.rss_source_name) cats.add(a._entry.rss_source_name);
     });
     return Array.from(cats).sort();
@@ -183,7 +226,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
   const years = useMemo(() => {
     const yrs = new Set<string>();
-    articles.forEach(a => {
+    articles.forEach((a) => {
       if (a._entry?.published_at) {
         const year = new Date(a._entry.published_at).getFullYear().toString();
         yrs.add(year);
@@ -200,10 +243,13 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     }
     setIsSearching(true);
     try {
-      const response = await entriesApi.search(query, { page: 1, page_size: 100 });
+      const response = await entriesApi.search(query, {
+        page: 1,
+        page_size: 100,
+      });
       setSearchResults(response.items.map(mapEntryToArticle));
     } catch (error) {
-      console.error('Search failed:', error);
+      console.error("Search failed:", error);
       setSearchResults(null);
     } finally {
       setIsSearching(false);
@@ -230,25 +276,32 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
     // Multi-select status filter
     // If 'all' is selected, don't filter by status (show all)
-    if (appliedStatusFilters.size > 0 && !appliedStatusFilters.has('all')) {
-      result = result.filter(a => a._entry?.status && appliedStatusFilters.has(a._entry.status));
+    if (appliedStatusFilters.size > 0 && !appliedStatusFilters.has("all")) {
+      result = result.filter(
+        (a) => a._entry?.status && appliedStatusFilters.has(a._entry.status),
+      );
     }
 
-    if (appliedCategoryFilter !== 'all') {
-      result = result.filter(a => a._entry?.rss_source_name === appliedCategoryFilter);
+    if (appliedCategoryFilter !== "all") {
+      result = result.filter(
+        (a) => a._entry?.rss_source_name === appliedCategoryFilter,
+      );
     }
 
-    if (appliedYearFilter !== 'all') {
-      result = result.filter(a => {
+    if (appliedYearFilter !== "all") {
+      result = result.filter((a) => {
         if (!a._entry?.published_at) return false;
-        return new Date(a._entry.published_at).getFullYear().toString() === appliedYearFilter;
+        return (
+          new Date(a._entry.published_at).getFullYear().toString() ===
+          appliedYearFilter
+        );
       });
     }
 
-    if (appliedLetterFilter !== 'all') {
-      result = result.filter(a => {
+    if (appliedLetterFilter !== "all") {
+      result = result.filter((a) => {
         const firstChar = a.title.charAt(0).toUpperCase();
-        if (appliedLetterFilter === '#') {
+        if (appliedLetterFilter === "#") {
           return !/[A-Z]/.test(firstChar);
         }
         return firstChar === appliedLetterFilter;
@@ -259,20 +312,33 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     // No need for frontend filtering when using backend search
 
     result = [...result].sort((a, b) => {
-      if (sortField === 'date') {
-        const dateA = a._entry?.published_at ? new Date(a._entry.published_at).getTime() : 0;
-        const dateB = b._entry?.published_at ? new Date(b._entry.published_at).getTime() : 0;
-        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+      if (sortField === "date") {
+        const dateA = a._entry?.published_at
+          ? new Date(a._entry.published_at).getTime()
+          : 0;
+        const dateB = b._entry?.published_at
+          ? new Date(b._entry.published_at).getTime()
+          : 0;
+        return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
       } else {
         const titleA = a.title.toLowerCase();
         const titleB = b.title.toLowerCase();
         const cmp = titleA.localeCompare(titleB);
-        return sortOrder === 'desc' ? -cmp : cmp;
+        return sortOrder === "desc" ? -cmp : cmp;
       }
     });
 
     return result;
-  }, [articles, searchResults, appliedStatusFilters, appliedCategoryFilter, appliedYearFilter, appliedLetterFilter, sortField, sortOrder]);
+  }, [
+    articles,
+    searchResults,
+    appliedStatusFilters,
+    appliedCategoryFilter,
+    appliedYearFilter,
+    appliedLetterFilter,
+    sortField,
+    sortOrder,
+  ]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSorted.length / PAGE_SIZE);
@@ -283,7 +349,15 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedStatusFilters, appliedCategoryFilter, appliedYearFilter, appliedLetterFilter, appliedSearch, sortField, sortOrder]);
+  }, [
+    appliedStatusFilters,
+    appliedCategoryFilter,
+    appliedYearFilter,
+    appliedLetterFilter,
+    appliedSearch,
+    sortField,
+    sortOrder,
+  ]);
 
   // Utility function to compare Sets for equality
   const areSetsEqual = (set1: Set<any>, set2: Set<any>) => {
@@ -332,23 +406,23 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
   // Reset all filters to default
   const resetFilters = () => {
-    const defaultStatusFilters = new Set<EntryStatus | 'all'>(['interested']);
+    const defaultStatusFilters = new Set<EntryStatus | "all">(["interested"]);
 
     setTempStatusFilters(defaultStatusFilters);
-    setTempCategoryFilter('all');
-    setTempYearFilter('all');
-    setTempLetterFilter('all');
-    setTempSearch('');
-    setTempTranslationFilter('all');
-    setTempInterpretFilter('all');
+    setTempCategoryFilter("all");
+    setTempYearFilter("all");
+    setTempLetterFilter("all");
+    setTempSearch("");
+    setTempTranslationFilter("all");
+    setTempInterpretFilter("all");
 
     setAppliedStatusFilters(defaultStatusFilters);
-    setAppliedCategoryFilter('all');
-    setAppliedYearFilter('all');
-    setAppliedLetterFilter('all');
-    setAppliedSearch('');
-    setAppliedTranslationFilter('all');
-    setAppliedInterpretFilter('all');
+    setAppliedCategoryFilter("all");
+    setAppliedYearFilter("all");
+    setAppliedLetterFilter("all");
+    setAppliedSearch("");
+    setAppliedTranslationFilter("all");
+    setAppliedInterpretFilter("all");
 
     setPage(1);
     setCurrentPage(1);
@@ -369,16 +443,16 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   };
 
   // Toggle status in temporary filter (not applied yet)
-  const toggleTempStatusFilter = (status: EntryStatus | 'all') => {
-    setTempStatusFilters(prev => {
+  const toggleTempStatusFilter = (status: EntryStatus | "all") => {
+    setTempStatusFilters((prev) => {
       const newSet = new Set(prev);
 
-      if (status === 'all') {
+      if (status === "all") {
         // If selecting "all", clear other selections
-        return new Set(['all']);
+        return new Set(["all"]);
       } else {
         // If selecting specific status, remove "all"
-        newSet.delete('all');
+        newSet.delete("all");
 
         if (newSet.has(status)) {
           newSet.delete(status);
@@ -393,25 +467,38 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
   };
 
   // Check if any applied filter is active
-  const hasActiveFilters = appliedStatusFilters.size > 0 || appliedCategoryFilter !== 'all' || appliedYearFilter !== 'all' || appliedLetterFilter !== 'all' || appliedSearch !== '';
+  const hasActiveFilters =
+    appliedStatusFilters.size > 0 ||
+    appliedCategoryFilter !== "all" ||
+    appliedYearFilter !== "all" ||
+    appliedLetterFilter !== "all" ||
+    appliedSearch !== "";
 
   // Count active filters for display
   const activeFiltersCount = useMemo(() => {
     let count = 0;
 
-    if (!appliedStatusFilters.has('all') && appliedStatusFilters.size > 0) {
+    if (!appliedStatusFilters.has("all") && appliedStatusFilters.size > 0) {
       count += appliedStatusFilters.size;
     }
 
-    if (appliedCategoryFilter !== 'all') count++;
-    if (appliedYearFilter !== 'all') count++;
-    if (appliedLetterFilter !== 'all') count++;
+    if (appliedCategoryFilter !== "all") count++;
+    if (appliedYearFilter !== "all") count++;
+    if (appliedLetterFilter !== "all") count++;
     if (appliedSearch.trim()) count++;
-    if (appliedTranslationFilter !== 'all') count++;
-    if (appliedInterpretFilter !== 'all') count++;
+    if (appliedTranslationFilter !== "all") count++;
+    if (appliedInterpretFilter !== "all") count++;
 
     return count;
-  }, [appliedStatusFilters, appliedCategoryFilter, appliedYearFilter, appliedLetterFilter, appliedSearch, appliedTranslationFilter, appliedInterpretFilter]);
+  }, [
+    appliedStatusFilters,
+    appliedCategoryFilter,
+    appliedYearFilter,
+    appliedLetterFilter,
+    appliedSearch,
+    appliedTranslationFilter,
+    appliedInterpretFilter,
+  ]);
 
   const toggleSelect = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -428,117 +515,147 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
     if (selectedIds.size === paginatedArticles.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(paginatedArticles.map(a => a.id)));
+      setSelectedIds(new Set(paginatedArticles.map((a) => a.id)));
     }
   };
 
   const handleBulkDiscard = async () => {
-    const ids = Array.from(selectedIds).map(id => {
-      const article = articles.find(a => a.id === id);
-      return article?._entry?.id;
-    }).filter((id): id is number => id !== undefined);
+    const ids = Array.from(selectedIds)
+      .map((id) => {
+        const article = articles.find((a) => a.id === id);
+        return article?._entry?.id;
+      })
+      .filter((id): id is number => id !== undefined);
 
     if (ids.length > 0) {
       try {
-        await entriesApi.batchUpdateStatus(ids, 'trash');
-        setArticles(prev => prev.filter(a => !selectedIds.has(a.id)));
+        await entriesApi.batchUpdateStatus(ids, "trash");
+        setArticles((prev) => prev.filter((a) => !selectedIds.has(a.id)));
         setSelectedIds(new Set());
-        showToast(t('library.articlesDiscarded', { count: ids.length }), 'success');
+        showToast(
+          t("library.articlesDiscarded", { count: ids.length }),
+          "success",
+        );
       } catch (error) {
-        console.error('Failed to bulk discard:', error);
-        showToast(t('library.failedToDiscard'), 'error');
+        console.error("Failed to bulk discard:", error);
+        showToast(t("library.failedToDiscard"), "error");
       }
     }
   };
 
   const handleBulkFavorite = async () => {
-    const ids = Array.from(selectedIds).map(id => {
-      const article = articles.find(a => a.id === id);
-      return article?._entry?.id;
-    }).filter((id): id is number => id !== undefined);
+    const ids = Array.from(selectedIds)
+      .map((id) => {
+        const article = articles.find((a) => a.id === id);
+        return article?._entry?.id;
+      })
+      .filter((id): id is number => id !== undefined);
 
     if (ids.length > 0) {
       try {
-        await entriesApi.batchUpdateStatus(ids, 'favorite');
-        setArticles(prev => prev.map(a =>
-          selectedIds.has(a.id) ? { ...a, isFavorite: true } : a
-        ));
+        await entriesApi.batchUpdateStatus(ids, "favorite");
+        setArticles((prev) =>
+          prev.map((a) =>
+            selectedIds.has(a.id) ? { ...a, isFavorite: true } : a,
+          ),
+        );
         setSelectedIds(new Set());
-        showToast(t('library.articlesFavorited', { count: ids.length }), 'success');
+        showToast(
+          t("library.articlesFavorited", { count: ids.length }),
+          "success",
+        );
       } catch (error) {
-        console.error('Failed to bulk favorite:', error);
-        showToast(t('library.failedToFavorite'), 'error');
+        console.error("Failed to bulk favorite:", error);
+        showToast(t("library.failedToFavorite"), "error");
       }
     }
   };
 
   const handleBulkSave = async () => {
-    const ids = Array.from(selectedIds).map(id => {
-      const article = articles.find(a => a.id === id);
-      return article?._entry?.id;
-    }).filter((id): id is number => id !== undefined);
+    const ids = Array.from(selectedIds)
+      .map((id) => {
+        const article = articles.find((a) => a.id === id);
+        return article?._entry?.id;
+      })
+      .filter((id): id is number => id !== undefined);
 
     if (ids.length > 0) {
       try {
-        await entriesApi.batchUpdateStatus(ids, 'interested');
+        await entriesApi.batchUpdateStatus(ids, "interested");
         fetchEntries();
         setSelectedIds(new Set());
-        showToast(t('library.articlesSaved', { count: ids.length }), 'success');
+        showToast(t("library.articlesSaved", { count: ids.length }), "success");
       } catch (error) {
-        console.error('Failed to bulk save:', error);
-        showToast(t('library.failedToSave'), 'error');
+        console.error("Failed to bulk save:", error);
+        showToast(t("library.failedToSave"), "error");
       }
     }
   };
 
   const openOriginalLink = (e: React.MouseEvent, link: string) => {
     e.stopPropagation();
-    window.open(link, '_blank', 'noopener,noreferrer');
+    window.open(link, "_blank", "noopener,noreferrer");
   };
 
   const handleReinterpret = async (e: React.MouseEvent, article: Article) => {
     e.stopPropagation();
     if (!article._entry?.id) return;
 
-    const isReinterpret = article._entry?.task_interpret_status === 'failed' || article._entry?.task_interpret_status === 'completed';
+    const isReinterpret =
+      article._entry?.task_interpret_status === "failed" ||
+      article._entry?.task_interpret_status === "completed";
 
     try {
       await entriesApi.reinterpret(article._entry.id);
       // Update local state to show interpreting status
-      setArticles(prev => prev.map(a =>
-        a.id === article.id
-          ? { ...a, _entry: { ...a._entry!, task_interpret_status: 'running', ai_summary: null } }
-          : a
-      ));
-      showToast(isReinterpret ? t('home.reinterpretStarted') : t('home.interpretStarted'), 'success');
+      setArticles((prev) =>
+        prev.map((a) =>
+          a.id === article.id
+            ? {
+                ...a,
+                _entry: {
+                  ...a._entry!,
+                  task_interpret_status: "running",
+                  ai_summary: null,
+                },
+              }
+            : a,
+        ),
+      );
+      showToast(
+        isReinterpret
+          ? t("home.reinterpretStarted")
+          : t("home.interpretStarted"),
+        "success",
+      );
     } catch (error) {
-      console.error('Failed to interpret:', error);
-      showToast(t('home.reinterpretFailed'), 'error');
+      console.error("Failed to interpret:", error);
+      showToast(t("home.reinterpretFailed"), "error");
     }
   };
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortOrder('desc');
+      setSortOrder("desc");
     }
   };
 
-  const getStatusLabel = (status: EntryStatus | 'all') => {
+  const getStatusLabel = (status: EntryStatus | "all") => {
     const labels: Record<string, string> = {
-      all: t('common.all'),
-      unread: t('library.unread'),
-      interested: t('library.saved'),
-      favorite: t('library.favorite'),
-      archived: t('library.archived'),
-      trash: t('library.trash'),
+      all: t("common.all"),
+      unread: t("library.unread"),
+      interested: t("library.saved"),
+      favorite: t("library.favorite"),
+      archived: t("library.archived"),
+      trash: t("library.trash"),
     };
     return labels[status] || status;
   };
 
-  const letters = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
+  const letters = ["#", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")];
 
   return (
     <div className="animate-fade-in space-y-4 pb-32 pt-4 md:pt-6 relative">
@@ -548,17 +665,19 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder={t('library.searchArticles')}
+              placeholder={t("library.searchArticles")}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   handleSearch();
                 }
               }}
-              className={`w-full min-h-touch pl-10 pr-4 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${darkMode ? 'bg-theme-muted border-theme-border focus:ring-theme-accent text-theme-text placeholder-theme-text-tertiary' : 'bg-theme-surface border-theme-border focus:ring-theme-accent/30 text-theme-text placeholder-theme-text-tertiary'}`}
+              className={`w-full min-h-touch pl-10 pr-4 rounded-xl border outline-none focus:ring-2 transition-all text-body-sm ${darkMode ? "bg-theme-muted border-theme-border focus:ring-theme-accent text-theme-text placeholder-theme-text-tertiary" : "bg-theme-surface border-theme-border focus:ring-theme-accent/30 text-theme-text placeholder-theme-text-tertiary"}`}
             />
-            <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
+            <div
+              className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
+            >
               {isSearching ? (
                 <div className="animate-spin h-4 w-4 border-2 border-theme-accent border-t-transparent rounded-full" />
               ) : (
@@ -571,44 +690,52 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
             disabled={isSearching}
             className={`min-h-touch px-4 rounded-xl border transition-micro cursor-pointer active:scale-[0.98] ${
               darkMode
-                ? 'bg-theme-muted border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent'
-                : 'bg-theme-surface border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent'
+                ? "bg-theme-muted border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent"
+                : "bg-theme-surface border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent"
             } disabled:opacity-50`}
           >
-            {t('common.search')}
+            {t("common.search")}
           </button>
         </div>
 
         <button
           onClick={() => {
             fetchEntries();
-            showToast(t('library.refreshed'), 'success');
+            showToast(t("library.refreshed"), "success");
           }}
           disabled={loading}
           className={`flex items-center gap-2 min-h-touch px-4 rounded-xl border transition-micro cursor-pointer active:scale-[0.98] ${
             darkMode
-              ? 'bg-theme-muted border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent'
-              : 'bg-theme-surface border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent'
+              ? "bg-theme-muted border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent"
+              : "bg-theme-surface border-theme-border text-theme-text-secondary hover:border-theme-accent hover:text-theme-accent"
           } disabled:opacity-50`}
         >
-          <div className={loading ? 'animate-spin' : ''}>
+          <div className={loading ? "animate-spin" : ""}>
             <Icons.Refresh />
           </div>
-          <span className="text-ui-sm font-medium hidden md:inline">{t('common.refresh')}</span>
+          <span className="text-ui-sm font-medium hidden md:inline">
+            {t("common.refresh")}
+          </span>
         </button>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-2 min-h-touch px-4 rounded-xl border transition-micro cursor-pointer active:scale-[0.98] ${
             showFilters || hasActiveFilters
-              ? (darkMode ? 'bg-theme-accent border-theme-accent text-white' : 'bg-theme-accent border-theme-accent text-white')
-              : (darkMode ? 'bg-theme-muted border-theme-border text-theme-text-secondary hover:border-theme-text-tertiary' : 'bg-theme-surface border-theme-border text-theme-text-secondary hover:border-theme-text-tertiary')
+              ? darkMode
+                ? "bg-theme-accent border-theme-accent text-white"
+                : "bg-theme-accent border-theme-accent text-white"
+              : darkMode
+                ? "bg-theme-muted border-theme-border text-theme-text-secondary hover:border-theme-text-tertiary"
+                : "bg-theme-surface border-theme-border text-theme-text-secondary hover:border-theme-text-tertiary"
           }`}
         >
           <Icons.Filter />
-          <span className="text-ui-sm font-medium">{t('library.filter')}</span>
+          <span className="text-ui-sm font-medium">{t("library.filter")}</span>
           {activeFiltersCount > 0 && (
-            <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${darkMode ? 'bg-theme-accent-light' : 'bg-theme-accent/100'}`}>
+            <span
+              className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${darkMode ? "bg-theme-accent-light" : "bg-theme-accent/100"}`}
+            >
               {activeFiltersCount}
             </span>
           )}
@@ -618,28 +745,46 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
           )}
         </button>
 
-        <div className={`flex rounded-xl border overflow-hidden ${darkMode ? 'border-theme-border' : 'border-theme-border'}`}>
+        <div
+          className={`flex rounded-xl border overflow-hidden ${darkMode ? "border-theme-border" : "border-theme-border"}`}
+        >
           <button
-            onClick={() => toggleSort('date')}
+            onClick={() => toggleSort("date")}
             className={`flex items-center gap-1.5 min-h-touch px-3 text-ui-sm font-medium transition-micro cursor-pointer ${
-              sortField === 'date'
-                ? (darkMode ? 'bg-theme-selected text-theme-text' : 'bg-theme-muted text-theme-text')
-                : (darkMode ? 'bg-theme-surface text-theme-text-secondary hover:text-theme-text hover:bg-theme-muted' : 'bg-theme-surface text-theme-text-secondary hover:text-theme-text hover:bg-theme-muted')
+              sortField === "date"
+                ? darkMode
+                  ? "bg-theme-selected text-theme-text"
+                  : "bg-theme-muted text-theme-text"
+                : darkMode
+                  ? "bg-theme-surface text-theme-text-secondary hover:text-theme-text hover:bg-theme-muted"
+                  : "bg-theme-surface text-theme-text-secondary hover:text-theme-text hover:bg-theme-muted"
             }`}
           >
-            {sortField === 'date' && sortOrder === 'desc' ? <Icons.SortDesc /> : <Icons.SortAsc />}
-            {t('library.date')}
+            {sortField === "date" && sortOrder === "desc" ? (
+              <Icons.SortDesc />
+            ) : (
+              <Icons.SortAsc />
+            )}
+            {t("library.date")}
           </button>
           <button
-            onClick={() => toggleSort('title')}
+            onClick={() => toggleSort("title")}
             className={`flex items-center gap-1.5 min-h-touch px-3 text-ui-sm font-medium border-l transition-micro cursor-pointer ${
-              sortField === 'title'
-                ? (darkMode ? 'bg-theme-selected text-theme-text border-theme-border' : 'bg-theme-muted text-theme-text border-theme-border')
-                : (darkMode ? 'bg-theme-surface text-theme-text-secondary hover:text-theme-text hover:bg-theme-muted border-theme-border' : 'bg-theme-surface text-theme-text-secondary hover:text-theme-text hover:bg-theme-muted border-theme-border')
+              sortField === "title"
+                ? darkMode
+                  ? "bg-theme-selected text-theme-text border-theme-border"
+                  : "bg-theme-muted text-theme-text border-theme-border"
+                : darkMode
+                  ? "bg-theme-surface text-theme-text-secondary hover:text-theme-text hover:bg-theme-muted border-theme-border"
+                  : "bg-theme-surface text-theme-text-secondary hover:text-theme-text hover:bg-theme-muted border-theme-border"
             }`}
           >
-            {sortField === 'title' && sortOrder === 'desc' ? <Icons.SortDesc /> : <Icons.SortAsc />}
-            {t('entry.title')}
+            {sortField === "title" && sortOrder === "desc" ? (
+              <Icons.SortDesc />
+            ) : (
+              <Icons.SortAsc />
+            )}
+            {t("entry.title")}
           </button>
         </div>
       </div>
@@ -648,18 +793,15 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
       {showFilters && (
         <>
           {/* Backdrop to close on click outside */}
+          <div className="fixed inset-0 z-10" onClick={cancelFilters} />
           <div
-            className="fixed inset-0 z-10"
-            onClick={cancelFilters}
-          />
-          <div
-            className={`absolute left-4 right-4 md:left-auto md:right-8 md:w-[500px] z-20 p-4 rounded-xl border shadow-xl space-y-4 ${darkMode ? 'bg-theme-surface border-theme-border' : 'bg-theme-surface border-theme-border'}`}
+            className={`absolute left-4 right-4 md:left-auto md:right-8 md:w-[500px] z-20 p-4 rounded-xl border shadow-xl space-y-4 ${darkMode ? "bg-theme-surface border-theme-border" : "bg-theme-surface border-theme-border"}`}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === "Enter") {
                 applyFilters();
-              } else if (e.key === 'Escape') {
+              } else if (e.key === "Escape") {
                 cancelFilters();
-              } else if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+              } else if ((e.metaKey || e.ctrlKey) && e.key === "r") {
                 e.preventDefault();
                 resetFilters();
               }
@@ -667,44 +809,68 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
             tabIndex={0}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className={`text-sm font-semibold ${darkMode ? 'text-theme-text' : 'text-theme-text'}`}>{t('library.filters')}</span>
+              <span
+                className={`text-sm font-semibold ${darkMode ? "text-theme-text" : "text-theme-text"}`}
+              >
+                {t("library.filters")}
+              </span>
               <button
                 onClick={cancelFilters}
-                className={`p-1 rounded-lg transition-colors ${darkMode ? 'hover:bg-theme-muted text-theme-text-secondary' : 'hover:bg-theme-muted text-theme-text-secondary'}`}
+                className={`p-1 rounded-lg transition-colors ${darkMode ? "hover:bg-theme-muted text-theme-text-secondary" : "hover:bg-theme-muted text-theme-text-secondary"}`}
               >
                 <Icons.X />
               </button>
             </div>
             {/* Status multi-select - using temporary state */}
             <div className="mb-4">
-              <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.status')}</label>
+              <label
+                className={`block text-xs font-medium uppercase tracking-wider mb-2 ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
+              >
+                {t("library.status")}
+              </label>
               <div className="flex flex-wrap gap-2">
                 {/* Phase 2: Add "All Statuses" button */}
                 <button
-                  onClick={() => toggleTempStatusFilter('all')}
+                  onClick={() => toggleTempStatusFilter("all")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    tempStatusFilters.has('all')
-                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-100 dark:text-purple-700 ring-2 ring-purple-400/50'
-                      : darkMode ? 'bg-theme-muted text-theme-text-secondary hover:text-theme-text' : 'bg-theme-muted text-theme-text-secondary hover:text-theme-text'
+                    tempStatusFilters.has("all")
+                      ? "bg-purple-100 text-purple-700 dark:bg-purple-100 dark:text-purple-700 ring-2 ring-purple-400/50"
+                      : darkMode
+                        ? "bg-theme-muted text-theme-text-secondary hover:text-theme-text"
+                        : "bg-theme-muted text-theme-text-secondary hover:text-theme-text"
                   }`}
                 >
-                  {tempStatusFilters.has('all') && <Icons.Check />}
-                  {t('library.allStatuses')}
+                  {tempStatusFilters.has("all") && <Icons.Check />}
+                  {t("library.allStatuses")}
                 </button>
 
                 {/* Individual status buttons */}
-                {(['unread', 'interested', 'favorite', 'archived', 'trash'] as EntryStatus[]).map(status => (
+                {(
+                  [
+                    "unread",
+                    "interested",
+                    "favorite",
+                    "archived",
+                    "trash",
+                  ] as EntryStatus[]
+                ).map((status) => (
                   <button
                     key={status}
                     onClick={() => toggleTempStatusFilter(status)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                       tempStatusFilters.has(status)
-                        ? status === 'favorite' ? 'bg-amber-100 text-amber-700 dark:bg-amber-100 dark:text-amber-700 ring-2 ring-amber-400/50' :
-                          status === 'interested' ? 'bg-green-100 text-green-700 dark:bg-green-100 dark:text-green-700 ring-2 ring-green-400/50' :
-                          status === 'unread' ? 'bg-blue-100 text-blue-700 dark:bg-blue-100 dark:text-blue-700 ring-2 ring-blue-400/50' :
-                          status === 'trash' ? 'bg-red-100 text-red-700 dark:bg-red-100 dark:text-red-700 ring-2 ring-red-400/50' :
-                          'bg-theme-muted text-theme-text dark:bg-theme-muted dark:text-theme-text ring-2 ring-theme-border/50'
-                        : darkMode ? 'bg-theme-muted text-theme-text-secondary hover:text-theme-text' : 'bg-theme-muted text-theme-text-secondary hover:text-theme-text'
+                        ? status === "favorite"
+                          ? "bg-amber-100 text-amber-700 dark:bg-amber-100 dark:text-amber-700 ring-2 ring-amber-400/50"
+                          : status === "interested"
+                            ? "bg-green-100 text-green-700 dark:bg-green-100 dark:text-green-700 ring-2 ring-green-400/50"
+                            : status === "unread"
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-100 dark:text-blue-700 ring-2 ring-blue-400/50"
+                              : status === "trash"
+                                ? "bg-red-100 text-red-700 dark:bg-red-100 dark:text-red-700 ring-2 ring-red-400/50"
+                                : "bg-theme-muted text-theme-text dark:bg-theme-muted dark:text-theme-text ring-2 ring-theme-border/50"
+                        : darkMode
+                          ? "bg-theme-muted text-theme-text-secondary hover:text-theme-text"
+                          : "bg-theme-muted text-theme-text-secondary hover:text-theme-text"
                     }`}
                   >
                     {tempStatusFilters.has(status) && <Icons.Check />}
@@ -716,43 +882,61 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.source')}</label>
+                <label
+                  className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
+                >
+                  {t("library.source")}
+                </label>
                 <select
                   value={tempCategoryFilter}
                   onChange={(e) => setTempCategoryFilter(e.target.value)}
-                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-surface border-theme-border text-theme-text'}`}
+                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? "bg-theme-muted border-theme-border text-theme-text" : "bg-theme-surface border-theme-border text-theme-text"}`}
                 >
-                  <option value="all">{t('library.allSources')}</option>
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  <option value="all">{t("library.allSources")}</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.year')}</label>
+                <label
+                  className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
+                >
+                  {t("library.year")}
+                </label>
                 <select
                   value={tempYearFilter}
                   onChange={(e) => setTempYearFilter(e.target.value)}
-                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-surface border-theme-border text-theme-text'}`}
+                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? "bg-theme-muted border-theme-border text-theme-text" : "bg-theme-surface border-theme-border text-theme-text"}`}
                 >
-                  <option value="all">{t('library.allYears')}</option>
-                  {years.map(year => (
-                    <option key={year} value={year}>{year}</option>
+                  <option value="all">{t("library.allYears")}</option>
+                  {years.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.firstLetter')}</label>
+                <label
+                  className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
+                >
+                  {t("library.firstLetter")}
+                </label>
                 <select
                   value={tempLetterFilter}
                   onChange={(e) => setTempLetterFilter(e.target.value)}
-                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-surface border-theme-border text-theme-text'}`}
+                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? "bg-theme-muted border-theme-border text-theme-text" : "bg-theme-surface border-theme-border text-theme-text"}`}
                 >
-                  <option value="all">{t('common.all')}</option>
-                  {letters.map(letter => (
-                    <option key={letter} value={letter}>{letter}</option>
+                  <option value="all">{t("common.all")}</option>
+                  {letters.map((letter) => (
+                    <option key={letter} value={letter}>
+                      {letter}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -761,33 +945,45 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
             {/* Task Status Filters */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.translationStatus')}</label>
+                <label
+                  className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
+                >
+                  {t("library.translationStatus")}
+                </label>
                 <select
                   value={tempTranslationFilter}
                   onChange={(e) => setTempTranslationFilter(e.target.value)}
-                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-surface border-theme-border text-theme-text'}`}
+                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? "bg-theme-muted border-theme-border text-theme-text" : "bg-theme-surface border-theme-border text-theme-text"}`}
                 >
-                  <option value="all">{t('library.allStatuses')}</option>
-                  <option value="none">{t('library.taskNone')}</option>
-                  <option value="pending">{t('library.taskPending')}</option>
-                  <option value="running">{t('library.taskRunning')}</option>
-                  <option value="completed">{t('library.taskCompleted')}</option>
-                  <option value="failed">{t('library.taskFailed')}</option>
+                  <option value="all">{t("library.allStatuses")}</option>
+                  <option value="none">{t("library.taskNone")}</option>
+                  <option value="pending">{t("library.taskPending")}</option>
+                  <option value="running">{t("library.taskRunning")}</option>
+                  <option value="completed">
+                    {t("library.taskCompleted")}
+                  </option>
+                  <option value="failed">{t("library.taskFailed")}</option>
                 </select>
               </div>
               <div>
-                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.interpretStatus')}</label>
+                <label
+                  className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
+                >
+                  {t("library.interpretStatus")}
+                </label>
                 <select
                   value={tempInterpretFilter}
                   onChange={(e) => setTempInterpretFilter(e.target.value)}
-                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? 'bg-theme-muted border-theme-border text-theme-text' : 'bg-theme-surface border-theme-border text-theme-text'}`}
+                  className={`w-full p-2 rounded-lg border text-sm ${darkMode ? "bg-theme-muted border-theme-border text-theme-text" : "bg-theme-surface border-theme-border text-theme-text"}`}
                 >
-                  <option value="all">{t('library.allStatuses')}</option>
-                  <option value="none">{t('library.taskNone')}</option>
-                  <option value="running">{t('library.taskRunning')}</option>
-                  <option value="completed">{t('library.taskCompleted')}</option>
-                  <option value="failed">{t('library.taskFailed')}</option>
-                  <option value="skipped">{t('library.taskSkipped')}</option>
+                  <option value="all">{t("library.allStatuses")}</option>
+                  <option value="none">{t("library.taskNone")}</option>
+                  <option value="running">{t("library.taskRunning")}</option>
+                  <option value="completed">
+                    {t("library.taskCompleted")}
+                  </option>
+                  <option value="failed">{t("library.taskFailed")}</option>
+                  <option value="skipped">{t("library.taskSkipped")}</option>
                 </select>
               </div>
             </div>
@@ -799,27 +995,28 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
                 disabled={!hasFilterChanges()}
                 className={`
                   flex-1 py-2.5 rounded-lg font-medium transition-all
-                  ${hasFilterChanges()
-                    ? 'bg-theme-accent text-white hover:bg-theme-accent/90 cursor-pointer'
-                    : 'bg-theme-muted text-theme-text-tertiary cursor-not-allowed'
+                  ${
+                    hasFilterChanges()
+                      ? "bg-theme-accent text-white hover:bg-theme-accent/90 cursor-pointer"
+                      : "bg-theme-muted text-theme-text-tertiary cursor-not-allowed"
                   }
                 `}
               >
-                {t('common.apply')}
+                {t("common.apply")}
               </button>
 
               <button
                 onClick={resetFilters}
-                className={`px-4 py-2.5 rounded-lg border font-medium transition-colors ${darkMode ? 'border-theme-border text-theme-text-secondary hover:bg-theme-muted' : 'border-theme-border text-theme-text-secondary hover:bg-theme-muted'}`}
+                className={`px-4 py-2.5 rounded-lg border font-medium transition-colors ${darkMode ? "border-theme-border text-theme-text-secondary hover:bg-theme-muted" : "border-theme-border text-theme-text-secondary hover:bg-theme-muted"}`}
               >
-                {t('common.reset')}
+                {t("common.reset")}
               </button>
 
               <button
                 onClick={cancelFilters}
-                className={`px-4 py-2.5 rounded-lg border font-medium transition-colors ${darkMode ? 'border-theme-border text-theme-text-secondary hover:bg-theme-muted' : 'border-theme-border text-theme-text-secondary hover:bg-theme-muted'}`}
+                className={`px-4 py-2.5 rounded-lg border font-medium transition-colors ${darkMode ? "border-theme-border text-theme-text-secondary hover:bg-theme-muted" : "border-theme-border text-theme-text-secondary hover:bg-theme-muted"}`}
               >
-                {t('common.cancel')}
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -831,15 +1028,31 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
-              <span className={`text-sm font-medium ${darkMode ? 'text-theme-accent' : 'text-theme-accent'}`}>{selectedIds.size} {t('library.selected')}</span>
+              <span
+                className={`text-sm font-medium ${darkMode ? "text-theme-accent" : "text-theme-accent"}`}
+              >
+                {selectedIds.size} {t("library.selected")}
+              </span>
             )}
           </div>
-          <div className="flex items-center gap-3 cursor-pointer" onClick={selectAll}>
-            <span className={`text-xs uppercase tracking-wider font-bold ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{t('library.selectAll')}</span>
-            <div
-              className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedIds.size === paginatedArticles.length && paginatedArticles.length > 0 ? (darkMode ? 'bg-theme-accent border-theme-accent' : 'bg-theme-accent border-theme-accent') : (darkMode ? 'border-theme-border' : 'border-theme-border')}`}
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={selectAll}
+          >
+            <span
+              className={`text-xs uppercase tracking-wider font-bold ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
             >
-              {selectedIds.size === paginatedArticles.length && paginatedArticles.length > 0 && <div className="text-white scale-75"><Icons.Check /></div>}
+              {t("library.selectAll")}
+            </span>
+            <div
+              className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedIds.size === paginatedArticles.length && paginatedArticles.length > 0 ? (darkMode ? "bg-theme-accent border-theme-accent" : "bg-theme-accent border-theme-accent") : darkMode ? "border-theme-border" : "border-theme-border"}`}
+            >
+              {selectedIds.size === paginatedArticles.length &&
+                paginatedArticles.length > 0 && (
+                  <div className="text-white scale-75">
+                    <Icons.Check />
+                  </div>
+                )}
             </div>
           </div>
         </div>
@@ -847,19 +1060,25 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className={`animate-spin h-8 w-8 border-2 border-t-transparent rounded-full ${darkMode ? 'border-theme-accent' : 'border-theme-accent'}`}/>
+          <div
+            className={`animate-spin h-8 w-8 border-2 border-t-transparent rounded-full ${darkMode ? "border-theme-accent" : "border-theme-accent"}`}
+          />
         </div>
       ) : paginatedArticles.length === 0 ? (
         <div className="text-center py-16 flex flex-col items-center">
           <div className="mb-4 p-4 rounded-full bg-theme-muted text-theme-text-tertiary">
             <Icons.Library />
           </div>
-          <p className="text-lg font-medium text-theme-text-secondary mb-1">{t('library.noArticlesFound')}</p>
-          <p className="text-sm text-theme-text-tertiary">{t('library.tryAdjustingFilters')}</p>
+          <p className="text-lg font-medium text-theme-text-secondary mb-1">
+            {t("library.noArticlesFound")}
+          </p>
+          <p className="text-sm text-theme-text-tertiary">
+            {t("library.tryAdjustingFilters")}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {paginatedArticles.map(article => {
+          {paginatedArticles.map((article) => {
             const isSelected = selectedIds.has(article.id);
             return (
               <div
@@ -867,73 +1086,123 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
                 onClick={() => onOpenArticle(article)}
                 className={`relative group flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-micro active:scale-[0.99] ${
                   isSelected
-                    ? (darkMode ? 'bg-theme-accent/10 border-theme-accent/50' : 'bg-theme-accent/10 border-theme-accent/30')
-                    : (darkMode ? 'bg-theme-surface border-theme-border hover:border-theme-accent/50 hover:shadow-lg hover:shadow-theme-text/5 hover:-translate-y-0.5' : 'bg-theme-surface border-theme-border hover:border-theme-accent/50 hover:shadow-lg hover:shadow-theme-accent/10 hover:-translate-y-0.5')
+                    ? darkMode
+                      ? "bg-theme-accent/10 border-theme-accent/50"
+                      : "bg-theme-accent/10 border-theme-accent/30"
+                    : darkMode
+                      ? "bg-theme-surface border-theme-border hover:border-theme-accent/50 hover:shadow-lg hover:shadow-theme-text/5 hover:-translate-y-0.5"
+                      : "bg-theme-surface border-theme-border hover:border-theme-accent/50 hover:shadow-lg hover:shadow-theme-accent/10 hover:-translate-y-0.5"
                 }`}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${darkMode ? 'bg-theme-muted text-theme-accent' : 'bg-theme-muted text-theme-accent'}`}>{article.source}</span>
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                        article._entry?.status === 'favorite' ? 'bg-amber-100 text-amber-700' :
-                        article._entry?.status === 'interested' ? 'bg-green-100 text-green-700' :
-                        article._entry?.status === 'unread' ? 'bg-blue-100 text-blue-700' :
-                        article._entry?.status === 'trash' ? 'bg-red-100 text-red-700' :
-                        darkMode ? 'bg-theme-muted text-theme-text-secondary' : 'bg-theme-muted text-theme-text-secondary'
-                      }`}>{getStatusLabel(article._entry?.status || 'unread')}</span>
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${darkMode ? "bg-theme-muted text-theme-accent" : "bg-theme-muted text-theme-accent"}`}
+                      >
+                        {article.source}
+                      </span>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          article._entry?.status === "favorite"
+                            ? "bg-amber-100 text-amber-700"
+                            : article._entry?.status === "interested"
+                              ? "bg-green-100 text-green-700"
+                              : article._entry?.status === "unread"
+                                ? "bg-blue-100 text-blue-700"
+                                : article._entry?.status === "trash"
+                                  ? "bg-red-100 text-red-700"
+                                  : darkMode
+                                    ? "bg-theme-muted text-theme-text-secondary"
+                                    : "bg-theme-muted text-theme-text-secondary"
+                        }`}
+                      >
+                        {getStatusLabel(article._entry?.status || "unread")}
+                      </span>
                       {/* ArXiv 翻译/解读状态徽章 */}
-                      {article._entry?.link?.includes('arxiv.org') && (
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                          article._entry?.task_interpret_status === 'completed'
-                            ? 'bg-theme-success/15 text-theme-success'
-                            : article._entry?.task_interpret_status === 'failed'
-                              ? 'bg-theme-error/15 text-theme-error'
-                              : article._entry?.task_interpret_status === 'running'
-                                ? 'bg-theme-warning/15 text-theme-warning'
-                                : article._entry?.task_translation_status === 'running'
-                                  ? 'bg-theme-accent/15 text-theme-accent'
-                                  : article._entry?.task_translation_status === 'completed'
-                                    ? 'bg-theme-success/15 text-theme-success'
-                                    : article._entry?.task_translation_status === 'pending'
-                                      ? 'bg-theme-muted text-theme-text-secondary'
-                                      : 'bg-theme-accent/15 text-theme-accent'
-                        }`}>
-                          {article._entry?.task_interpret_status === 'completed'
-                            ? t('home.interpreted')
-                            : article._entry?.task_interpret_status === 'failed'
-                              ? t('home.interpretFailed')
-                              : article._entry?.task_interpret_status === 'running'
-                                ? t('home.interpreting')
-                                : article._entry?.task_translation_status === 'running'
-                                  ? t('library.translating')
-                                  : article._entry?.task_translation_status === 'completed'
-                                    ? t('library.translated')
-                                    : article._entry?.task_translation_status === 'pending'
-                                      ? t('library.pendingTranslation')
-                                      : 'ArXiv'}
+                      {article._entry?.link?.includes("arxiv.org") && (
+                        <span
+                          className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                            article._entry?.task_interpret_status ===
+                            "completed"
+                              ? "bg-theme-success/15 text-theme-success"
+                              : article._entry?.task_interpret_status ===
+                                  "failed"
+                                ? "bg-theme-error/15 text-theme-error"
+                                : article._entry?.task_interpret_status ===
+                                    "running"
+                                  ? "bg-theme-warning/15 text-theme-warning"
+                                  : article._entry?.task_translation_status ===
+                                      "running"
+                                    ? "bg-theme-accent/15 text-theme-accent"
+                                    : article._entry
+                                          ?.task_translation_status ===
+                                        "completed"
+                                      ? "bg-theme-success/15 text-theme-success"
+                                      : article._entry
+                                            ?.task_translation_status ===
+                                          "pending"
+                                        ? "bg-theme-muted text-theme-text-secondary"
+                                        : "bg-theme-accent/15 text-theme-accent"
+                          }`}
+                        >
+                          {article._entry?.task_interpret_status === "completed"
+                            ? t("home.interpreted")
+                            : article._entry?.task_interpret_status === "failed"
+                              ? t("home.interpretFailed")
+                              : article._entry?.task_interpret_status ===
+                                  "running"
+                                ? t("home.interpreting")
+                                : article._entry?.task_translation_status ===
+                                    "running"
+                                  ? t("library.translating")
+                                  : article._entry?.task_translation_status ===
+                                      "completed"
+                                    ? t("library.translated")
+                                    : article._entry
+                                          ?.task_translation_status ===
+                                        "pending"
+                                      ? t("library.pendingTranslation")
+                                      : "ArXiv"}
                         </span>
                       )}
-                      <span className={`text-xs ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{article.timestamp}</span>
+                      <span
+                        className={`text-xs ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
+                      >
+                        {article.timestamp}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      {article.isFavorite && <div className="text-amber-500 scale-75"><Icons.Star /></div>}
-                      {/* Interpret button for ArXiv articles: saved + (uninterpreted, failed, or completed for re-interpret) */}
-                      {article._entry?.link?.includes('arxiv.org') &&
-                       article._entry?.status === 'interested' &&
-                       article._entry?.task_interpret_status !== 'running' && (
-                        <button
-                          onClick={(e) => handleReinterpret(e, article)}
-                          className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'hover:bg-theme-muted text-theme-accent' : 'hover:bg-theme-muted text-theme-accent'}`}
-                          title={article._entry?.task_interpret_status === 'completed' || article._entry?.task_interpret_status === 'failed' ? t('home.reinterpret') : t('home.interpret')}
-                        >
-                          <Icons.Sparkles />
-                        </button>
+                      {article.isFavorite && (
+                        <div className="text-amber-500 scale-75">
+                          <Icons.Star />
+                        </div>
                       )}
+                      {/* Interpret button for ArXiv articles: saved/favorite + not running */}
+                      {article._entry?.link?.includes("arxiv.org") &&
+                        (article._entry?.status === "interested" ||
+                          article._entry?.status === "favorite") &&
+                        article._entry?.task_interpret_status !== "running" && (
+                          <button
+                            onClick={(e) => handleReinterpret(e, article)}
+                            className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? "hover:bg-theme-muted text-theme-accent" : "hover:bg-theme-muted text-theme-accent"}`}
+                            title={
+                              article._entry?.task_interpret_status ===
+                                "completed" ||
+                              article._entry?.task_interpret_status === "failed"
+                                ? t("home.reinterpret")
+                                : t("home.interpret")
+                            }
+                          >
+                            <Icons.Sparkles />
+                          </button>
+                        )}
                       {article._entry?.link && (
                         <button
-                          onClick={(e) => openOriginalLink(e, article._entry!.link)}
-                          className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'hover:bg-theme-muted text-theme-text-secondary' : 'hover:bg-theme-muted text-theme-text-secondary'}`}
+                          onClick={(e) =>
+                            openOriginalLink(e, article._entry!.link)
+                          }
+                          className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? "hover:bg-theme-muted text-theme-text-secondary" : "hover:bg-theme-muted text-theme-text-secondary"}`}
                           title="Open original"
                         >
                           <Icons.ExternalLink />
@@ -947,32 +1216,53 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
                       onClick={(e) => {
                         e.stopPropagation();
                         if (article._entry?.link) {
-                          window.open(article._entry.link, '_blank', 'noopener,noreferrer');
+                          window.open(
+                            article._entry.link,
+                            "_blank",
+                            "noopener,noreferrer",
+                          );
                         }
                       }}
-                      className={`text-base font-bold cursor-pointer hover:underline decoration-2 underline-offset-2 ${darkMode ? 'text-theme-text decoration-theme-accent' : 'text-theme-text decoration-theme-accent'}`}
+                      className={`text-base font-bold cursor-pointer hover:underline decoration-2 underline-offset-2 ${darkMode ? "text-theme-text decoration-theme-accent" : "text-theme-text decoration-theme-accent"}`}
                     >
                       {article.title}
                     </span>
                   </h3>
 
-                  <p className={`text-sm line-clamp-2 mb-2 leading-relaxed ${darkMode ? 'text-theme-text-secondary' : 'text-theme-text-secondary'}`}>{article.snippet}</p>
+                  <p
+                    className={`text-sm line-clamp-2 mb-2 leading-relaxed ${darkMode ? "text-theme-text-secondary" : "text-theme-text-secondary"}`}
+                  >
+                    {article.snippet}
+                  </p>
 
                   <div className="flex items-center justify-between">
                     <div className="flex gap-2">
-                      {article.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className={`text-[10px] px-2 py-0.5 rounded font-medium ${darkMode ? 'bg-theme-muted text-theme-text-secondary' : 'bg-theme-muted text-theme-text-secondary'}`}>#{tag}</span>
+                      {article.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className={`text-[10px] px-2 py-0.5 rounded font-medium ${darkMode ? "bg-theme-muted text-theme-text-secondary" : "bg-theme-muted text-theme-text-secondary"}`}
+                        >
+                          #{tag}
+                        </span>
                       ))}
                     </div>
-                    <span className={`text-xs ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>{article.readTime}</span>
+                    <span
+                      className={`text-xs ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
+                    >
+                      {article.readTime}
+                    </span>
                   </div>
                 </div>
 
                 <div
                   onClick={(e) => toggleSelect(article.id, e)}
-                  className={`mt-1 flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors z-10 ${isSelected ? (darkMode ? 'bg-theme-accent border-theme-accent' : 'bg-theme-accent border-theme-accent') : (darkMode ? 'border-theme-border hover:border-theme-accent' : 'border-theme-border hover:border-theme-accent/50')}`}
+                  className={`mt-1 flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors z-10 ${isSelected ? (darkMode ? "bg-theme-accent border-theme-accent" : "bg-theme-accent border-theme-accent") : darkMode ? "border-theme-border hover:border-theme-accent" : "border-theme-border hover:border-theme-accent/50"}`}
                 >
-                  {isSelected && <div className="text-white scale-75"><Icons.Check /></div>}
+                  {isSelected && (
+                    <div className="text-white scale-75">
+                      <Icons.Check />
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -981,142 +1271,179 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
       )}
 
       {/* Load More Button - for fetching more data from API (not shown in search mode) */}
-      {hasMore && !loading && !searchResults && paginatedArticles.length > 0 && (
-        <div className="flex justify-center py-6">
-          <button
-            onClick={() => fetchEntries(true)}
-            disabled={loadingMore}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              loadingMore
-                ? 'bg-theme-muted text-theme-text-tertiary cursor-not-allowed'
-                : 'bg-theme-accent text-white hover:bg-theme-accent-hover active:scale-95'
-            }`}
-          >
-            {loadingMore ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"/>
-                <span>{t('library.loadingMore')}</span>
-              </div>
-            ) : (
-              t('library.loadMore')
-            )}
-          </button>
-        </div>
-      )}
+      {hasMore &&
+        !loading &&
+        !searchResults &&
+        paginatedArticles.length > 0 && (
+          <div className="flex justify-center py-6">
+            <button
+              onClick={() => fetchEntries(true)}
+              disabled={loadingMore}
+              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                loadingMore
+                  ? "bg-theme-muted text-theme-text-tertiary cursor-not-allowed"
+                  : "bg-theme-accent text-white hover:bg-theme-accent-hover active:scale-95"
+              }`}
+            >
+              {loadingMore ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <span>{t("library.loadingMore")}</span>
+                </div>
+              ) : (
+                t("library.loadMore")
+              )}
+            </button>
+          </div>
+        )}
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-3 pt-4">
-          <span className={`text-caption ${darkMode ? 'text-theme-text-tertiary' : 'text-theme-text-tertiary'}`}>
-            {filteredAndSorted.length} {t('library.articles')}
+          <span
+            className={`text-caption ${darkMode ? "text-theme-text-tertiary" : "text-theme-text-tertiary"}`}
+          >
+            {filteredAndSorted.length} {t("library.articles")}
           </span>
           <div className="flex items-center gap-1">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl transition-micro ${
-              currentPage === 1
-                ? (darkMode ? 'text-theme-text-muted cursor-not-allowed' : 'text-theme-text-muted cursor-not-allowed')
-                : (darkMode ? 'text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95' : 'text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95')
-            }`}
-          >
-            <Icons.ChevronLeft />
-          </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl transition-micro ${
+                currentPage === 1
+                  ? darkMode
+                    ? "text-theme-text-muted cursor-not-allowed"
+                    : "text-theme-text-muted cursor-not-allowed"
+                  : darkMode
+                    ? "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+                    : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+              }`}
+            >
+              <Icons.ChevronLeft />
+            </button>
 
-          <div className="flex items-center gap-1">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let page: number;
-              if (totalPages <= 5) {
-                page = i + 1;
-              } else if (currentPage <= 3) {
-                page = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                page = totalPages - 4 + i;
-              } else {
-                page = currentPage - 2 + i;
-              }
-              return (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl text-ui-sm font-medium transition-micro cursor-pointer active:scale-95 ${
-                    currentPage === page
-                      ? (darkMode ? 'bg-theme-accent text-white' : 'bg-theme-accent text-white')
-                      : (darkMode ? 'text-theme-text-secondary hover:bg-theme-muted' : 'text-theme-text-secondary hover:bg-theme-muted')
-                  }`}
-                >
-                  {page}
-                </button>
-              );
-            })}
-          </div>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let page: number;
+                if (totalPages <= 5) {
+                  page = i + 1;
+                } else if (currentPage <= 3) {
+                  page = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  page = totalPages - 4 + i;
+                } else {
+                  page = currentPage - 2 + i;
+                }
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl text-ui-sm font-medium transition-micro cursor-pointer active:scale-95 ${
+                      currentPage === page
+                        ? darkMode
+                          ? "bg-theme-accent text-white"
+                          : "bg-theme-accent text-white"
+                        : darkMode
+                          ? "text-theme-text-secondary hover:bg-theme-muted"
+                          : "text-theme-text-secondary hover:bg-theme-muted"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+            </div>
 
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl transition-micro ${
-              currentPage === totalPages
-                ? (darkMode ? 'text-theme-text-muted cursor-not-allowed' : 'text-theme-text-muted cursor-not-allowed')
-                : (darkMode ? 'text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95' : 'text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95')
-            }`}
-          >
-            <Icons.ChevronRight />
-          </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={`min-h-touch min-w-touch flex items-center justify-center rounded-xl transition-micro ${
+                currentPage === totalPages
+                  ? darkMode
+                    ? "text-theme-text-muted cursor-not-allowed"
+                    : "text-theme-text-muted cursor-not-allowed"
+                  : darkMode
+                    ? "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+                    : "text-theme-text-secondary hover:bg-theme-muted cursor-pointer active:scale-95"
+              }`}
+            >
+              <Icons.ChevronRight />
+            </button>
           </div>
         </div>
       )}
 
       {/* Floating Bulk Action Bar */}
       {(() => {
-        const selectedArticles = articles.filter(a => selectedIds.has(a.id));
-        const hasTrashSelected = selectedArticles.some(a => a._entry?.status === 'trash');
+        const selectedArticles = articles.filter((a) => selectedIds.has(a.id));
+        const hasTrashSelected = selectedArticles.some(
+          (a) => a._entry?.status === "trash",
+        );
 
         return (
-          <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-0.5 md:gap-1 p-1.5 md:p-2 rounded-full shadow-lg transition-micro-slow max-w-[95vw] ${selectedIds.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'} bg-theme-surface border border-theme-border`}>
+          <div
+            className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-0.5 md:gap-1 p-1.5 md:p-2 rounded-full shadow-lg transition-micro-slow max-w-[95vw] ${selectedIds.size > 0 ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0 pointer-events-none"} bg-theme-surface border border-theme-border`}
+          >
             <button
               onClick={() => setSelectedIds(new Set())}
-              className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'hover:bg-theme-muted text-theme-text-secondary' : 'hover:bg-theme-muted text-theme-text-secondary'}`}
+              className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-3 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? "hover:bg-theme-muted text-theme-text-secondary" : "hover:bg-theme-muted text-theme-text-secondary"}`}
               title="Clear selection"
             >
               <Icons.X /> <span className="text-xs">{selectedIds.size}</span>
             </button>
-            <div className={`w-px h-5 md:h-6 ${darkMode ? 'bg-theme-border' : 'bg-theme-border'}`}></div>
+            <div
+              className={`w-px h-5 md:h-6 ${darkMode ? "bg-theme-border" : "bg-theme-border"}`}
+            ></div>
             {hasTrashSelected ? (
               // Only show Save button for trashed articles
               <button
                 onClick={handleBulkSave}
-                className={`flex items-center justify-center gap-1.5 md:gap-2 min-h-touch px-4 md:px-5 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'bg-theme-accent hover:bg-theme-accent text-white' : 'bg-theme-accent hover:bg-theme-accent/100 text-white'}`}
+                className={`flex items-center justify-center gap-1.5 md:gap-2 min-h-touch px-4 md:px-5 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? "bg-theme-accent hover:bg-theme-accent text-white" : "bg-theme-accent hover:bg-theme-accent/100 text-white"}`}
               >
-                <Icons.Check /> <span>{t('library.restore')}</span>
+                <Icons.Check /> <span>{t("library.restore")}</span>
               </button>
             ) : (
               // Normal action bar
               <>
                 <button
                   onClick={handleBulkDiscard}
-                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'hover:bg-red-100 text-theme-error' : 'hover:bg-red-50 text-theme-error'}`}
+                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? "hover:bg-red-100 text-theme-error" : "hover:bg-red-50 text-theme-error"}`}
                 >
-                  <Icons.Trash /> <span className="hidden md:inline">{t('library.discard')}</span>
+                  <Icons.Trash />{" "}
+                  <span className="hidden md:inline">
+                    {t("library.discard")}
+                  </span>
                 </button>
-                <div className={`w-px h-5 md:h-6 ${darkMode ? 'bg-theme-border' : 'bg-theme-border'}`}></div>
+                <div
+                  className={`w-px h-5 md:h-6 ${darkMode ? "bg-theme-border" : "bg-theme-border"}`}
+                ></div>
                 <button
                   onClick={handleBulkSave}
-                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'hover:bg-theme-muted text-theme-text' : 'hover:bg-theme-muted text-theme-text'}`}
+                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? "hover:bg-theme-muted text-theme-text" : "hover:bg-theme-muted text-theme-text"}`}
                 >
-                  <Icons.Check /> <span className="hidden md:inline">{t('common.save')}</span>
+                  <Icons.Check />{" "}
+                  <span className="hidden md:inline">{t("common.save")}</span>
                 </button>
                 <button
                   onClick={handleBulkFavorite}
-                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'hover:bg-theme-muted text-theme-text' : 'hover:bg-theme-muted text-theme-text'}`}
+                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? "hover:bg-theme-muted text-theme-text" : "hover:bg-theme-muted text-theme-text"}`}
                 >
-                  <Icons.Star /> <span className="hidden md:inline">{t('library.favorite')}</span>
+                  <Icons.Star />{" "}
+                  <span className="hidden md:inline">
+                    {t("library.favorite")}
+                  </span>
                 </button>
-                <div className={`w-px h-5 md:h-6 ${darkMode ? 'bg-theme-border' : 'bg-theme-border'}`}></div>
+                <div
+                  className={`w-px h-5 md:h-6 ${darkMode ? "bg-theme-border" : "bg-theme-border"}`}
+                ></div>
                 <button
                   onClick={() => setExportModalOpen(true)}
-                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? 'hover:bg-theme-muted text-theme-text' : 'hover:bg-theme-muted text-theme-text'}`}
+                  className={`flex items-center justify-center gap-1 md:gap-2 min-h-touch min-w-touch md:min-w-0 md:px-4 rounded-full font-medium text-ui-sm transition-micro cursor-pointer active:scale-95 ${darkMode ? "hover:bg-theme-muted text-theme-text" : "hover:bg-theme-muted text-theme-text"}`}
                 >
-                  <Icons.Share /> <span className="hidden md:inline">{t('library.export')}</span>
+                  <Icons.Share />{" "}
+                  <span className="hidden md:inline">
+                    {t("library.export")}
+                  </span>
                 </button>
               </>
             )}
@@ -1127,7 +1454,7 @@ export function LibraryView({ darkMode, onOpenArticle, refreshKey = 0 }: Library
       <ExportModal
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
-        articles={articles.filter(a => selectedIds.has(a.id))}
+        articles={articles.filter((a) => selectedIds.has(a.id))}
       />
     </div>
   );

@@ -442,32 +442,55 @@ async def fix_arxiv_image_urls() -> None:
     """
     修复 ai_summary 中的错误 arXiv 图片链接
 
-    错误格式: https://arxiv.org/html/2603.02049/2603.02049v1/x3.png
+    错误模式1: https://arxiv.org/html/2603.02049/2603.02049v1/x3.png (ID重复)
     正确格式: https://arxiv.org/html/2603.02049v1/x3.png
 
-    原因: 旧代码用简单字符串拼接构建图片 URL，导致 arxiv_id 重复出现
+    错误模式2: https://arxiv.org/html/x3.png (缺少 ID 路径)
+    正确格式: https://arxiv.org/html/2412.00100v1/x3.png
+
+    原因: 旧代码用简单字符串拼接或 urljoin 构建图片 URL 导致路径错误
     """
     import re
     from sqlalchemy import text
 
     async with async_session_maker() as db:
-        # 查找包含错误图片链接的解读内容
+        # 查找包含 arXiv 图片链接的解读内容
         result = await db.execute(text(
-            "SELECT id, ai_summary FROM entries "
+            "SELECT id, ai_summary, link FROM entries "
             "WHERE ai_summary IS NOT NULL AND ai_summary LIKE '%arxiv.org/html/%'"
         ))
         rows = result.fetchall()
 
-        # 匹配错误模式: /html/{id}/{id}v{N}/ → /html/{id}v{N}/
-        # 例: /html/2603.02049/2603.02049v1/ → /html/2603.02049v1/
-        pattern = re.compile(
+        # 模式1: /html/{id}/{id}v{N}/ → /html/{id}v{N}/ (ID 重复)
+        pattern_dup = re.compile(
             r'(https?://arxiv\.org/html/)(\d{4}\.\d{4,5})/(\2v\d+/)'
         )
 
+        # 模式2: /html/x3.png 或 /html/extracted/... (缺少 arxiv ID 路径)
+        # 匹配 /html/ 后直接跟文件名或非 ID 的路径
+        pattern_bare = re.compile(
+            r'(https?://arxiv\.org/html/)(?!\d{4}\.\d{4,5})([^)\s"\']+)'
+        )
+
+        # 从 link 中提取 arxiv ID
+        arxiv_id_pattern = re.compile(r'(\d{4}\.\d{4,5})')
+
         fixed_count = 0
         for row in rows:
-            entry_id, ai_summary = row
-            fixed = pattern.sub(r'\1\3', ai_summary)
+            entry_id, ai_summary, link = row
+            fixed = ai_summary
+
+            # 修复模式1: 去除重复的 ID
+            fixed = pattern_dup.sub(r'\1\3', fixed)
+
+            # 修复模式2: 补充缺失的 ID 路径
+            if pattern_bare.search(fixed):
+                m = arxiv_id_pattern.search(link or '')
+                if m:
+                    aid = m.group(1)
+                    # 在 /html/ 后插入 {id}/
+                    fixed = pattern_bare.sub(rf'\g<1>{aid}/\2', fixed)
+
             if fixed != ai_summary:
                 await db.execute(
                     text("UPDATE entries SET ai_summary = :summary WHERE id = :id"),

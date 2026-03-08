@@ -391,8 +391,7 @@ class ArxivInterpreter:
                 response = await client.get(html_url, headers=headers, follow_redirects=True)
                 response.raise_for_status()
                 html_content = response.text
-                # 使用实际响应 URL 作为基准（跟随重定向后的地址，如 /html/2603.02049v1/）
-                self._base_url = str(response.url)
+                self._response_url = str(response.url)
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 logger.info(f"ArXiv HTML not available (404): {html_url}")
@@ -405,6 +404,18 @@ class ArxivInterpreter:
 
         # 解析 HTML
         soup = BeautifulSoup(html_content, "html.parser")
+
+        # 提取 <base href> 用于解析相对图片 URL
+        # 部分 arXiv 页面包含 <base href="/html/2412.00100v1/"> 标签
+        # 没有 base 标签时回退到响应 URL
+        base_tag = soup.find("base")
+        if base_tag and base_tag.get("href"):
+            base_href = base_tag["href"]
+            if base_href.startswith("/"):
+                base_href = f"https://arxiv.org{base_href}"
+            self._base_url = base_href
+        else:
+            self._base_url = self._response_url
 
         content_parts = []
 
